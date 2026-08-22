@@ -1,0 +1,252 @@
+#!/usr/bin/env node
+'use strict'
+// godkit — scaffold the shared .agent/ contract into a project, and install the skills into
+// whichever agent tools are on this machine.
+
+const fs = require('fs')
+const os = require('os')
+const path = require('path')
+
+const ROOT = path.resolve(__dirname, '..')
+const TEMPLATES = path.join(ROOT, 'templates')
+const SKILLS = path.join(ROOT, 'skills')
+const { projectRoot, paths, utcStamp } = require('../lib/paths')
+
+// Where each tool looks for skills, and how it wants them laid out.
+//   per-skill: one link per skill directory
+//   folder   : one link named godkit for the whole skills/ directory
+const TOOLS = {
+  claude: { dir: ['.claude', 'skills'], style: 'per-skill', hooks: true },
+  codex: { dir: ['.agents', 'skills'], style: 'per-skill', hooks: true },
+  antigravity: { dir: ['.gemini', 'antigravity', 'skills'], style: 'folder', hooks: false },
+  cursor: { dir: null, style: 'rules-only', hooks: false },
+}
+
+function log(msg) {
+  process.stdout.write(msg + '\n')
+}
+
+function tpl(name, vars) {
+  let s = fs.readFileSync(path.join(TEMPLATES, name), 'utf8')
+  for (const [k, v] of Object.entries(vars || {})) s = s.split('{{' + k + '}}').join(v)
+  return s
+}
+
+// Never clobber. Everything .agent/ holds is written by agents; a second `init` must be safe.
+function writeIfAbsent(file, content) {
+  if (fs.existsSync(file)) return false
+  fs.mkdirSync(path.dirname(file), { recursive: true })
+  fs.writeFileSync(file, content)
+  return true
+}
+
+function skillNames() {
+  try {
+    return fs
+      .readdirSync(SKILLS, { withFileTypes: true })
+      .filter((d) => d.isDirectory())
+      .map((d) => d.name)
+      .sort()
+  } catch {
+    return []
+  }
+}
+
+// Symlinks need elevation on Windows, junctions do not. Copy is the last resort so that a
+// non-admin install still works — it just will not track edits to the package.
+function link(src, dest) {
+  fs.mkdirSync(path.dirname(dest), { recursive: true })
+  try {
+    const st = fs.lstatSync(dest)
+    if (st.isSymbolicLink() || st.isDirectory()) fs.rmSync(dest, { recursive: true, force: true })
+  } catch {
+    /* not there yet */
+  }
+  try {
+    fs.symlinkSync(src, dest, process.platform === 'win32' ? 'junction' : 'dir')
+    return 'linked'
+  } catch {
+    fs.cpSync(src, dest, { recursive: true })
+    return 'copied'
+  }
+}
+
+function cmdInit(args) {
+  const root = args[0] ? path.resolve(args[0]) : projectRoot(process.cwd())
+  const p = paths(root)
+  const name = path.basename(root)
+  const vars = { PROJECT: name, UTC: utcStamp() }
+
+  fs.mkdirSync(p.tasks, { recursive: true })
+  fs.mkdirSync(p.log, { recursive: true })
+
+  const wrote = []
+  if (writeIfAbsent(p.board, tpl('BOARD.md', vars))) wrote.push('.agent/BOARD.md')
+  if (writeIfAbsent(p.thread, tpl('THREAD.md', vars))) wrote.push('.agent/THREAD.md')
+  if (writeIfAbsent(p.map, tpl('MAP.md', vars))) wrote.push('.agent/MAP.md')
+  if (writeIfAbsent(p.ignore, tpl('.agentignore', vars))) wrote.push('.agent/.agentignore')
+
+  // The always-on rules, at the path each host already reads.
+  const body = fs.readFileSync(path.join(ROOT, 'AGENTS.md'), 'utf8')
+  const cursorHeader = fs.readFileSync(path.join(TEMPLATES, 'rules', 'cursor-header.md'), 'utf8')
+  const rules = [
+    ['AGENTS.md', body],
+    ['CLAUDE.md', body],
+    [path.join('.cursor', 'rules', 'godkit.mdc'), cursorHeader.trimEnd() + '\n\n' + body],
+    [path.join('.agents', 'rules', 'godkit.md'), body],
+  ]
+  for (const [rel, content] of rules) {
+    if (writeIfAbsent(path.join(root, rel), content)) wrote.push(rel.replace(/\\/g, '/'))
+  }
+
+  log('godkit: ' + name)
+  if (wrote.length) for (const w of wrote) log('  + ' + w)
+  else log('  already set up — nothing to write')
+  log('')
+  log('Next: run the godkit-map skill to build the project map, then claim your scope on')
+  log('.agent/BOARD.md before you edit.')
+}
+
+function cmdInstall(args) {
+  const want = args.filter((a) => !a.startsWith('-'))
+  const targets = want.length ? want : Object.keys(TOOLS)
+  const names = skillNames()
+  if (!names.length) {
+    log('No skills found in ' + SKILLS)
+    return
+  }
+
+  for (const t of targets) {
+    const spec = TOOLS[t]
+    if (!spec) {
+      log(t + ': unknown tool (known: ' + Object.keys(TOOLS).join(', ') + ')')
+      continue
+    }
+    if (spec.style === 'rules-only') {
+      log(t + ': rules only — `godkit init` writes .cursor/rules/godkit.mdc per project')
+      continue
+    }
+
+    const base = path.join(os.homedir(), ...spec.dir)
+    if (spec.style === 'folder') {
+      const how = link(SKILLS, path.join(base, 'godkit'))
+      log(t + ': ' + how + ' ' + names.length + ' skills -> ' + path.join(base, 'godkit'))
+    } else {
+      let how = ''
+      for (const n of names) how = link(path.join(SKILLS, n), path.join(base, n))
+      log(t + ': ' + how + ' ' + names.length + ' skills -> ' + base)
+    }
+    if (spec.hooks) {
+      log('   hooks: run `node ' + path.join(ROOT, 'hooks', 'install.js') + '` to register them')
+    }
+  }
+}
+
+function cmdDoctor() {
+  const root = projectRoot(process.cwd())
+  const p = paths(root)
+  log('project: ' + root)
+  log('')
+
+  const has = fs.existsSync(p.dir)
+  log('  .agent/          ' + (has ? 'present' : 'MISSING — run `godkit init`'))
+  if (has) {
+    for (const [label, file] of [
+      ['BOARD.md', p.board],
+      ['THREAD.md', p.thread],
+      ['MAP.md', p.map],
+      ['graph.json', p.graph],
+    ]) {
+      log('    ' + label.padEnd(14) + (fs.existsSync(file) ? 'ok' : 'missing'))
+    }
+    try {
+      const { staleness, summary } = require('../lib/freshness')
+      log('    map          ' + summary(staleness(root, p.meta)))
+    } catch (err) {
+      log('    map          could not check (' + err.message + ')')
+    }
+    try {
+      const n = fs.readdirSync(p.log).filter((f) => f.endsWith('.md')).length
+      log('    log entries  ' + n)
+    } catch {
+      log('    log entries  0')
+    }
+  }
+
+  log('')
+  const names = skillNames()
+  log('  skills in package: ' + names.length)
+  for (const [t, spec] of Object.entries(TOOLS)) {
+    if (spec.style === 'rules-only') {
+      const f = path.join(root, '.cursor', 'rules', 'godkit.mdc')
+      log('  ' + t.padEnd(13) + (fs.existsSync(f) ? 'rules installed' : 'rules missing'))
+      continue
+    }
+    const base = path.join(os.homedir(), ...spec.dir)
+    const probe = spec.style === 'folder' ? path.join(base, 'godkit') : path.join(base, names[0] || 'godkit')
+    log('  ' + t.padEnd(13) + (fs.existsSync(probe) ? 'installed' : 'not installed') + '  (' + base + ')')
+  }
+}
+
+function cmdUninstall(args) {
+  const targets = args.filter((a) => !a.startsWith('-'))
+  const names = skillNames()
+  for (const t of targets.length ? targets : Object.keys(TOOLS)) {
+    const spec = TOOLS[t]
+    if (!spec || spec.style === 'rules-only') continue
+    const base = path.join(os.homedir(), ...spec.dir)
+    const victims = spec.style === 'folder' ? [path.join(base, 'godkit')] : names.map((n) => path.join(base, n))
+    let n = 0
+    for (const v of victims) {
+      try {
+        fs.rmSync(v, { recursive: true, force: true })
+        n++
+      } catch {
+        /* already gone */
+      }
+    }
+    log(t + ': removed ' + n + ' entries from ' + base)
+  }
+  log('')
+  log('Left in place: this project\'s .agent/ directory and rule files. Delete them by hand if')
+  log('you want them gone — they are your project\'s memory, not the package\'s.')
+}
+
+const HELP = `godkit — one shared harness for every AI agent
+
+  godkit init [path]        scaffold .agent/ and the per-tool rule files into a project
+  godkit install [tool...]  install the skills for claude, codex, antigravity (default: all)
+  godkit doctor             what is set up here, and whether the map is stale
+  godkit uninstall [tool]   remove the installed skills (leaves your .agent/ alone)
+
+After init, run the godkit-map skill to build the project map.
+`
+
+function main() {
+  const [cmd, ...args] = process.argv.slice(2)
+  switch (cmd) {
+    case 'init':
+      return cmdInit(args)
+    case 'install':
+      return cmdInstall(args)
+    case 'doctor':
+      return cmdDoctor()
+    case 'uninstall':
+      return cmdUninstall(args)
+    case undefined:
+    case 'help':
+    case '--help':
+    case '-h':
+      return process.stdout.write(HELP)
+    default:
+      process.stderr.write('godkit: unknown command "' + cmd + '"\n\n' + HELP)
+      process.exit(1)
+  }
+}
+
+try {
+  main()
+} catch (err) {
+  process.stderr.write('godkit: ' + (err && err.message) + '\n')
+  process.exit(1)
+}

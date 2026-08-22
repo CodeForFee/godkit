@@ -1,3 +1,9 @@
+---
+description: Godkit — shared agent harness. Read .agent/ before editing, log before finishing, never edit a file another agent has claimed.
+globs:
+alwaysApply: true
+---
+
 # Godkit — shared agent harness
 
 You are not the only agent in this repo. Someone worked here before you and someone will work here after you — a different model, a different tool, a different day, with none of your context. Work that cannot be resumed is work you will pay for twice.

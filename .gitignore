@@ -1,0 +1,6 @@
+node_modules/
+*.tgz
+*.bak
+.DS_Store
+.agent/tmp/
+.agent/.trash-*

@@ -1,0 +1,59 @@
+{
+  "name": "godkit",
+  "version": "1.0.0",
+  "description": "One shared harness for every AI agent. Any agent entering your repo reads the same board, map and thread — so nothing is redone and nobody edits the same file twice.",
+  "keywords": [
+    "godkit",
+    "agent",
+    "agents",
+    "skills",
+    "claude-code",
+    "cursor",
+    "codex",
+    "antigravity",
+    "handoff",
+    "orchestration",
+    "agent-memory"
+  ],
+  "license": "MIT",
+  "author": {
+    "name": "CodeForFee",
+    "email": "dienhoanguyen11@gmail.com",
+    "url": "https://github.com/CodeForFee"
+  },
+  "homepage": "https://github.com/CodeForFee/godkit",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/CodeForFee/godkit.git"
+  },
+  "bugs": {
+    "url": "https://github.com/CodeForFee/godkit/issues"
+  },
+  "type": "commonjs",
+  "bin": {
+    "godkit": "bin/godkit.js"
+  },
+  "files": [
+    "bin/",
+    "lib/",
+    "skills/",
+    "agents/",
+    "hooks/",
+    "templates/",
+    "commands/",
+    "scripts/uninstall.js",
+    "AGENTS.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "test": "node --test tests/*.test.js",
+    "check": "node scripts/check-rule-copies.js && node scripts/check-versions.js",
+    "pretest": "npm run check"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
