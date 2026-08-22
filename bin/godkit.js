@@ -232,15 +232,25 @@ function cmdSave(args) {
   )
 
   // Move scratch aside rather than deleting it: reversible, and it never trips a gate.
+  // Bucketed by day, not by millisecond — rebuilding the map five times should leave one
+  // recoverable copy, not five directories.
   try {
-    if (fs.existsSync(p.tmp)) fs.renameSync(p.tmp, path.join(p.dir, '.trash-' + Date.now()))
+    if (fs.existsSync(p.tmp)) {
+      const bucket = path.join(p.dir, '.trash-' + new Date().toISOString().slice(0, 10))
+      fs.rmSync(bucket, { recursive: true, force: true }) // today's earlier scratch is already trash
+      fs.renameSync(p.tmp, bucket)
+    }
   } catch {
     /* scratch is disposable; a locked file must not fail the save */
   }
+
+  const WEEK = 7 * 24 * 3600 * 1000
   for (const entry of fs.readdirSync(p.dir)) {
     if (!entry.startsWith('.trash-')) continue
-    const age = Date.now() - Number(entry.slice(7))
-    if (age > 7 * 24 * 3600 * 1000) fs.rmSync(path.join(p.dir, entry), { recursive: true, force: true })
+    const stamp = Date.parse(entry.slice(7))
+    if (Number.isNaN(stamp) || Date.now() - stamp > WEEK) {
+      fs.rmSync(path.join(p.dir, entry), { recursive: true, force: true })
+    }
   }
 
   log('saved: ' + saved.nodes.length + ' nodes, ' + saved.edges.length + ' edges, ' +

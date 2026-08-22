@@ -8,8 +8,8 @@
     ],
     "frameworks": [],
     "description": "One shared harness for every AI agent. A committed .agent/ directory carries the board, the thread, the task files, the logs and the project map; the skills teach agents to read it before editing and write to it before finishing. Zero runtime dependencies. AGENTS.md generates every per-host rule file, and graph.json generates MAP.md plus its own freshness signatures, so no fact has two homes.",
-    "generatedAt": "2026-08-22T02:44:17.852Z",
-    "sha": "e56d0a49bf295bf501a55c10d9ea519c0ea17484"
+    "generatedAt": "2026-08-22T02:46:54.451Z",
+    "sha": "6491b07fe4b0563c1068fd30170cf1749632d087"
   },
   "nodes": [
     {
