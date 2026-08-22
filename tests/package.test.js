@@ -144,7 +144,7 @@ test('the always-on rules keep the two non-negotiable instructions', () => {
 })
 
 test('nothing in the shipped package references the tools it was built alongside', () => {
-  const banned = /ponytail|deepseek|understand-anything|cordis/i
+  const banned = /ponytail|deepseek|understand-anything|cordis|agent-skills|addyosmani|taste-skill|leonxlnx/i
   const walk = (dir) => {
     for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
       if (e.name === 'node_modules' || e.name === '.git' || e.name === 'tests') continue

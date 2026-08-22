@@ -1,0 +1,2 @@
+description = "Design taste for UI work: set the dials, avoid the AI-default look"
+prompt = "Use the godkit-frontend skill. $ARGUMENTS"

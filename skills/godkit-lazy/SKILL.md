@@ -45,6 +45,24 @@ A report names a symptom. Before you edit, grep every caller of the function you
 
 The lazy fix *is* the root-cause fix: one guard in the shared function is a smaller diff than a guard in every caller — and patching only the path the ticket names leaves every sibling caller still broken, which you will pay for twice.
 
+## Simplifying code that already exists
+
+The ladder above is for writing new code. Deleting or collapsing existing code needs one more
+check first: **Chesterton's Fence.** Before removing something that looks unnecessary, check
+`.agent/log/` and `git log` for why it is there — in a shared repo, "unnecessary" may be another
+agent's fix that is invisible in your current diff.
+
+Then it has to still be the same code, not a rewrite: same inputs, same outputs, same side
+effects, same error paths. If any of those change, you have rewritten it — plan and test it as a
+rewrite, not wave it through as a simplification.
+
+Scope it to what you are already touching. Simplifying a neighbor's file while you are in yours
+is a drive-by edit outside your claim — see **godkit-handoff**.
+
+And over-simplification is still a mistake. Merging two clear functions into one, or inlining a
+well-named helper into its one caller, is fewer names — not fewer bugs, and sometimes worse
+readability for no real gain.
+
 ## Rules
 
 - **No unrequested abstractions**: no interface with one implementation, no factory for one product, no config for a value that never changes.
