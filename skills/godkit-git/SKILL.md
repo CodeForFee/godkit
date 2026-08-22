@@ -55,10 +55,31 @@ The file layout in **godkit-handoff** is deliberately merge-friendly:
 | `tasks/T-NNN-*.md` | rare | one file per task; two agents on the same task is already a `godkit-handoff` clock-in violation |
 | `BOARD.md` | occasional | append-heavy by convention (new claim rows, new decision lines) — a conflict is almost always both sides adding a different line, which is a trivial union |
 | `THREAD.md` | occasional | append-only, newest at the bottom — same trivial-union shape |
+| `skills/<name>/SKILL.md` | rare | one file per skill; a real edit conflict here is two agents fixing the same skill |
 
 A real disagreement — two agents wanting different things recorded as the *same* decision, or
 conflicting claims on the same file — is not a merge-tool problem. Resolve it in `THREAD.md` where
 a reader will see it, never by silently picking one side during the merge.
+
+### The generated half is different: never merge it, regenerate it
+
+`graph.json`, `meta.json` and `MAP.md` are machine-written, and both sides rewrite the whole file
+on every map refresh. A textual merge injects conflict markers into `graph.json`, which makes it
+**invalid JSON** — `loadGraph` then refuses to overwrite it (correctly, since a bad parse must
+never silently reset the project's memory), and `godkit save` is stuck.
+
+`.gitattributes` marks all three `-merge`, so git keeps one side intact and just flags the
+conflict rather than corrupting the file. Resolve by **taking either side and refreshing** — both
+sides are real graphs, and hand-reconciling a machine-written node array is meaningless work:
+
+```
+git checkout --ours .agent/graph.json .agent/meta.json .agent/MAP.md
+godkit scan   # then the analysis pass, then `godkit save`
+```
+
+Because the surviving side still carries a valid `meta.json` sha, the freshness classifier
+re-analyzes only the delta. **Deleting the file instead is the expensive mistake**: that loses the
+map and forces a FULL rebuild, with the model re-analyzing every batch.
 
 ## Boundaries
 

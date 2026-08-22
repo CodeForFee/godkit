@@ -1,3 +1,20 @@
 * text=auto eol=lf
 *.png binary
 *.jpg binary
+
+# The generated half of .agent/ must never be merged textually. Git would inject conflict markers
+# into graph.json, making it invalid JSON — loadGraph then refuses to overwrite it (correctly),
+# and `godkit save` is stuck until someone hand-merges a machine-written node array, which is
+# meaningless work. Worse, deleting the file to escape costs a FULL rebuild instead of an
+# incremental one.
+#
+# `-merge` makes git keep our side intact and just flag the conflict, so the file stays valid.
+# Resolve by taking either side — both are real graphs — then refreshing:
+#   git checkout --ours .agent/graph.json .agent/meta.json .agent/MAP.md
+#   godkit scan && ... && godkit save     # only the delta gets re-analyzed
+#
+# The hand-written half (BOARD.md, THREAD.md, log/, tasks/, skills/) is deliberately NOT listed:
+# those hold work a person or agent actually wrote, and a real textual merge is what you want.
+.agent/graph.json -merge
+.agent/meta.json  -merge
+.agent/MAP.md     -merge
