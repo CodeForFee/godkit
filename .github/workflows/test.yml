@@ -23,4 +23,4 @@ jobs:
           node-version: ${{ matrix.node }}
       - run: node scripts/sync-rules.js --check
       - run: node scripts/check-versions.js
-      - run: node --test tests/*.test.js
+      - run: node --test   # no glob: PowerShell does not expand one, and node <20 cannot

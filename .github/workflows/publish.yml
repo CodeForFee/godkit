@@ -22,7 +22,7 @@ jobs:
       # check-versions refuses to publish when the tag and the manifests disagree.
       - run: node scripts/sync-rules.js --check
       - run: node scripts/check-versions.js
-      - run: node --test tests/*.test.js
+      - run: node --test   # no glob: PowerShell does not expand one, and node <20 cannot
 
       # Trusted publishing (OIDC) needs npm >= 11.5.1; Node 22 ships npm 10.
       - run: npm install -g npm@latest

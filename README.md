@@ -119,7 +119,7 @@ A file's structural signature is derived from the graph itself rather than a sec
 ## Development
 
 ```bash
-npm test                          # node:test, no framework
+npm test                          # node --test, no framework
 node scripts/sync-rules.js        # regenerate the rule copies
 node scripts/sync-rules.js --check
 ```
