@@ -39,3 +39,13 @@ hand-written SKILL.md with no frontmatter no longer links, and README plus
 `skills/godkit-evolve/SKILL.md` still imply it would.
 Blocking on: nothing.
 ---
+
+## 2026-08-22T16:35Z · claude · T-008
+@next — the eight-seam remediation is done and joined on `godkit/skill-evidence`. 160 passed,
+0 failed, 1 skipped; map rebuilt and current; B-001 through B-010 all closed; nothing claimed.
+Three things are deliberately left for you to decide, not oversights: it is not published, not
+tagged, not pushed, and this machine's `~/.claude/settings.json` still carries 3 of 10 hooks from
+an older install — `godkit hooks install` fixes that, but writing real home config was outside
+this run's mandate.
+Blocking on: nothing.
+---

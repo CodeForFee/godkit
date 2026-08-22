@@ -11,8 +11,8 @@
     ],
     "frameworks": [],
     "description": "Zero-runtime-dependency Node.js harness that coordinates Claude Code, Codex, Cursor, Copilot, and Gemini-compatible agents through committed .agent state. Host rule or SessionStart hook -> shared BOARD/map/log context -> CLI and skill workflows -> verified task handoff. Project maps and skill evidence are Markdown/JSON files backed by Git; there is no database or application authentication layer.",
-    "generatedAt": "2026-08-22T14:17:00.946Z",
-    "sha": "4f151d80b30ae8e8521ea68e8404bfa1a982d0d3"
+    "generatedAt": "2026-08-22T15:16:17.222Z",
+    "sha": "efeeca61fe283ccfcf0fea265a352a8df2cdca69"
   },
   "nodes": [
     {
@@ -65,40 +65,6 @@
         "gemini"
       ],
       "complexity": "simple"
-    },
-    {
-      "id": "file:package.json",
-      "type": "file",
-      "name": "package.json",
-      "filePath": "package.json",
-      "lineRange": [
-        1,
-        59
-      ],
-      "summary": "npm package and CLI contract for godkit: CommonJS, Node 18+, zero runtime dependencies, and bin/godkit.js as the executable. Its check/test scripts enforce generated-rule and cross-manifest version consistency before release.",
-      "tags": [
-        "npm",
-        "cli",
-        "release"
-      ],
-      "complexity": "simple"
-    },
-    {
-      "id": "file:README.md",
-      "type": "file",
-      "name": "README.md",
-      "filePath": "README.md",
-      "lineRange": [
-        1,
-        251
-      ],
-      "summary": "Primary user guide for the shared .agent protocol, four-host installation, hooks, CLI, project maps, project-local skills, and lazy modes. It also documents the zero-dependency design and the expected init-to-map workflow.",
-      "tags": [
-        "documentation",
-        "onboarding",
-        "godkit"
-      ],
-      "complexity": "moderate"
     },
     {
       "id": "file:.agents/rules/godkit.md",
@@ -186,74 +152,6 @@
       "complexity": "simple"
     },
     {
-      "id": "file:.github/workflows/publish.yml",
-      "type": "file",
-      "name": "publish.yml",
-      "filePath": ".github/workflows/publish.yml",
-      "lineRange": [
-        1,
-        30
-      ],
-      "summary": "Release workflow for version tags or manual dispatch. It checks generated rules and manifest versions, runs the full test suite on Node 22, then publishes to npm with provenance and OIDC.",
-      "tags": [
-        "ci",
-        "release",
-        "npm"
-      ],
-      "complexity": "moderate"
-    },
-    {
-      "id": "pipeline:.github/workflows/publish.yml",
-      "type": "pipeline",
-      "name": "publish",
-      "filePath": ".github/workflows/publish.yml",
-      "lineRange": [
-        1,
-        30
-      ],
-      "summary": "Single-job npm publication gate: checkout, Node 22, generated-file checks, tests, and provenance-enabled npm publish. A version tag is not enough to ship if any consistency check fails.",
-      "tags": [
-        "pipeline",
-        "publish",
-        "provenance"
-      ],
-      "complexity": "moderate"
-    },
-    {
-      "id": "file:.github/workflows/test.yml",
-      "type": "file",
-      "name": "test.yml",
-      "filePath": ".github/workflows/test.yml",
-      "lineRange": [
-        1,
-        26
-      ],
-      "summary": "Cross-platform CI workflow covering Ubuntu and Windows on Node 18, 22, and 24. Every matrix leg checks generated rules and versions before running npm test.",
-      "tags": [
-        "ci",
-        "test",
-        "matrix"
-      ],
-      "complexity": "moderate"
-    },
-    {
-      "id": "pipeline:.github/workflows/test.yml",
-      "type": "pipeline",
-      "name": "test",
-      "filePath": ".github/workflows/test.yml",
-      "lineRange": [
-        1,
-        26
-      ],
-      "summary": "Six-leg portability gate across two operating systems and three supported Node versions. It catches drift in generated adapters and manifests before exercising the Node tests.",
-      "tags": [
-        "pipeline",
-        "test",
-        "portability"
-      ],
-      "complexity": "moderate"
-    },
-    {
       "id": "file:agents/architect.md",
       "type": "file",
       "name": "architect.md",
@@ -286,226 +184,6 @@
         "graph-schema"
       ],
       "complexity": "moderate"
-    },
-    {
-      "id": "file:bin/godkit.js",
-      "type": "file",
-      "name": "godkit.js",
-      "filePath": "bin/godkit.js",
-      "lineRange": [
-        1,
-        509
-      ],
-      "summary": "Zero-dependency CLI entry point for scaffolding shared state, installing host adapters, scanning and saving maps, managing project skills, reporting evidence, diagnosing setup, and uninstalling packaged skills. Map saves deliberately write graph, Markdown projection, then metadata so an interrupted save cannot advertise itself as complete.",
-      "tags": [
-        "cli",
-        "orchestration",
-        "godkit"
-      ],
-      "complexity": "complex"
-    },
-    {
-      "id": "function:bin/godkit.js:cmdInit",
-      "type": "function",
-      "name": "cmdInit",
-      "filePath": "bin/godkit.js",
-      "lineRange": [
-        74,
-        108
-      ],
-      "summary": "Scaffolds missing .agent state and each host's always-on rule file without overwriting existing project memory. Canonical rules come from the package AGENTS.md, with a Cursor frontmatter adapter.",
-      "tags": [
-        "cli",
-        "init",
-        "handoff"
-      ],
-      "complexity": "moderate"
-    },
-    {
-      "id": "function:bin/godkit.js:cmdInstall",
-      "type": "function",
-      "name": "cmdInstall",
-      "filePath": "bin/godkit.js",
-      "lineRange": [
-        110,
-        143
-      ],
-      "summary": "Installs packaged skills for selected hosts using the host-specific folder layout. It prefers links but reports copy fallbacks because copied skills stop tracking package updates.",
-      "tags": [
-        "cli",
-        "install",
-        "portability"
-      ],
-      "complexity": "moderate"
-    },
-    {
-      "id": "function:bin/godkit.js:cmdScan",
-      "type": "function",
-      "name": "cmdScan",
-      "filePath": "bin/godkit.js",
-      "lineRange": [
-        147,
-        171
-      ],
-      "summary": "Runs the deterministic project scanner and locality batcher, then writes scan.json and batches.json under .agent/tmp for the semantic analysis pass.",
-      "tags": [
-        "cli",
-        "scan",
-        "map"
-      ],
-      "complexity": "simple"
-    },
-    {
-      "id": "function:bin/godkit.js:cmdSave",
-      "type": "function",
-      "name": "cmdSave",
-      "filePath": "bin/godkit.js",
-      "lineRange": [
-        176,
-        259
-      ],
-      "summary": "Load-patch-saves incoming analysis into the existing graph unless --replace is set, then writes graph.json, MAP.md, and meta.json in crash-safe order. Its partial merge scopes replacement by incoming filePath; existing nodes for files absent from the refresh and retained edges can survive until a full replacement.",
-      "tags": [
-        "cli",
-        "map",
-        "persistence"
-      ],
-      "complexity": "complex"
-    },
-    {
-      "id": "function:bin/godkit.js:cmdSkills",
-      "type": "function",
-      "name": "cmdSkills",
-      "filePath": "bin/godkit.js",
-      "lineRange": [
-        263,
-        320
-      ],
-      "summary": "Lists project-owned .agent skills, their link state and safety findings, or links/unlinks them into supported host paths. Blocking scan findings remain visible and affect whether linking is allowed.",
-      "tags": [
-        "cli",
-        "skills",
-        "safety"
-      ],
-      "complexity": "moderate"
-    },
-    {
-      "id": "function:bin/godkit.js:cmdEvolve",
-      "type": "function",
-      "name": "cmdEvolve",
-      "filePath": "bin/godkit.js",
-      "lineRange": [
-        324,
-        374
-      ],
-      "summary": "Recomputes evidence and trust reports for project-local skills from the append-only logs, including capture candidates and unattributed coverage. With --write it projects the report to .agent/SKILLS.md for hosts without hooks.",
-      "tags": [
-        "cli",
-        "skills",
-        "evidence"
-      ],
-      "complexity": "moderate"
-    },
-    {
-      "id": "function:bin/godkit.js:cmdDoctor",
-      "type": "function",
-      "name": "cmdDoctor",
-      "filePath": "bin/godkit.js",
-      "lineRange": [
-        376,
-        430
-      ],
-      "summary": "Reports shared-state files, map freshness, handoff log count, project-skill safety/link coverage, and per-host installation probes. It is diagnostic only and does not repair missing state.",
-      "tags": [
-        "cli",
-        "diagnostics",
-        "freshness"
-      ],
-      "complexity": "moderate"
-    },
-    {
-      "id": "function:bin/godkit.js:cmdUninstall",
-      "type": "function",
-      "name": "cmdUninstall",
-      "filePath": "bin/godkit.js",
-      "lineRange": [
-        432,
-        455
-      ],
-      "summary": "Removes packaged skill entries from selected host installation paths while deliberately preserving project-owned .agent memory, rules, and project-skill links.",
-      "tags": [
-        "cli",
-        "uninstall",
-        "safety"
-      ],
-      "complexity": "simple"
-    },
-    {
-      "id": "function:bin/godkit.js:main",
-      "type": "function",
-      "name": "main",
-      "filePath": "bin/godkit.js",
-      "lineRange": [
-        474,
-        502
-      ],
-      "summary": "Dispatches the public CLI command surface and exits nonzero for unknown commands; a top-level guard converts thrown command errors into concise stderr output.",
-      "tags": [
-        "cli",
-        "entrypoint",
-        "dispatch"
-      ],
-      "complexity": "simple"
-    },
-    {
-      "id": "file:lib/paths.js",
-      "type": "file",
-      "name": "paths.js",
-      "filePath": "lib/paths.js",
-      "lineRange": [
-        1,
-        117
-      ],
-      "summary": "Central location and git utility used by the CLI and hooks. It finds the nearest existing .agent first, otherwise routes linked worktrees to the main repository root, and exposes every shared-state path plus sortable log naming.",
-      "tags": [
-        "paths",
-        "git",
-        "worktrees"
-      ],
-      "complexity": "moderate"
-    },
-    {
-      "id": "function:lib/paths.js:projectRoot",
-      "type": "function",
-      "name": "projectRoot",
-      "filePath": "lib/paths.js",
-      "lineRange": [
-        55,
-        60
-      ],
-      "summary": "Chooses the owner of shared .agent memory: nearest existing .agent, then the main git repository root, then the caller's directory when no repository can be found.",
-      "tags": [
-        "paths",
-        "worktrees",
-        "agent-state"
-      ],
-      "complexity": "moderate"
-    },
-    {
-      "id": "function:lib/paths.js:paths",
-      "type": "function",
-      "name": "paths",
-      "filePath": "lib/paths.js",
-      "lineRange": [
-        62,
-        78
-      ],
-      "summary": "Returns the canonical BOARD, THREAD, map, graph, metadata, task, log, scratch, and project-skill paths beneath the resolved .agent directory.",
-      "tags": [
-        "paths",
-        "agent-state"
-      ],
-      "complexity": "simple"
     },
     {
       "id": "file:lib/scan.js",
@@ -657,125 +335,6 @@
         "graph",
         "markdown",
         "map"
-      ],
-      "complexity": "moderate"
-    },
-    {
-      "id": "file:lib/freshness.js",
-      "type": "file",
-      "name": "freshness.js",
-      "filePath": "lib/freshness.js",
-      "lineRange": [
-        1,
-        100
-      ],
-      "summary": "Separates cheap git-based staleness detection from rebuild-scope classification. Changes under .agent are excluded so writing the map cannot immediately stale itself.",
-      "tags": [
-        "freshness",
-        "git",
-        "map"
-      ],
-      "complexity": "moderate"
-    },
-    {
-      "id": "function:lib/freshness.js:staleness",
-      "type": "function",
-      "name": "staleness",
-      "filePath": "lib/freshness.js",
-      "lineRange": [
-        31,
-        48
-      ],
-      "summary": "Compares meta SHA to HEAD, checking working-tree status only when the SHAs match and committed diff/rev-list when they differ. Because the shared git helper returns null on command failure, an invalid comparison SHA can currently collapse to an empty diff and a false fresh result.",
-      "tags": [
-        "freshness",
-        "git",
-        "landmine"
-      ],
-      "complexity": "moderate"
-    },
-    {
-      "id": "function:lib/freshness.js:classify",
-      "type": "function",
-      "name": "classify",
-      "filePath": "lib/freshness.js",
-      "lineRange": [
-        61,
-        88
-      ],
-      "summary": "Selects SKIP, PARTIAL, ARCHITECTURE, or FULL rebuild scope from changed-file count, mapped-file blast radius, and newly introduced top-level directories. Absolute thresholds are evaluated before architecture-only rules.",
-      "tags": [
-        "freshness",
-        "classification",
-        "map"
-      ],
-      "complexity": "moderate"
-    },
-    {
-      "id": "file:hooks/brief.js",
-      "type": "file",
-      "name": "brief.js",
-      "filePath": "hooks/brief.js",
-      "lineRange": [
-        1,
-        123
-      ],
-      "summary": "Fail-open SessionStart briefing hook that injects BOARD, map freshness, project-skill trust/safety, two recent logs, and the THREAD tail, capped at 8,000 characters. If no .agent directory exists it explains how to initialize one instead of crashing the session.",
-      "tags": [
-        "hook",
-        "session-start",
-        "handoff"
-      ],
-      "complexity": "moderate"
-    },
-    {
-      "id": "file:hooks/clockout.js",
-      "type": "file",
-      "name": "clockout.js",
-      "filePath": "hooks/clockout.js",
-      "lineRange": [
-        1,
-        64
-      ],
-      "summary": "Stop hook that blocks once when the git worktree has non-.agent changes but no session-matching handoff log. It deliberately does not block clean, committed, non-git, or already-blocked sessions.",
-      "tags": [
-        "hook",
-        "stop",
-        "handoff"
-      ],
-      "complexity": "moderate"
-    },
-    {
-      "id": "file:hooks/map-watch.js",
-      "type": "file",
-      "name": "map-watch.js",
-      "filePath": "hooks/map-watch.js",
-      "lineRange": [
-        1,
-        51
-      ],
-      "summary": "Fail-open PostToolUse hook that only checks freshness after shell commands likely to land git history. It emits additional context for stale or unbuilt maps and stays silent for unrelated commands.",
-      "tags": [
-        "hook",
-        "git",
-        "freshness"
-      ],
-      "complexity": "simple"
-    },
-    {
-      "id": "file:tests/scan.test.js",
-      "type": "file",
-      "name": "scan.test.js",
-      "filePath": "tests/scan.test.js",
-      "lineRange": [
-        1,
-        110
-      ],
-      "summary": "Node tests for file categorization, hard skips, relative-import resolution, bare-package exclusion, .agentignore handling, batching coverage, import locality, and impossible-budget behavior using disposable fixtures.",
-      "tags": [
-        "test",
-        "scanner",
-        "batching"
       ],
       "complexity": "moderate"
     },
@@ -1035,409 +594,6 @@
       "complexity": "simple"
     },
     {
-      "id": "file:docs/agent-portability.md",
-      "type": "file",
-      "name": "agent-portability.md",
-      "filePath": "docs/agent-portability.md",
-      "lineRange": [
-        1,
-        82
-      ],
-      "summary": "Portability design note for Claude Code, Cursor, Codex, and Antigravity: canonical asset ownership, per-host adapters, hook asymmetry, install paths, and the extension checklist. It explicitly marks Codex project-local skill discovery as not yet live-verified and explains why skills are linked individually rather than by folder.",
-      "tags": [
-        "documentation",
-        "portability",
-        "architecture"
-      ],
-      "complexity": "moderate"
-    },
-    {
-      "id": "file:hooks/godkit-hooks.json",
-      "type": "file",
-      "name": "godkit-hooks.json",
-      "filePath": "hooks/godkit-hooks.json",
-      "lineRange": [
-        1,
-        77
-      ],
-      "summary": "Shared Claude/Codex plugin hook registry. It wires six scripts to SessionStart, Stop, PostToolUse, SubagentStart, and UserPromptSubmit with portable regex-compatible matchers and bounded timeouts.",
-      "tags": [
-        "hooks",
-        "config",
-        "claude",
-        "codex"
-      ],
-      "complexity": "moderate"
-    },
-    {
-      "id": "config:hooks/godkit-hooks.json",
-      "type": "config",
-      "name": "godkit hook registry",
-      "filePath": "hooks/godkit-hooks.json",
-      "lineRange": [
-        1,
-        77
-      ],
-      "summary": "Behavioral hook configuration consumed by both plugin manifests. SessionStart deliberately uses independent groups for the handoff brief and lazy-mode activation so both execute.",
-      "tags": [
-        "hooks",
-        "events",
-        "plugin-config"
-      ],
-      "complexity": "moderate"
-    },
-    {
-      "id": "file:hooks/install.js",
-      "type": "file",
-      "name": "install.js",
-      "filePath": "hooks/install.js",
-      "lineRange": [
-        1,
-        96
-      ],
-      "summary": "Standalone settings merger for installing or uninstalling Godkit hooks in Claude/Codex-style JSON settings. It preserves foreign groups, identifies its own groups by script path, refuses malformed JSON, and backs up an existing settings file; the hook list is duplicated here rather than read from godkit-hooks.json.",
-      "tags": [
-        "hooks",
-        "installer",
-        "settings"
-      ],
-      "complexity": "moderate"
-    },
-    {
-      "id": "file:hooks/lazy-activate.js",
-      "type": "file",
-      "name": "lazy-activate.js",
-      "filePath": "hooks/lazy-activate.js",
-      "lineRange": [
-        1,
-        34
-      ],
-      "summary": "Fail-open SessionStart hook that resolves the configured godkit-lazy default, records the active session mode, and injects its instructions. An off default clears stale mode state and emits nothing.",
-      "tags": [
-        "hook",
-        "lazy",
-        "session-start"
-      ],
-      "complexity": "simple"
-    },
-    {
-      "id": "file:hooks/lazy-mode-tracker.js",
-      "type": "file",
-      "name": "lazy-mode-tracker.js",
-      "filePath": "hooks/lazy-mode-tracker.js",
-      "lineRange": [
-        1,
-        80
-      ],
-      "summary": "UserPromptSubmit hook for live lazy-mode control. It parses slash-command switches, persists an explicit default, reports the current mode, and recognizes plain-language deactivation while otherwise staying silent.",
-      "tags": [
-        "hook",
-        "lazy",
-        "prompt"
-      ],
-      "complexity": "moderate"
-    },
-    {
-      "id": "file:hooks/lazy-subagent.js",
-      "type": "file",
-      "name": "lazy-subagent.js",
-      "filePath": "hooks/lazy-subagent.js",
-      "lineRange": [
-        1,
-        65
-      ],
-      "summary": "SubagentStart hook that propagates the active lazy ruleset into delegated workers. An optional case-insensitive agent-type regex narrows injection; invalid regex or unreadable payload fails open so the discipline is not silently lost.",
-      "tags": [
-        "hook",
-        "lazy",
-        "subagent"
-      ],
-      "complexity": "moderate"
-    },
-    {
-      "id": "file:lib/evolve.js",
-      "type": "file",
-      "name": "evolve.js",
-      "filePath": "lib/evolve.js",
-      "lineRange": [
-        1,
-        689
-      ],
-      "summary": "Implements project-local skill discovery, safety scanning, ownership-aware host linking, log-derived trust/evidence, capture-candidate clustering, and SKILLS.md rendering. Its ownership guard is the safe replacement boundary: only exact links into .agent/skills or marked copies may be removed.",
-      "tags": [
-        "skills",
-        "evolution",
-        "security",
-        "evidence"
-      ],
-      "complexity": "complex"
-    },
-    {
-      "id": "function:lib/evolve.js:getEvolveMode",
-      "type": "function",
-      "name": "getEvolveMode",
-      "filePath": "lib/evolve.js",
-      "lineRange": [
-        45,
-        50
-      ],
-      "summary": "Resolves skill-evolution mode from GODKIT_EVOLVE_MODE, then the shared Godkit config, then audit_only.",
-      "tags": [
-        "configuration",
-        "skills"
-      ],
-      "complexity": "simple"
-    },
-    {
-      "id": "function:lib/evolve.js:frontmatter",
-      "type": "function",
-      "name": "frontmatter",
-      "filePath": "lib/evolve.js",
-      "lineRange": [
-        57,
-        66
-      ],
-      "summary": "Parses the simple key/value YAML subset used by skill and session-log frontmatter; all evolution metadata and evidence attribution flow through this parser.",
-      "tags": [
-        "parsing",
-        "metadata"
-      ],
-      "complexity": "simple"
-    },
-    {
-      "id": "function:lib/evolve.js:readSkill",
-      "type": "function",
-      "name": "readSkill",
-      "filePath": "lib/evolve.js",
-      "lineRange": [
-        86,
-        109
-      ],
-      "summary": "Loads one .agent/skills entry and normalizes its origin, revision, parent, and enabled metadata while preserving unreadable bodies for the safety scanner to report.",
-      "tags": [
-        "skills",
-        "metadata"
-      ],
-      "complexity": "moderate"
-    },
-    {
-      "id": "function:lib/evolve.js:listSkills",
-      "type": "function",
-      "name": "listSkills",
-      "filePath": "lib/evolve.js",
-      "lineRange": [
-        111,
-        113
-      ],
-      "summary": "Returns every project-local skill as a normalized record in deterministic name order.",
-      "tags": [
-        "skills"
-      ],
-      "complexity": "simple"
-    },
-    {
-      "id": "function:lib/evolve.js:scanSkill",
-      "type": "function",
-      "name": "scanSkill",
-      "filePath": "lib/evolve.js",
-      "lineRange": [
-        156,
-        203
-      ],
-      "summary": "Applies the project-skill contract, size limit, executable ban, and heuristic prompt/destructive/credential scans. This is explicitly a speed bump rather than a sandbox; inert-until-linked and committed review are the real controls.",
-      "tags": [
-        "skills",
-        "security",
-        "validation"
-      ],
-      "complexity": "complex"
-    },
-    {
-      "id": "function:lib/evolve.js:projectSkillTargets",
-      "type": "function",
-      "name": "projectSkillTargets",
-      "filePath": "lib/evolve.js",
-      "lineRange": [
-        219,
-        227
-      ],
-      "summary": "Maps supported project-level hosts to their skill projection directories; only Claude and Codex currently participate.",
-      "tags": [
-        "skills",
-        "hosts",
-        "paths"
-      ],
-      "complexity": "simple"
-    },
-    {
-      "id": "function:lib/evolve.js:ownership",
-      "type": "function",
-      "name": "ownership",
-      "filePath": "lib/evolve.js",
-      "lineRange": [
-        235,
-        253
-      ],
-      "summary": "Classifies a destination as absent, an exact Godkit link, a Godkit-marked copy, or foreign. Link and unlink operations refuse foreign content, preventing deletion of user-owned skill directories.",
-      "tags": [
-        "security",
-        "filesystem",
-        "ownership"
-      ],
-      "complexity": "moderate"
-    },
-    {
-      "id": "function:lib/evolve.js:linkProjectSkills",
-      "type": "function",
-      "name": "linkProjectSkills",
-      "filePath": "lib/evolve.js",
-      "lineRange": [
-        275,
-        325
-      ],
-      "summary": "Projects eligible project skills into selected hosts after safety, enabled, quarantine, and evolution-mode gates. It prefers links and falls back to ownership-marked copies on restricted systems.",
-      "tags": [
-        "skills",
-        "installation",
-        "security"
-      ],
-      "complexity": "complex"
-    },
-    {
-      "id": "function:lib/evolve.js:unlinkProjectSkills",
-      "type": "function",
-      "name": "unlinkProjectSkills",
-      "filePath": "lib/evolve.js",
-      "lineRange": [
-        327,
-        344
-      ],
-      "summary": "Removes only verified Godkit-owned project-skill projections and reports, rather than deleting, foreign destinations.",
-      "tags": [
-        "skills",
-        "uninstall",
-        "ownership"
-      ],
-      "complexity": "moderate"
-    },
-    {
-      "id": "function:lib/evolve.js:linkedTools",
-      "type": "function",
-      "name": "linkedTools",
-      "filePath": "lib/evolve.js",
-      "lineRange": [
-        347,
-        353
-      ],
-      "summary": "Reports which supported host destinations contain any projection for a project skill, including foreign entries so doctor output exposes collisions.",
-      "tags": [
-        "skills",
-        "diagnostics"
-      ],
-      "complexity": "simple"
-    },
-    {
-      "id": "function:lib/evolve.js:readLogSignals",
-      "type": "function",
-      "name": "readLogSignals",
-      "filePath": "lib/evolve.js",
-      "lineRange": [
-        416,
-        443
-      ],
-      "summary": "Reads session logs once into normalized evidence records containing status, named skills, verification count, bug bullets, and task tokens. Markdown logs remain the authoritative merge-friendly store.",
-      "tags": [
-        "logs",
-        "evidence",
-        "skills"
-      ],
-      "complexity": "moderate"
-    },
-    {
-      "id": "function:lib/evolve.js:tally",
-      "type": "function",
-      "name": "tally",
-      "filePath": "lib/evolve.js",
-      "lineRange": [
-        450,
-        477
-      ],
-      "summary": "Attributes success, failure, and neutral evidence to one skill after its revised timestamp; explicit bug blame or a sole-skill blocked session counts as failure.",
-      "tags": [
-        "skills",
-        "evidence",
-        "trust"
-      ],
-      "complexity": "moderate"
-    },
-    {
-      "id": "function:lib/evolve.js:trustOf",
-      "type": "function",
-      "name": "trustOf",
-      "filePath": "lib/evolve.js",
-      "lineRange": [
-        483,
-        490
-      ],
-      "summary": "Assigns quarantined, provisional, or trusted status using asymmetric evidence: three verified distinct sessions promote, while failures demote quickly and safety findings quarantine.",
-      "tags": [
-        "skills",
-        "trust",
-        "policy"
-      ],
-      "complexity": "simple"
-    },
-    {
-      "id": "function:lib/evolve.js:candidates",
-      "type": "function",
-      "name": "candidates",
-      "filePath": "lib/evolve.js",
-      "lineRange": [
-        523,
-        560
-      ],
-      "summary": "Clusters similarly shaped logged tasks by pairwise Jaccard overlap and distinct-session count to surface high-recall skill-capture candidates for human judgment.",
-      "tags": [
-        "skills",
-        "clustering",
-        "evidence"
-      ],
-      "complexity": "moderate"
-    },
-    {
-      "id": "function:lib/evolve.js:report",
-      "type": "function",
-      "name": "report",
-      "filePath": "lib/evolve.js",
-      "lineRange": [
-        563,
-        584
-      ],
-      "summary": "Builds the complete evolution report: mode, skill findings, trust evidence, link state, attribution coverage, and capture candidates.",
-      "tags": [
-        "skills",
-        "reporting"
-      ],
-      "complexity": "moderate"
-    },
-    {
-      "id": "function:lib/evolve.js:renderSkillsDoc",
-      "type": "function",
-      "name": "renderSkillsDoc",
-      "filePath": "lib/evolve.js",
-      "lineRange": [
-        591,
-        660
-      ],
-      "summary": "Renders the generated .agent/SKILLS.md projection, including trust caveats, blocking findings, capture candidates, and evidence coverage.",
-      "tags": [
-        "skills",
-        "documentation",
-        "reporting"
-      ],
-      "complexity": "moderate"
-    },
-    {
       "id": "file:lib/lazy.js",
       "type": "file",
       "name": "lazy.js",
@@ -1620,39 +776,6 @@
       "complexity": "moderate"
     },
     {
-      "id": "file:scripts/check-versions.js",
-      "type": "file",
-      "name": "check-versions.js",
-      "filePath": "scripts/check-versions.js",
-      "lineRange": [
-        1,
-        73
-      ],
-      "summary": "CI/release guard that requires package, Claude plugin, Codex plugin, and Gemini extension manifests to share one semver and, on tag builds, match the pushed tag.",
-      "tags": [
-        "release",
-        "ci",
-        "versioning"
-      ],
-      "complexity": "simple"
-    },
-    {
-      "id": "function:scripts/check-versions.js:main",
-      "type": "function",
-      "name": "main",
-      "filePath": "scripts/check-versions.js",
-      "lineRange": [
-        22,
-        71
-      ],
-      "summary": "Reads all version-bearing manifests, rejects missing, divergent, or non-semver values, and enforces tag-to-version equality in GitHub Actions.",
-      "tags": [
-        "release",
-        "validation"
-      ],
-      "complexity": "moderate"
-    },
-    {
       "id": "file:scripts/sync-rules.js",
       "type": "file",
       "name": "sync-rules.js",
@@ -1703,75 +826,6 @@
       "complexity": "moderate"
     },
     {
-      "id": "file:scripts/uninstall.js",
-      "type": "file",
-      "name": "uninstall.js",
-      "filePath": "scripts/uninstall.js",
-      "lineRange": [
-        1,
-        124
-      ],
-      "summary": "Standalone cleanup script for globally installed skills, settings hooks, and the lazy flag. It currently recursively deletes any matching skill-name destination without ownership proof, removes whole hook groups when one command substring matches, and looks for obsolete ~/.codex/settings.json.",
-      "tags": [
-        "uninstall",
-        "hooks",
-        "skills",
-        "filesystem"
-      ],
-      "complexity": "complex"
-    },
-    {
-      "id": "function:scripts/uninstall.js:removeSkills",
-      "type": "function",
-      "name": "removeSkills",
-      "filePath": "scripts/uninstall.js",
-      "lineRange": [
-        51,
-        64
-      ],
-      "summary": "Recursively removes shipped skill names from each host directory, or the whole Antigravity godkit folder. It checks existence but not whether Godkit owns the target.",
-      "tags": [
-        "uninstall",
-        "skills",
-        "destructive"
-      ],
-      "complexity": "moderate"
-    },
-    {
-      "id": "function:scripts/uninstall.js:removeHooks",
-      "type": "function",
-      "name": "removeHooks",
-      "filePath": "scripts/uninstall.js",
-      "lineRange": [
-        66,
-        106
-      ],
-      "summary": "Parses host settings safely enough to preserve malformed files, then backs up and rewrites valid JSON after dropping any entire matcher group containing a hook command whose path substring names a Godkit script.",
-      "tags": [
-        "uninstall",
-        "hooks",
-        "configuration"
-      ],
-      "complexity": "complex"
-    },
-    {
-      "id": "function:scripts/uninstall.js:removeLazyState",
-      "type": "function",
-      "name": "removeLazyState",
-      "filePath": "scripts/uninstall.js",
-      "lineRange": [
-        111,
-        117
-      ],
-      "summary": "Deletes the Claude-side global lazy runtime flag while deliberately preserving persisted user preferences.",
-      "tags": [
-        "uninstall",
-        "lazy-mode",
-        "state"
-      ],
-      "complexity": "simple"
-    },
-    {
       "id": "file:skills/godkit/SKILL.md",
       "type": "file",
       "name": "SKILL.md",
@@ -1806,24 +860,6 @@
         "protocol"
       ],
       "complexity": "moderate"
-    },
-    {
-      "id": "file:skills/godkit-evolve/SKILL.md",
-      "type": "file",
-      "name": "SKILL.md",
-      "filePath": "skills/godkit-evolve/SKILL.md",
-      "lineRange": [
-        1,
-        161
-      ],
-      "summary": "Procedure for capturing repeated project work, deriving narrow skill variants, and repairing skills blamed by logs under .agent/skills. It defines frontmatter, safety boundaries, audit/fix/autonomous gates, and evidence-based trust without claiming that self-reported correlation proves quality.",
-      "tags": [
-        "skill",
-        "evolution",
-        "project-skills",
-        "trust"
-      ],
-      "complexity": "complex"
     },
     {
       "id": "file:skills/godkit-execute/SKILL.md",
@@ -2276,24 +1312,6 @@
       "complexity": "moderate"
     },
     {
-      "id": "file:templates/log.md",
-      "type": "file",
-      "name": "log.md",
-      "filePath": "templates/log.md",
-      "lineRange": [
-        1,
-        35
-      ],
-      "summary": "Session-log template with agent, session, timing, scope, status, and skill frontmatter plus sections for work, verification, bugs, decisions, and remaining handoff context.",
-      "tags": [
-        "template",
-        "session-log",
-        "evidence",
-        "handoff"
-      ],
-      "complexity": "moderate"
-    },
-    {
       "id": "file:templates/MAP.md",
       "type": "file",
       "name": "MAP.md",
@@ -2365,101 +1383,6 @@
       "complexity": "simple"
     },
     {
-      "id": "file:tests/evolve.test.js",
-      "type": "file",
-      "name": "evolve.test.js",
-      "filePath": "tests/evolve.test.js",
-      "lineRange": [
-        1,
-        341
-      ],
-      "summary": "End-to-end tests for project-local skill evolution, covering audit and autonomous linking, safe unlinking, authored-skill protection, trust evidence, blame, quarantine, revision resets, coverage, candidate capture, doctor output, and brief-hook reporting.",
-      "tags": [
-        "test",
-        "evolution",
-        "skills",
-        "trust",
-        "cli"
-      ],
-      "complexity": "complex"
-    },
-    {
-      "id": "file:tests/graph.test.js",
-      "type": "file",
-      "name": "graph.test.js",
-      "filePath": "tests/graph.test.js",
-      "lineRange": [
-        1,
-        196
-      ],
-      "summary": "Unit tests for graph path sanitization, normalization, node and edge deduplication, dangling-edge removal, corruption handling, BOM support, stable signatures, save/load round trips, and empty MAP rendering.",
-      "tags": [
-        "test",
-        "graph",
-        "normalization",
-        "privacy",
-        "persistence"
-      ],
-      "complexity": "moderate"
-    },
-    {
-      "id": "file:tests/hook-install.test.js",
-      "type": "file",
-      "name": "hook-install.test.js",
-      "filePath": "tests/hook-install.test.js",
-      "lineRange": [
-        1,
-        111
-      ],
-      "summary": "Integration tests for hook installation and removal, including idempotency, preservation of unrelated settings, malformed-settings refusal, backups, and install/uninstall parity for the core hooks.",
-      "tags": [
-        "test",
-        "hooks",
-        "installation",
-        "settings",
-        "idempotency"
-      ],
-      "complexity": "moderate"
-    },
-    {
-      "id": "file:tests/hooks.test.js",
-      "type": "file",
-      "name": "hooks.test.js",
-      "filePath": "tests/hooks.test.js",
-      "lineRange": [
-        1,
-        147
-      ],
-      "summary": "Behavior tests for brief, clockout, and map-watch hooks across setup and malformed input, shared-state injection, dirty-worktree blocking, stop-hook loop prevention, agent-only changes, and stale-map warnings.",
-      "tags": [
-        "test",
-        "hooks",
-        "brief",
-        "clockout",
-        "map-watch"
-      ],
-      "complexity": "moderate"
-    },
-    {
-      "id": "file:tests/package.test.js",
-      "type": "file",
-      "name": "package.test.js",
-      "filePath": "tests/package.test.js",
-      "lineRange": [
-        1,
-        169
-      ],
-      "summary": "Package-contract tests for the published-file allowlist, executable CLI, zero runtime dependencies, skill and agent metadata, slash commands, synchronized versions and generated rules, hook configuration, and repository-reference hygiene.",
-      "tags": [
-        "test",
-        "package",
-        "metadata",
-        "distribution",
-        "rules"
-      ],
-      "complexity": "moderate"
-    },
-    {
       "id": "file:tests/save.test.js",
       "type": "file",
       "name": "save.test.js",
@@ -2477,6 +1400,1241 @@
         "freshness"
       ],
       "complexity": "complex"
+    },
+    {
+      "id": "file:lib/session.js",
+      "type": "file",
+      "name": "session.js",
+      "filePath": "lib/session.js",
+      "lineRange": [
+        1,
+        185
+      ],
+      "summary": "Host-neutral hook input and per-session runtime state. Session ids are hashed before they become path components and state lives only under a godkit-owned directory, so one session can never read or clear another. Also the atomic writer (temp + fsync + rename, optional compare-and-swap and .bak) that every config write in the package goes through.",
+      "tags": [
+        "runtime",
+        "session-state",
+        "atomic-write",
+        "security"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:lib/session.js:readHookInput",
+      "type": "function",
+      "name": "readHookInput",
+      "filePath": "lib/session.js",
+      "lineRange": [
+        1,
+        1
+      ],
+      "summary": "Reads and validates a hook payload from stdin; malformed input warns and yields {} rather than throwing, because a hook that throws breaks the session it exists to help.",
+      "tags": [],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:lib/session.js:statePath",
+      "type": "function",
+      "name": "statePath",
+      "filePath": "lib/session.js",
+      "lineRange": [
+        1,
+        1
+      ],
+      "summary": "Resolves a state file path from namespace + session id. Rejects unknown namespaces, missing session ids and unsafe leaf names; the raw host id is hashed, never used as a path component.",
+      "tags": [
+        "security"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:lib/session.js:atomicWriteFile",
+      "type": "function",
+      "name": "atomicWriteFile",
+      "filePath": "lib/session.js",
+      "lineRange": [
+        1,
+        1
+      ],
+      "summary": "Temp-and-rename write with fsync, optional expectedRaw compare-and-swap and optional .bak. The one write path for settings, config and map files.",
+      "tags": [
+        "atomic-write"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:lib/session.js:clearSession",
+      "type": "function",
+      "name": "clearSession",
+      "filePath": "lib/session.js",
+      "lineRange": [
+        1,
+        1
+      ],
+      "summary": "Removes every namespace for one session. Refuses any cleanup target that resolves outside the owned state root.",
+      "tags": [
+        "security"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:lib/work.js",
+      "type": "file",
+      "name": "work.js",
+      "filePath": "lib/work.js",
+      "lineRange": [
+        1,
+        205
+      ],
+      "summary": "Session-owned evidence that a tool changed project files — the thing clockout judges. Shell tools compare a before/after Git fingerprint that excludes .agent/, edit tools mark work only for successful paths outside it. A dirty working tree is deliberately NOT evidence: it says nothing about which session made it.",
+      "tags": [
+        "runtime",
+        "session-state",
+        "git",
+        "enforcement"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "function:lib/work.js:fingerprint",
+      "type": "function",
+      "name": "fingerprint",
+      "filePath": "lib/work.js",
+      "lineRange": [
+        1,
+        1
+      ],
+      "summary": "SHA-256 over the non-.agent tree plus working-tree status and content, so an .agent-only checkpoint does not count as product work while a source commit does.",
+      "tags": [
+        "git"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:lib/work.js:statusPaths",
+      "type": "function",
+      "name": "statusPaths",
+      "filePath": "lib/work.js",
+      "lineRange": [
+        1,
+        1
+      ],
+      "summary": "Parses git porcelain -z records into paths, consuming the second path of a rename or copy record. Shared with lib/freshness so neither invents a filename out of \"old -> new\".",
+      "tags": [
+        "git"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:lib/work.js:recordDirectEdit",
+      "type": "function",
+      "name": "recordDirectEdit",
+      "filePath": "lib/work.js",
+      "lineRange": [
+        1,
+        1
+      ],
+      "summary": "Marks work for a successful Edit/Write/apply_patch/NotebookEdit whose target lands inside the project and outside .agent/.",
+      "tags": [],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:lib/work.js:didSessionWork",
+      "type": "function",
+      "name": "didSessionWork",
+      "filePath": "lib/work.js",
+      "lineRange": [
+        1,
+        1
+      ],
+      "summary": "The question clockout asks: did THIS session change project files?",
+      "tags": [
+        "enforcement"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:lib/install.js",
+      "type": "file",
+      "name": "install.js",
+      "filePath": "lib/install.js",
+      "lineRange": [
+        1,
+        215
+      ],
+      "summary": "The single source of truth for what godkit installs and what it may remove. HOOKS lists every registration once; both the standalone settings installer and the generated plugin manifest derive from it. Ownership is the safety property: a destination is ours only if it is a link back into this package or a copy carrying our marker, and anything else is refused rather than replaced.",
+      "tags": [
+        "install",
+        "ownership",
+        "hooks",
+        "security"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "function:lib/install.js:stripOurHooks",
+      "type": "function",
+      "name": "stripOurHooks",
+      "filePath": "lib/install.js",
+      "lineRange": [
+        1,
+        1
+      ],
+      "summary": "Filters hook HANDLERS, not groups. Dropping a whole group to remove ours used to take a user hook sharing that group with it.",
+      "tags": [
+        "security"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:lib/install.js:applyHooks",
+      "type": "function",
+      "name": "applyHooks",
+      "filePath": "lib/install.js",
+      "lineRange": [
+        1,
+        1
+      ],
+      "summary": "Returns a new settings object with our registrations replaced or removed; never mutates the caller's copy, so a failed write leaves nothing half-edited.",
+      "tags": [],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:lib/install.js:ownership",
+      "type": "function",
+      "name": "ownership",
+      "filePath": "lib/install.js",
+      "lineRange": [
+        1,
+        1
+      ],
+      "summary": "absent | ours-link | ours-copy | ours-broken-link | foreign. The guard that stops install and uninstall from touching a directory the user created.",
+      "tags": [
+        "ownership",
+        "security"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:lib/install.js:installOne",
+      "type": "function",
+      "name": "installOne",
+      "filePath": "lib/install.js",
+      "lineRange": [
+        1,
+        1
+      ],
+      "summary": "Symlink, then Windows junction, then a marked copy. Refuses a foreign destination outright.",
+      "tags": [
+        "install"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:lib/install.js:settingsTargets",
+      "type": "function",
+      "name": "settingsTargets",
+      "filePath": "lib/install.js",
+      "lineRange": [
+        1,
+        1
+      ],
+      "summary": "Claude and Codex settings paths, honouring CLAUDE_CONFIG_DIR and CODEX_HOME — which is also what lets tests run without touching real home config.",
+      "tags": [],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:lib/managed.js",
+      "type": "file",
+      "name": "managed.js",
+      "filePath": "lib/managed.js",
+      "lineRange": [
+        1,
+        85
+      ],
+      "summary": "A managed block is godkit's few lines inside a file the user also owns. init used to skip any host file that already existed, which silently meant \"this project gets no rules\"; overwriting would have eaten the user's text. Marked blocks do neither, and ambiguous or hand-edited markers are refused rather than guessed at.",
+      "tags": [
+        "init",
+        "host-files",
+        "idempotence"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:lib/managed.js:applyBlock",
+      "type": "function",
+      "name": "applyBlock",
+      "filePath": "lib/managed.js",
+      "lineRange": [
+        1,
+        1
+      ],
+      "summary": "Creates, appends, updates or reports-unchanged the marked block, leaving every byte outside the markers alone.",
+      "tags": [],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:lib/managed.js:locate",
+      "type": "function",
+      "name": "locate",
+      "filePath": "lib/managed.js",
+      "lineRange": [
+        1,
+        1
+      ],
+      "summary": "Finds the single marker pair, throwing on a duplicate, unbalanced, or reversed pair.",
+      "tags": [
+        "safety"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:lib/paths.js",
+      "type": "file",
+      "name": "paths.js",
+      "filePath": "lib/paths.js",
+      "lineRange": [
+        1,
+        300
+      ],
+      "summary": "Locating shared project state, and every bounded read of it. Hooks execute in the active worktree while .agent/ belongs to the MAIN worktree, so state survives linked-worktree removal and stays common to every agent. Reads below .agent/ reject symlinks and stop at a byte budget, so a project-controlled file cannot turn a session brief into a local-file reader.",
+      "tags": [
+        "runtime",
+        "worktrees",
+        "security",
+        "bounded-reads"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "function:lib/paths.js:findAgentContext",
+      "type": "function",
+      "name": "findAgentContext",
+      "filePath": "lib/paths.js",
+      "lineRange": [
+        1,
+        1
+      ],
+      "summary": "Returns worktreeRoot, stateRoot and the canonical agentDir. A linked worktree's local .agent is ignored unless it resolves exactly to the main copy.",
+      "tags": [
+        "worktrees"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:lib/paths.js:containedPath",
+      "type": "function",
+      "name": "containedPath",
+      "filePath": "lib/paths.js",
+      "lineRange": [
+        1,
+        1
+      ],
+      "summary": "lstat-validates every path component before returning it; any symlink below the root is refused.",
+      "tags": [
+        "security"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:lib/paths.js:readContained",
+      "type": "function",
+      "name": "readContained",
+      "filePath": "lib/paths.js",
+      "lineRange": [
+        1,
+        1
+      ],
+      "summary": "O_NOFOLLOW read capped at a byte budget, reporting truncation, without splitting a multi-byte character.",
+      "tags": [
+        "bounded-reads"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:lib/paths.js:fitBytes",
+      "type": "function",
+      "name": "fitBytes",
+      "filePath": "lib/paths.js",
+      "lineRange": [
+        1,
+        1
+      ],
+      "summary": "Trims text to a byte budget from either end without producing a replacement character.",
+      "tags": [],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:lib/paths.js:logEntries",
+      "type": "function",
+      "name": "logEntries",
+      "filePath": "lib/paths.js",
+      "lineRange": [
+        1,
+        1
+      ],
+      "summary": "Newest-first .md entries under .agent/log, through the bounded contained walk.",
+      "tags": [],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:lib/freshness.js",
+      "type": "file",
+      "name": "freshness.js",
+      "filePath": "lib/freshness.js",
+      "lineRange": [
+        1,
+        105
+      ],
+      "summary": "Is the map still true? staleness() is git-only and safe on every session start; classify() decides how much to rebuild. It fails CLOSED: an unreadable status, a meta sha the repo no longer has, or a failed diff all report unknown or stale — never fresh. A hook that blesses a map nobody verified is the one wrong answer.",
+      "tags": [
+        "map",
+        "git",
+        "fail-closed"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:lib/freshness.js:staleness",
+      "type": "function",
+      "name": "staleness",
+      "filePath": "lib/freshness.js",
+      "lineRange": [
+        1,
+        1
+      ],
+      "summary": "fresh | stale | unbuilt | unknown, from HEAD, the working tree, and whether meta.sha is still reachable.",
+      "tags": [
+        "fail-closed"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:lib/freshness.js:classify",
+      "type": "function",
+      "name": "classify",
+      "filePath": "lib/freshness.js",
+      "lineRange": [
+        1,
+        1
+      ],
+      "summary": "SKIP | PARTIAL | ARCHITECTURE | FULL, from how many files moved and whether a new top-level directory appeared.",
+      "tags": [],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:lib/evolve.js",
+      "type": "file",
+      "name": "evolve.js",
+      "filePath": "lib/evolve.js",
+      "lineRange": [
+        1,
+        780
+      ],
+      "summary": "Project skills in .agent/skills/: what they are, whether they are safe to project into a host path, and what the log stream says about each. Projections are owned SHA-256 snapshots, not live links, so godkit replaces only what it wrote and never removes a foreign target. Trust is derived from logs alone — there is no separate store.",
+      "tags": [
+        "skills",
+        "evidence",
+        "ownership",
+        "security"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "function:lib/evolve.js:frontmatter",
+      "type": "function",
+      "name": "frontmatter",
+      "filePath": "lib/evolve.js",
+      "lineRange": [
+        1,
+        1
+      ],
+      "summary": "A deliberate YAML subset — quoted scalars, comments, block scalars, duplicate-key detection — reporting malformed metadata as blocking findings. Hand-rolled because zero runtime dependencies is a hard constraint.",
+      "tags": [
+        "parsing"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:lib/evolve.js:scanSkill",
+      "type": "function",
+      "name": "scanSkill",
+      "filePath": "lib/evolve.js",
+      "lineRange": [
+        1,
+        1
+      ],
+      "summary": "Blocks linking on symlinks, executable extensions, executable mode bits, executable magic bytes, credentials and instruction-override text.",
+      "tags": [
+        "security"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:lib/evolve.js:ownership",
+      "type": "function",
+      "name": "ownership",
+      "filePath": "lib/evolve.js",
+      "lineRange": [
+        1,
+        1
+      ],
+      "summary": "absent | ours-link | ours-copy | ours-snapshot | ours-stale | foreign, by marker plus tree hash.",
+      "tags": [
+        "ownership"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:lib/evolve.js:linkProjectSkills",
+      "type": "function",
+      "name": "linkProjectSkills",
+      "filePath": "lib/evolve.js",
+      "lineRange": [
+        1,
+        1
+      ],
+      "summary": "Projects approved skills as owned snapshots, revoking a projection that becomes quarantined or mode-gated.",
+      "tags": [],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:lib/evolve.js:trustOf",
+      "type": "function",
+      "name": "trustOf",
+      "filePath": "lib/evolve.js",
+      "lineRange": [
+        1,
+        1
+      ],
+      "summary": "Trust from distinct verified sessions, demoted by a blaming Bugs bullet and reset when revised: moves.",
+      "tags": [
+        "evidence"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:hooks/work-track.js",
+      "type": "file",
+      "name": "work-track.js",
+      "filePath": "hooks/work-track.js",
+      "lineRange": [
+        1,
+        45
+      ],
+      "summary": "The lifecycle hook that feeds work evidence: pre captures a fingerprint, post compares, edit records a direct edit, end clears the session. Registered on PreToolUse, PostToolUse and SessionEnd — without it nothing records work and clockout can never fire.",
+      "tags": [
+        "hooks",
+        "session-state",
+        "enforcement"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:hooks/clockout.js",
+      "type": "file",
+      "name": "clockout.js",
+      "filePath": "hooks/clockout.js",
+      "lineRange": [
+        1,
+        66
+      ],
+      "summary": "Stop hook. Blocks the turn when THIS session changed project files and has no log naming it, and keeps blocking until that log exists. Judges the session, not the directory: another agent's dirty file is not evidence about you, and a log naming a different session does not clock you out. stop_hook_active short-circuits, or a blocked turn would loop forever.",
+      "tags": [
+        "hooks",
+        "enforcement",
+        "handoff"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:hooks/brief.js",
+      "type": "file",
+      "name": "brief.js",
+      "filePath": "hooks/brief.js",
+      "lineRange": [
+        1,
+        135
+      ],
+      "summary": "SessionStart hook. Injects a bounded, no-follow view of shared state — board, map freshness, project skills, newest logs, THREAD tail — under one total budget, so an arriving agent starts from the same truth without a project file being able to steer what it reads.",
+      "tags": [
+        "hooks",
+        "handoff",
+        "bounded-reads"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:hooks/install.js",
+      "type": "file",
+      "name": "install.js",
+      "filePath": "hooks/install.js",
+      "lineRange": [
+        1,
+        45
+      ],
+      "summary": "Standalone hook registration for a settings file: a thin CLI over lib/install.js with --uninstall and --dry-run. Paths derive from where this file actually lives, so moving the package is a re-run rather than a text hunt.",
+      "tags": [
+        "hooks",
+        "install"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:hooks/lazy-activate.js",
+      "type": "file",
+      "name": "lazy-activate.js",
+      "filePath": "hooks/lazy-activate.js",
+      "lineRange": [
+        1,
+        32
+      ],
+      "summary": "SessionStart hook that resolves the godkit-lazy mode for this session and injects its ruleset. Mode state is per session, under the owned state root.",
+      "tags": [
+        "hooks",
+        "lazy"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:hooks/lazy-subagent.js",
+      "type": "file",
+      "name": "lazy-subagent.js",
+      "filePath": "hooks/lazy-subagent.js",
+      "lineRange": [
+        1,
+        40
+      ],
+      "summary": "SubagentStart hook. Inherits the parent session's lazy rules; a malformed matcher fails closed and warns rather than broadening its own scope.",
+      "tags": [
+        "hooks",
+        "lazy"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:hooks/lazy-mode-tracker.js",
+      "type": "file",
+      "name": "lazy-mode-tracker.js",
+      "filePath": "hooks/lazy-mode-tracker.js",
+      "lineRange": [
+        1,
+        75
+      ],
+      "summary": "UserPromptSubmit hook tracking /godkit-lazy switches and deactivation for the session.",
+      "tags": [
+        "hooks",
+        "lazy"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:hooks/map-watch.js",
+      "type": "file",
+      "name": "map-watch.js",
+      "filePath": "hooks/map-watch.js",
+      "lineRange": [
+        1,
+        40
+      ],
+      "summary": "PostToolUse (Bash) hook. After a command that lands a change, says whether the map went stale — and stays quiet otherwise, because a warning that fires constantly gets muted.",
+      "tags": [
+        "hooks",
+        "map"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:hooks/godkit-hooks.json",
+      "type": "file",
+      "name": "godkit-hooks.json",
+      "filePath": "hooks/godkit-hooks.json",
+      "lineRange": [
+        1,
+        120
+      ],
+      "summary": "The plugin hook manifest read by Claude Code and Codex. GENERATED from the HOOKS list in lib/install.js by scripts/sync-hooks.js; CI fails if it drifted. It was hand-maintained until a hook was added to the settings installer and not to this file.",
+      "tags": [
+        "hooks",
+        "generated",
+        "manifest"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "config:hooks/godkit-hooks.json",
+      "type": "config",
+      "name": "godkit-hooks.json",
+      "filePath": "hooks/godkit-hooks.json",
+      "lineRange": [
+        1,
+        120
+      ],
+      "summary": "Ten registrations across SessionStart, UserPromptSubmit, SubagentStart, PreToolUse, PostToolUse, Stop and SessionEnd. Matchers are chosen to mean the same under Claude Code (literal or regex) and Codex (always regex).",
+      "tags": [
+        "hooks",
+        "manifest"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:bin/godkit.js",
+      "type": "file",
+      "name": "godkit.js",
+      "filePath": "bin/godkit.js",
+      "lineRange": [
+        1,
+        590
+      ],
+      "summary": "The CLI: init, install, hooks, scan, save, skills, evolve, doctor, uninstall. It owns no policy — ownership lives in lib/install.js, managed blocks in lib/managed.js, graph rules in lib/graph.js — so every command is a thin, testable shell over a library.",
+      "tags": [
+        "cli",
+        "entrypoint"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "function:bin/godkit.js:cmdInit",
+      "type": "function",
+      "name": "cmdInit",
+      "filePath": "bin/godkit.js",
+      "lineRange": [
+        1,
+        1
+      ],
+      "summary": "Scaffolds .agent/ and writes the rules into managed blocks in AGENTS.md, CLAUDE.md, the Cursor and Antigravity rule files, and .gitattributes. Preserves user text; refuses a file whose markers were hand-mangled.",
+      "tags": [
+        "init"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:bin/godkit.js:cmdInstall",
+      "type": "function",
+      "name": "cmdInstall",
+      "filePath": "bin/godkit.js",
+      "lineRange": [
+        1,
+        1
+      ],
+      "summary": "Places the skills per tool through installOne, refusing any destination godkit does not own. --dry-run reports without writing.",
+      "tags": [
+        "install",
+        "ownership"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:bin/godkit.js:cmdHooks",
+      "type": "function",
+      "name": "cmdHooks",
+      "filePath": "bin/godkit.js",
+      "lineRange": [
+        1,
+        1
+      ],
+      "summary": "status | install | uninstall for the Claude and Codex settings files, with --dry-run. Replaces \"go run this script by hand\".",
+      "tags": [
+        "hooks"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:bin/godkit.js:cmdSave",
+      "type": "function",
+      "name": "cmdSave",
+      "filePath": "bin/godkit.js",
+      "lineRange": [
+        1,
+        1
+      ],
+      "summary": "Load-patch-save of the map: replaces re-analyzed files, keeps untouched ones, DROPS nodes whose file no longer exists, then writes graph, MAP.md and meta.json in that order so an interrupted save reads as stale.",
+      "tags": [
+        "map"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:bin/godkit.js:cmdScan",
+      "type": "function",
+      "name": "cmdScan",
+      "filePath": "bin/godkit.js",
+      "lineRange": [
+        1,
+        1
+      ],
+      "summary": "Deterministic walk, categorize, resolve imports and batch — the token-free half of building the map.",
+      "tags": [
+        "map"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:bin/godkit.js:cmdSkills",
+      "type": "function",
+      "name": "cmdSkills",
+      "filePath": "bin/godkit.js",
+      "lineRange": [
+        1,
+        1
+      ],
+      "summary": "Lists project skills with origin, findings and which hosts see them; --link/--unlink projects them.",
+      "tags": [
+        "skills"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:bin/godkit.js:cmdEvolve",
+      "type": "function",
+      "name": "cmdEvolve",
+      "filePath": "bin/godkit.js",
+      "lineRange": [
+        1,
+        1
+      ],
+      "summary": "Re-reads the log stream and reports what the evidence implies about each project skill.",
+      "tags": [
+        "skills",
+        "evidence"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:bin/godkit.js:cmdDoctor",
+      "type": "function",
+      "name": "cmdDoctor",
+      "filePath": "bin/godkit.js",
+      "lineRange": [
+        1,
+        1
+      ],
+      "summary": "What is set up here: .agent files, map freshness, project skills, installed skills per tool, and which hooks are registered.",
+      "tags": [
+        "diagnostics"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:bin/godkit.js:cmdUninstall",
+      "type": "function",
+      "name": "cmdUninstall",
+      "filePath": "bin/godkit.js",
+      "lineRange": [
+        1,
+        1
+      ],
+      "summary": "Removes only the skill directories godkit owns, and says what it kept.",
+      "tags": [
+        "ownership"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:bin/godkit.js:main",
+      "type": "function",
+      "name": "main",
+      "filePath": "bin/godkit.js",
+      "lineRange": [
+        1,
+        1
+      ],
+      "summary": "Command dispatch and help.",
+      "tags": [],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:scripts/uninstall.js",
+      "type": "file",
+      "name": "uninstall.js",
+      "filePath": "scripts/uninstall.js",
+      "lineRange": [
+        1,
+        100
+      ],
+      "summary": "Removes what a host's own uninstall cannot see: installed skill directories, hook registrations, and the session-state root. Shares every ownership decision with lib/install.js, so what install created is exactly what uninstall removes — nothing else.",
+      "tags": [
+        "install",
+        "ownership",
+        "lifecycle"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:scripts/uninstall.js:removeSkills",
+      "type": "function",
+      "name": "removeSkills",
+      "filePath": "scripts/uninstall.js",
+      "lineRange": [
+        1,
+        1
+      ],
+      "summary": "Per-tool removal through removeOne; a foreign directory is kept and reported.",
+      "tags": [
+        "ownership"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:scripts/uninstall.js:removeHooks",
+      "type": "function",
+      "name": "removeHooks",
+      "filePath": "scripts/uninstall.js",
+      "lineRange": [
+        1,
+        1
+      ],
+      "summary": "Strips our handlers from each settings file, leaving other tools' hooks — including ones sharing a group.",
+      "tags": [],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:scripts/uninstall.js:removeRuntimeState",
+      "type": "function",
+      "name": "removeRuntimeState",
+      "filePath": "scripts/uninstall.js",
+      "lineRange": [
+        1,
+        1
+      ],
+      "summary": "Clears the per-session state root. The persisted lazy default mode is user config and is left alone.",
+      "tags": [],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:scripts/sync-hooks.js",
+      "type": "file",
+      "name": "sync-hooks.js",
+      "filePath": "scripts/sync-hooks.js",
+      "lineRange": [
+        1,
+        68
+      ],
+      "summary": "Generates hooks/godkit-hooks.json from the HOOKS list in lib/install.js; --check fails if it drifted. A generated manifest cannot disagree with the installer, which is exactly how work-track came to be missing from one of them.",
+      "tags": [
+        "generated",
+        "hooks",
+        "ci"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:scripts/check-versions.js",
+      "type": "file",
+      "name": "check-versions.js",
+      "filePath": "scripts/check-versions.js",
+      "lineRange": [
+        1,
+        80
+      ],
+      "summary": "Every version-bearing manifest must carry the same version, and on a tag push that version must equal the tag. An empty or non-release tag now fails instead of skipping the check — the case where skipping is most dangerous.",
+      "tags": [
+        "ci",
+        "release",
+        "fail-closed"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:scripts/check-versions.js:main",
+      "type": "function",
+      "name": "main",
+      "filePath": "scripts/check-versions.js",
+      "lineRange": [
+        1,
+        1
+      ],
+      "summary": "Compares four manifests, then the agreed version against GITHUB_REF_NAME when the ref is a tag.",
+      "tags": [
+        "release"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:package.json",
+      "type": "file",
+      "name": "package.json",
+      "filePath": "package.json",
+      "lineRange": [
+        1,
+        60
+      ],
+      "summary": "Zero runtime dependencies, Node 18+, bin godkit. `files` is the allowlist that decides what an installed package actually contains — a runtime file missing from it works in a checkout and 404s for everyone else, which the packed-install smoke test now catches. pretest runs the generated-file and version checks.",
+      "tags": [
+        "manifest",
+        "packaging"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:.github/workflows/publish.yml",
+      "type": "file",
+      "name": "publish.yml",
+      "filePath": ".github/workflows/publish.yml",
+      "lineRange": [
+        1,
+        32
+      ],
+      "summary": "Tag-only publish. workflow_dispatch is deliberately absent: it could publish a branch the tag gate never examined. Runs the rule, hook-manifest and version checks plus the full suite before an OIDC trusted publish.",
+      "tags": [
+        "ci",
+        "release"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "pipeline:.github/workflows/publish.yml",
+      "type": "pipeline",
+      "name": "publish",
+      "filePath": ".github/workflows/publish.yml",
+      "lineRange": [
+        1,
+        32
+      ],
+      "summary": "tag v* -> checkout -> sync-rules --check -> sync-hooks --check -> check-versions -> node --test -> npm publish with provenance.",
+      "tags": [
+        "ci",
+        "release"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:.github/workflows/test.yml",
+      "type": "file",
+      "name": "test.yml",
+      "filePath": ".github/workflows/test.yml",
+      "lineRange": [
+        1,
+        27
+      ],
+      "summary": "Matrix CI across ubuntu and windows on Node 18, 22 and 24. Windows is not optional: path handling and hook stdin differ there, and that is where this package is developed.",
+      "tags": [
+        "ci"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "pipeline:.github/workflows/test.yml",
+      "type": "pipeline",
+      "name": "test",
+      "filePath": ".github/workflows/test.yml",
+      "lineRange": [
+        1,
+        27
+      ],
+      "summary": "push/PR -> 6-way matrix -> sync-rules --check -> sync-hooks --check -> check-versions -> node --test.",
+      "tags": [
+        "ci"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:templates/gitattributes",
+      "type": "file",
+      "name": "gitattributes",
+      "filePath": "templates/gitattributes",
+      "lineRange": [
+        1,
+        14
+      ],
+      "summary": "The -merge rules for the generated half of .agent/, shipped as a template because godkit init writes them into every project. They lived only in this repo's own .gitattributes, which npm does not ship, so init crashed from an installed package.",
+      "tags": [
+        "templates",
+        "git",
+        "packaging"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:templates/log.md",
+      "type": "file",
+      "name": "log.md",
+      "filePath": "templates/log.md",
+      "lineRange": [
+        1,
+        30
+      ],
+      "summary": "The session log skeleton. Its frontmatter scalars are quoted so a generated log parses under the stricter skill frontmatter reader.",
+      "tags": [
+        "templates",
+        "handoff"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:README.md",
+      "type": "file",
+      "name": "README.md",
+      "filePath": "README.md",
+      "lineRange": [
+        1,
+        270
+      ],
+      "summary": "The public contract: install, compatibility, hooks, CLI, skills, project skills and evidence. Every claim here is asserted somewhere in tests/ — the compatibility table and the hook table are the two that drift first.",
+      "tags": [
+        "docs"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:docs/agent-portability.md",
+      "type": "file",
+      "name": "agent-portability.md",
+      "filePath": "docs/agent-portability.md",
+      "lineRange": [
+        1,
+        107
+      ],
+      "summary": "What each host actually reads, and which of those claims are verified versus best-effort. The honesty convention matters more than the table: an unverified adapter is labelled, never presented as certain.",
+      "tags": [
+        "docs",
+        "portability"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:skills/godkit-evolve/SKILL.md",
+      "type": "file",
+      "name": "SKILL.md",
+      "filePath": "skills/godkit-evolve/SKILL.md",
+      "lineRange": [
+        1,
+        190
+      ],
+      "summary": "How a project skill is written, approved and judged. Now states that origin and enabled are required frontmatter — an unreadable declaration is not a safe default to guess at.",
+      "tags": [
+        "skills",
+        "docs"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:tests/runtime.test.js",
+      "type": "file",
+      "name": "runtime.test.js",
+      "filePath": "tests/runtime.test.js",
+      "lineRange": [
+        1,
+        229
+      ],
+      "summary": "The hook runtime boundaries: shared state resolves to the main worktree from a linked one, reads stay inside .agent/ and inside a byte budget, session state is isolated and cleanable, work evidence tracks the session, lazy mode belongs to one session.",
+      "tags": [
+        "tests",
+        "runtime"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:tests/cli.test.js",
+      "type": "file",
+      "name": "cli.test.js",
+      "filePath": "tests/cli.test.js",
+      "lineRange": [
+        1,
+        240
+      ],
+      "summary": "What init and save do to files a user also owns, and what freshness reports when git cannot answer. Every case here is a silently-wrong failure: a rule file that never landed, a map node for a deleted file, a stale map reported as current.",
+      "tags": [
+        "tests",
+        "cli"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:tests/hook-install.test.js",
+      "type": "file",
+      "name": "hook-install.test.js",
+      "filePath": "tests/hook-install.test.js",
+      "lineRange": [
+        1,
+        240
+      ],
+      "summary": "Install idempotence and the ownership rule. The two bugs it exists for: matching our entries by package name (which matched nothing, so re-runs appended), and filtering whole groups (which took a user hook out with ours).",
+      "tags": [
+        "tests",
+        "install"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:tests/hooks.test.js",
+      "type": "file",
+      "name": "hooks.test.js",
+      "filePath": "tests/hooks.test.js",
+      "lineRange": [
+        1,
+        160
+      ],
+      "summary": "Hooks never throw, never block a read-only session, and never loop. Clockout is asserted against recorded session work, not a dirty tree, and every hook runs against a temp CLAUDE_CONFIG_DIR so no test writes real home config.",
+      "tags": [
+        "tests",
+        "hooks"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:tests/package.test.js",
+      "type": "file",
+      "name": "package.test.js",
+      "filePath": "tests/package.test.js",
+      "lineRange": [
+        1,
+        210
+      ],
+      "summary": "Contract tests: the package ships what the README promises, manifests agree, generated files are current, and — the one that catches an allowlist bug — the packed file set can actually run godkit init from a temp directory.",
+      "tags": [
+        "tests",
+        "packaging"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:tests/evolve.test.js",
+      "type": "file",
+      "name": "evolve.test.js",
+      "filePath": "tests/evolve.test.js",
+      "lineRange": [
+        1,
+        640
+      ],
+      "summary": "Project-skill snapshots, quarantine, frontmatter parsing, trust promotion and demotion, and fixture cleanup.",
+      "tags": [
+        "tests",
+        "skills"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:tests/graph.test.js",
+      "type": "file",
+      "name": "graph.test.js",
+      "filePath": "tests/graph.test.js",
+      "lineRange": [
+        1,
+        150
+      ],
+      "summary": "Graph portability and persistence: absolute ids rejected, last-wins edges, atomic write with rollback.",
+      "tags": [
+        "tests",
+        "map"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:tests/scan.test.js",
+      "type": "file",
+      "name": "scan.test.js",
+      "filePath": "tests/scan.test.js",
+      "lineRange": [
+        1,
+        140
+      ],
+      "summary": "Scan, category, import resolution, batching, and the documented .agentignore subset.",
+      "tags": [
+        "tests",
+        "map"
+      ],
+      "complexity": "moderate"
     }
   ],
   "edges": [
@@ -2598,55 +2756,55 @@
       "source": "file:bin/godkit.js",
       "target": "function:bin/godkit.js:cmdInit",
       "type": "contains",
-      "weight": 1
+      "weight": 0.9
     },
     {
       "source": "file:bin/godkit.js",
       "target": "function:bin/godkit.js:cmdInstall",
       "type": "contains",
-      "weight": 1
+      "weight": 0.9
     },
     {
       "source": "file:bin/godkit.js",
       "target": "function:bin/godkit.js:cmdScan",
       "type": "contains",
-      "weight": 1
+      "weight": 0.9
     },
     {
       "source": "file:bin/godkit.js",
       "target": "function:bin/godkit.js:cmdSave",
       "type": "contains",
-      "weight": 1
+      "weight": 0.9
     },
     {
       "source": "file:bin/godkit.js",
       "target": "function:bin/godkit.js:cmdSkills",
       "type": "contains",
-      "weight": 1
+      "weight": 0.9
     },
     {
       "source": "file:bin/godkit.js",
       "target": "function:bin/godkit.js:cmdEvolve",
       "type": "contains",
-      "weight": 1
+      "weight": 0.9
     },
     {
       "source": "file:bin/godkit.js",
       "target": "function:bin/godkit.js:cmdDoctor",
       "type": "contains",
-      "weight": 1
+      "weight": 0.9
     },
     {
       "source": "file:bin/godkit.js",
       "target": "function:bin/godkit.js:cmdUninstall",
       "type": "contains",
-      "weight": 1
+      "weight": 0.9
     },
     {
       "source": "file:bin/godkit.js",
       "target": "function:bin/godkit.js:main",
       "type": "contains",
-      "weight": 1
+      "weight": 0.9
     },
     {
       "source": "function:bin/godkit.js:main",
@@ -2700,37 +2858,37 @@
       "source": "file:bin/godkit.js",
       "target": "file:lib/paths.js",
       "type": "imports",
-      "weight": 0.7
+      "weight": 0.8
     },
     {
       "source": "file:bin/godkit.js",
       "target": "file:lib/scan.js",
       "type": "imports",
-      "weight": 0.7
+      "weight": 0.8
     },
     {
       "source": "file:bin/godkit.js",
       "target": "file:lib/batch.js",
       "type": "imports",
-      "weight": 0.7
+      "weight": 0.8
     },
     {
       "source": "file:bin/godkit.js",
       "target": "file:lib/graph.js",
       "type": "imports",
-      "weight": 0.7
+      "weight": 0.8
     },
     {
       "source": "file:bin/godkit.js",
       "target": "file:lib/evolve.js",
       "type": "imports",
-      "weight": 0.7
+      "weight": 0.8
     },
     {
       "source": "file:bin/godkit.js",
       "target": "file:lib/freshness.js",
       "type": "imports",
-      "weight": 0.7
+      "weight": 0.8
     },
     {
       "source": "function:bin/godkit.js:cmdScan",
@@ -2767,18 +2925,6 @@
       "target": "function:lib/freshness.js:staleness",
       "type": "calls",
       "weight": 0.8
-    },
-    {
-      "source": "file:lib/paths.js",
-      "target": "function:lib/paths.js:projectRoot",
-      "type": "contains",
-      "weight": 1
-    },
-    {
-      "source": "file:lib/paths.js",
-      "target": "function:lib/paths.js:paths",
-      "type": "contains",
-      "weight": 1
     },
     {
       "source": "file:lib/scan.js",
@@ -2826,37 +2972,37 @@
       "source": "file:lib/freshness.js",
       "target": "function:lib/freshness.js:staleness",
       "type": "contains",
-      "weight": 1
+      "weight": 0.9
     },
     {
       "source": "file:lib/freshness.js",
       "target": "function:lib/freshness.js:classify",
       "type": "contains",
-      "weight": 1
+      "weight": 0.9
     },
     {
       "source": "file:lib/freshness.js",
       "target": "file:lib/paths.js",
       "type": "imports",
-      "weight": 0.7
+      "weight": 0.8
     },
     {
       "source": "file:lib/freshness.js",
       "target": "file:lib/graph.js",
       "type": "imports",
-      "weight": 0.7
+      "weight": 0.8
     },
     {
       "source": "file:hooks/brief.js",
       "target": "file:lib/paths.js",
       "type": "imports",
-      "weight": 0.7
+      "weight": 0.8
     },
     {
       "source": "file:hooks/brief.js",
       "target": "file:lib/freshness.js",
       "type": "imports",
-      "weight": 0.7
+      "weight": 0.8
     },
     {
       "source": "file:hooks/brief.js",
@@ -2874,19 +3020,19 @@
       "source": "file:hooks/clockout.js",
       "target": "file:lib/paths.js",
       "type": "imports",
-      "weight": 0.7
+      "weight": 0.8
     },
     {
       "source": "file:hooks/map-watch.js",
       "target": "file:lib/paths.js",
       "type": "imports",
-      "weight": 0.7
+      "weight": 0.8
     },
     {
       "source": "file:hooks/map-watch.js",
       "target": "file:lib/freshness.js",
       "type": "imports",
-      "weight": 0.7
+      "weight": 0.8
     },
     {
       "source": "file:hooks/map-watch.js",
@@ -2898,7 +3044,7 @@
       "source": "file:lib/scan.js",
       "target": "file:tests/scan.test.js",
       "type": "tested_by",
-      "weight": 0.6
+      "weight": 0.9
     },
     {
       "source": "file:lib/batch.js",
@@ -3078,145 +3224,61 @@
       "source": "file:hooks/lazy-activate.js",
       "target": "file:lib/lazy.js",
       "type": "imports",
-      "weight": 0.7
+      "weight": 0.8
     },
     {
       "source": "file:hooks/lazy-mode-tracker.js",
       "target": "file:lib/lazy.js",
       "type": "imports",
-      "weight": 0.7
+      "weight": 0.8
     },
     {
       "source": "file:hooks/lazy-subagent.js",
       "target": "file:lib/lazy.js",
       "type": "imports",
-      "weight": 0.7
+      "weight": 0.8
     },
     {
       "source": "file:lib/evolve.js",
       "target": "file:lib/paths.js",
       "type": "imports",
-      "weight": 0.7
+      "weight": 0.8
     },
     {
       "source": "file:lib/evolve.js",
       "target": "file:lib/lazy.js",
       "type": "imports",
-      "weight": 0.7
-    },
-    {
-      "source": "file:lib/evolve.js",
-      "target": "function:lib/evolve.js:getEvolveMode",
-      "type": "contains",
-      "weight": 1
+      "weight": 0.8
     },
     {
       "source": "file:lib/evolve.js",
       "target": "function:lib/evolve.js:frontmatter",
       "type": "contains",
-      "weight": 1
-    },
-    {
-      "source": "file:lib/evolve.js",
-      "target": "function:lib/evolve.js:readSkill",
-      "type": "contains",
-      "weight": 1
-    },
-    {
-      "source": "file:lib/evolve.js",
-      "target": "function:lib/evolve.js:listSkills",
-      "type": "contains",
-      "weight": 1
+      "weight": 0.9
     },
     {
       "source": "file:lib/evolve.js",
       "target": "function:lib/evolve.js:scanSkill",
       "type": "contains",
-      "weight": 1
-    },
-    {
-      "source": "file:lib/evolve.js",
-      "target": "function:lib/evolve.js:projectSkillTargets",
-      "type": "contains",
-      "weight": 1
+      "weight": 0.9
     },
     {
       "source": "file:lib/evolve.js",
       "target": "function:lib/evolve.js:ownership",
       "type": "contains",
-      "weight": 1
+      "weight": 0.9
     },
     {
       "source": "file:lib/evolve.js",
       "target": "function:lib/evolve.js:linkProjectSkills",
       "type": "contains",
-      "weight": 1
-    },
-    {
-      "source": "file:lib/evolve.js",
-      "target": "function:lib/evolve.js:unlinkProjectSkills",
-      "type": "contains",
-      "weight": 1
-    },
-    {
-      "source": "file:lib/evolve.js",
-      "target": "function:lib/evolve.js:linkedTools",
-      "type": "contains",
-      "weight": 1
-    },
-    {
-      "source": "file:lib/evolve.js",
-      "target": "function:lib/evolve.js:readLogSignals",
-      "type": "contains",
-      "weight": 1
-    },
-    {
-      "source": "file:lib/evolve.js",
-      "target": "function:lib/evolve.js:tally",
-      "type": "contains",
-      "weight": 1
+      "weight": 0.9
     },
     {
       "source": "file:lib/evolve.js",
       "target": "function:lib/evolve.js:trustOf",
       "type": "contains",
-      "weight": 1
-    },
-    {
-      "source": "file:lib/evolve.js",
-      "target": "function:lib/evolve.js:candidates",
-      "type": "contains",
-      "weight": 1
-    },
-    {
-      "source": "file:lib/evolve.js",
-      "target": "function:lib/evolve.js:report",
-      "type": "contains",
-      "weight": 1
-    },
-    {
-      "source": "file:lib/evolve.js",
-      "target": "function:lib/evolve.js:renderSkillsDoc",
-      "type": "contains",
-      "weight": 1
-    },
-    {
-      "source": "function:lib/evolve.js:getEvolveMode",
-      "target": "function:lib/lazy.js:configPath",
-      "type": "calls",
-      "weight": 0.8
-    },
-    {
-      "source": "function:lib/evolve.js:listSkills",
-      "target": "function:lib/evolve.js:readSkill",
-      "type": "calls",
-      "weight": 0.8
-    },
-    {
-      "source": "function:lib/evolve.js:linkProjectSkills",
-      "target": "function:lib/evolve.js:readLogSignals",
-      "type": "calls",
-      "weight": 0.8
+      "weight": 0.9
     },
     {
       "source": "function:lib/evolve.js:linkProjectSkills",
@@ -3227,78 +3289,6 @@
     {
       "source": "function:lib/evolve.js:linkProjectSkills",
       "target": "function:lib/evolve.js:trustOf",
-      "type": "calls",
-      "weight": 0.8
-    },
-    {
-      "source": "function:lib/evolve.js:linkProjectSkills",
-      "target": "function:lib/evolve.js:projectSkillTargets",
-      "type": "calls",
-      "weight": 0.8
-    },
-    {
-      "source": "function:lib/evolve.js:unlinkProjectSkills",
-      "target": "function:lib/evolve.js:projectSkillTargets",
-      "type": "calls",
-      "weight": 0.8
-    },
-    {
-      "source": "function:lib/evolve.js:unlinkProjectSkills",
-      "target": "function:lib/evolve.js:ownership",
-      "type": "calls",
-      "weight": 0.8
-    },
-    {
-      "source": "function:lib/evolve.js:linkedTools",
-      "target": "function:lib/evolve.js:projectSkillTargets",
-      "type": "calls",
-      "weight": 0.8
-    },
-    {
-      "source": "function:lib/evolve.js:linkedTools",
-      "target": "function:lib/evolve.js:ownership",
-      "type": "calls",
-      "weight": 0.8
-    },
-    {
-      "source": "function:lib/evolve.js:report",
-      "target": "function:lib/evolve.js:readLogSignals",
-      "type": "calls",
-      "weight": 0.8
-    },
-    {
-      "source": "function:lib/evolve.js:report",
-      "target": "function:lib/evolve.js:listSkills",
-      "type": "calls",
-      "weight": 0.8
-    },
-    {
-      "source": "function:lib/evolve.js:report",
-      "target": "function:lib/evolve.js:scanSkill",
-      "type": "calls",
-      "weight": 0.8
-    },
-    {
-      "source": "function:lib/evolve.js:report",
-      "target": "function:lib/evolve.js:tally",
-      "type": "calls",
-      "weight": 0.8
-    },
-    {
-      "source": "function:lib/evolve.js:report",
-      "target": "function:lib/evolve.js:trustOf",
-      "type": "calls",
-      "weight": 0.8
-    },
-    {
-      "source": "function:lib/evolve.js:report",
-      "target": "function:lib/evolve.js:linkedTools",
-      "type": "calls",
-      "weight": 0.8
-    },
-    {
-      "source": "function:lib/evolve.js:report",
-      "target": "function:lib/evolve.js:candidates",
       "type": "calls",
       "weight": 0.8
     },
@@ -3396,7 +3386,7 @@
       "source": "file:scripts/check-versions.js",
       "target": "function:scripts/check-versions.js:main",
       "type": "contains",
-      "weight": 1
+      "weight": 0.9
     },
     {
       "source": "file:scripts/check-versions.js",
@@ -3468,19 +3458,13 @@
       "source": "file:scripts/uninstall.js",
       "target": "function:scripts/uninstall.js:removeSkills",
       "type": "contains",
-      "weight": 1
+      "weight": 0.9
     },
     {
       "source": "file:scripts/uninstall.js",
       "target": "function:scripts/uninstall.js:removeHooks",
       "type": "contains",
-      "weight": 1
-    },
-    {
-      "source": "file:scripts/uninstall.js",
-      "target": "function:scripts/uninstall.js:removeLazyState",
-      "type": "contains",
-      "weight": 1
+      "weight": 0.9
     },
     {
       "source": "file:scripts/uninstall.js",
@@ -3984,7 +3968,7 @@
       "source": "file:lib/evolve.js",
       "target": "file:tests/evolve.test.js",
       "type": "tested_by",
-      "weight": 0.6
+      "weight": 0.9
     },
     {
       "source": "file:hooks/brief.js",
@@ -4002,43 +3986,43 @@
       "source": "file:lib/graph.js",
       "target": "file:tests/graph.test.js",
       "type": "tested_by",
-      "weight": 0.6
+      "weight": 0.9
     },
     {
       "source": "file:hooks/install.js",
       "target": "file:tests/hook-install.test.js",
       "type": "tested_by",
-      "weight": 0.6
+      "weight": 0.9
     },
     {
       "source": "file:scripts/uninstall.js",
       "target": "file:tests/hook-install.test.js",
       "type": "tested_by",
-      "weight": 0.6
+      "weight": 0.9
     },
     {
       "source": "file:hooks/brief.js",
       "target": "file:tests/hooks.test.js",
       "type": "tested_by",
-      "weight": 0.6
+      "weight": 0.9
     },
     {
       "source": "file:hooks/clockout.js",
       "target": "file:tests/hooks.test.js",
       "type": "tested_by",
-      "weight": 0.6
+      "weight": 0.9
     },
     {
       "source": "file:hooks/map-watch.js",
       "target": "file:tests/hooks.test.js",
       "type": "tested_by",
-      "weight": 0.6
+      "weight": 0.9
     },
     {
       "source": "file:package.json",
       "target": "file:tests/package.test.js",
       "type": "tested_by",
-      "weight": 0.6
+      "weight": 0.9
     },
     {
       "source": "file:.claude-plugin/plugin.json",
@@ -4062,7 +4046,7 @@
       "source": "file:hooks/godkit-hooks.json",
       "target": "file:tests/package.test.js",
       "type": "tested_by",
-      "weight": 0.6
+      "weight": 0.9
     },
     {
       "source": "file:AGENTS.md",
@@ -4087,176 +4071,543 @@
       "target": "file:tests/save.test.js",
       "type": "tested_by",
       "weight": 0.6
+    },
+    {
+      "source": "file:lib/session.js",
+      "target": "function:lib/session.js:readHookInput",
+      "type": "contains",
+      "weight": 0.9
+    },
+    {
+      "source": "file:lib/session.js",
+      "target": "function:lib/session.js:statePath",
+      "type": "contains",
+      "weight": 0.9
+    },
+    {
+      "source": "file:lib/session.js",
+      "target": "function:lib/session.js:atomicWriteFile",
+      "type": "contains",
+      "weight": 0.9
+    },
+    {
+      "source": "file:lib/session.js",
+      "target": "function:lib/session.js:clearSession",
+      "type": "contains",
+      "weight": 0.9
+    },
+    {
+      "source": "file:lib/work.js",
+      "target": "function:lib/work.js:fingerprint",
+      "type": "contains",
+      "weight": 0.9
+    },
+    {
+      "source": "file:lib/work.js",
+      "target": "function:lib/work.js:statusPaths",
+      "type": "contains",
+      "weight": 0.9
+    },
+    {
+      "source": "file:lib/work.js",
+      "target": "function:lib/work.js:recordDirectEdit",
+      "type": "contains",
+      "weight": 0.9
+    },
+    {
+      "source": "file:lib/work.js",
+      "target": "function:lib/work.js:didSessionWork",
+      "type": "contains",
+      "weight": 0.9
+    },
+    {
+      "source": "file:lib/install.js",
+      "target": "function:lib/install.js:stripOurHooks",
+      "type": "contains",
+      "weight": 0.9
+    },
+    {
+      "source": "file:lib/install.js",
+      "target": "function:lib/install.js:applyHooks",
+      "type": "contains",
+      "weight": 0.9
+    },
+    {
+      "source": "file:lib/install.js",
+      "target": "function:lib/install.js:ownership",
+      "type": "contains",
+      "weight": 0.9
+    },
+    {
+      "source": "file:lib/install.js",
+      "target": "function:lib/install.js:installOne",
+      "type": "contains",
+      "weight": 0.9
+    },
+    {
+      "source": "file:lib/install.js",
+      "target": "function:lib/install.js:settingsTargets",
+      "type": "contains",
+      "weight": 0.9
+    },
+    {
+      "source": "file:lib/managed.js",
+      "target": "function:lib/managed.js:applyBlock",
+      "type": "contains",
+      "weight": 0.9
+    },
+    {
+      "source": "file:lib/managed.js",
+      "target": "function:lib/managed.js:locate",
+      "type": "contains",
+      "weight": 0.9
+    },
+    {
+      "source": "file:lib/paths.js",
+      "target": "function:lib/paths.js:findAgentContext",
+      "type": "contains",
+      "weight": 0.9
+    },
+    {
+      "source": "file:lib/paths.js",
+      "target": "function:lib/paths.js:containedPath",
+      "type": "contains",
+      "weight": 0.9
+    },
+    {
+      "source": "file:lib/paths.js",
+      "target": "function:lib/paths.js:readContained",
+      "type": "contains",
+      "weight": 0.9
+    },
+    {
+      "source": "file:lib/paths.js",
+      "target": "function:lib/paths.js:fitBytes",
+      "type": "contains",
+      "weight": 0.9
+    },
+    {
+      "source": "file:lib/paths.js",
+      "target": "function:lib/paths.js:logEntries",
+      "type": "contains",
+      "weight": 0.9
+    },
+    {
+      "source": "file:bin/godkit.js",
+      "target": "function:bin/godkit.js:cmdHooks",
+      "type": "contains",
+      "weight": 0.9
+    },
+    {
+      "source": "file:scripts/uninstall.js",
+      "target": "function:scripts/uninstall.js:removeRuntimeState",
+      "type": "contains",
+      "weight": 0.9
+    },
+    {
+      "source": "file:lib/work.js",
+      "target": "file:lib/session.js",
+      "type": "imports",
+      "weight": 0.8
+    },
+    {
+      "source": "file:lib/work.js",
+      "target": "file:lib/paths.js",
+      "type": "imports",
+      "weight": 0.8
+    },
+    {
+      "source": "file:lib/install.js",
+      "target": "file:lib/session.js",
+      "type": "imports",
+      "weight": 0.8
+    },
+    {
+      "source": "file:lib/install.js",
+      "target": "file:lib/paths.js",
+      "type": "imports",
+      "weight": 0.8
+    },
+    {
+      "source": "file:lib/lazy.js",
+      "target": "file:lib/session.js",
+      "type": "imports",
+      "weight": 0.8
+    },
+    {
+      "source": "file:lib/freshness.js",
+      "target": "file:lib/work.js",
+      "type": "imports",
+      "weight": 0.8
+    },
+    {
+      "source": "file:hooks/brief.js",
+      "target": "file:lib/session.js",
+      "type": "imports",
+      "weight": 0.8
+    },
+    {
+      "source": "file:hooks/clockout.js",
+      "target": "file:lib/session.js",
+      "type": "imports",
+      "weight": 0.8
+    },
+    {
+      "source": "file:hooks/clockout.js",
+      "target": "file:lib/work.js",
+      "type": "imports",
+      "weight": 0.8
+    },
+    {
+      "source": "file:hooks/work-track.js",
+      "target": "file:lib/paths.js",
+      "type": "imports",
+      "weight": 0.8
+    },
+    {
+      "source": "file:hooks/work-track.js",
+      "target": "file:lib/session.js",
+      "type": "imports",
+      "weight": 0.8
+    },
+    {
+      "source": "file:hooks/work-track.js",
+      "target": "file:lib/work.js",
+      "type": "imports",
+      "weight": 0.8
+    },
+    {
+      "source": "file:hooks/map-watch.js",
+      "target": "file:lib/session.js",
+      "type": "imports",
+      "weight": 0.8
+    },
+    {
+      "source": "file:hooks/lazy-activate.js",
+      "target": "file:lib/session.js",
+      "type": "imports",
+      "weight": 0.8
+    },
+    {
+      "source": "file:hooks/lazy-subagent.js",
+      "target": "file:lib/session.js",
+      "type": "imports",
+      "weight": 0.8
+    },
+    {
+      "source": "file:hooks/lazy-mode-tracker.js",
+      "target": "file:lib/session.js",
+      "type": "imports",
+      "weight": 0.8
+    },
+    {
+      "source": "file:hooks/install.js",
+      "target": "file:lib/install.js",
+      "type": "imports",
+      "weight": 0.8
+    },
+    {
+      "source": "file:scripts/uninstall.js",
+      "target": "file:lib/install.js",
+      "type": "imports",
+      "weight": 0.8
+    },
+    {
+      "source": "file:scripts/uninstall.js",
+      "target": "file:lib/session.js",
+      "type": "imports",
+      "weight": 0.8
+    },
+    {
+      "source": "file:scripts/sync-hooks.js",
+      "target": "file:lib/install.js",
+      "type": "imports",
+      "weight": 0.8
+    },
+    {
+      "source": "file:bin/godkit.js",
+      "target": "file:lib/install.js",
+      "type": "imports",
+      "weight": 0.8
+    },
+    {
+      "source": "file:bin/godkit.js",
+      "target": "file:lib/managed.js",
+      "type": "imports",
+      "weight": 0.8
+    },
+    {
+      "source": "file:lib/paths.js",
+      "target": "file:tests/runtime.test.js",
+      "type": "tested_by",
+      "weight": 0.9
+    },
+    {
+      "source": "file:lib/session.js",
+      "target": "file:tests/runtime.test.js",
+      "type": "tested_by",
+      "weight": 0.9
+    },
+    {
+      "source": "file:lib/work.js",
+      "target": "file:tests/runtime.test.js",
+      "type": "tested_by",
+      "weight": 0.9
+    },
+    {
+      "source": "file:lib/lazy.js",
+      "target": "file:tests/runtime.test.js",
+      "type": "tested_by",
+      "weight": 0.9
+    },
+    {
+      "source": "file:bin/godkit.js",
+      "target": "file:tests/cli.test.js",
+      "type": "tested_by",
+      "weight": 0.9
+    },
+    {
+      "source": "file:lib/managed.js",
+      "target": "file:tests/cli.test.js",
+      "type": "tested_by",
+      "weight": 0.9
+    },
+    {
+      "source": "file:lib/freshness.js",
+      "target": "file:tests/cli.test.js",
+      "type": "tested_by",
+      "weight": 0.9
+    },
+    {
+      "source": "file:lib/install.js",
+      "target": "file:tests/hook-install.test.js",
+      "type": "tested_by",
+      "weight": 0.9
+    },
+    {
+      "source": "file:scripts/sync-hooks.js",
+      "target": "file:tests/hook-install.test.js",
+      "type": "tested_by",
+      "weight": 0.9
+    },
+    {
+      "source": "file:hooks/work-track.js",
+      "target": "file:tests/hooks.test.js",
+      "type": "tested_by",
+      "weight": 0.9
+    },
+    {
+      "source": "file:templates/gitattributes",
+      "target": "file:tests/package.test.js",
+      "type": "tested_by",
+      "weight": 0.9
+    },
+    {
+      "source": "file:bin/godkit.js",
+      "target": "file:tests/package.test.js",
+      "type": "tested_by",
+      "weight": 0.9
+    },
+    {
+      "source": "file:templates/log.md",
+      "target": "file:tests/evolve.test.js",
+      "type": "tested_by",
+      "weight": 0.9
+    },
+    {
+      "source": "file:lib/install.js",
+      "target": "file:hooks/godkit-hooks.json",
+      "type": "configures",
+      "weight": 0.9
+    },
+    {
+      "source": "file:scripts/sync-hooks.js",
+      "target": "file:hooks/godkit-hooks.json",
+      "type": "configures",
+      "weight": 0.9
+    },
+    {
+      "source": "config:hooks/godkit-hooks.json",
+      "target": "file:hooks/work-track.js",
+      "type": "triggers",
+      "weight": 0.9
+    },
+    {
+      "source": "config:hooks/godkit-hooks.json",
+      "target": "file:hooks/clockout.js",
+      "type": "triggers",
+      "weight": 0.9
+    },
+    {
+      "source": "config:hooks/godkit-hooks.json",
+      "target": "file:hooks/brief.js",
+      "type": "triggers",
+      "weight": 0.9
+    },
+    {
+      "source": "config:hooks/godkit-hooks.json",
+      "target": "file:hooks/map-watch.js",
+      "type": "triggers",
+      "weight": 0.9
+    },
+    {
+      "source": "config:hooks/godkit-hooks.json",
+      "target": "file:hooks/lazy-activate.js",
+      "type": "triggers",
+      "weight": 0.8
+    },
+    {
+      "source": "config:hooks/godkit-hooks.json",
+      "target": "file:hooks/lazy-subagent.js",
+      "type": "triggers",
+      "weight": 0.8
+    },
+    {
+      "source": "config:hooks/godkit-hooks.json",
+      "target": "file:hooks/lazy-mode-tracker.js",
+      "type": "triggers",
+      "weight": 0.8
+    },
+    {
+      "source": "file:hooks/work-track.js",
+      "target": "file:hooks/clockout.js",
+      "type": "depends_on",
+      "weight": 0.9
+    },
+    {
+      "source": "file:bin/godkit.js",
+      "target": "file:templates/gitattributes",
+      "type": "depends_on",
+      "weight": 0.8
+    },
+    {
+      "source": "file:package.json",
+      "target": "file:.github/workflows/publish.yml",
+      "type": "configures",
+      "weight": 0.7
+    },
+    {
+      "source": "pipeline:.github/workflows/publish.yml",
+      "target": "file:scripts/check-versions.js",
+      "type": "calls",
+      "weight": 0.8
+    },
+    {
+      "source": "pipeline:.github/workflows/publish.yml",
+      "target": "file:scripts/sync-hooks.js",
+      "type": "calls",
+      "weight": 0.8
+    },
+    {
+      "source": "pipeline:.github/workflows/test.yml",
+      "target": "file:scripts/sync-hooks.js",
+      "type": "calls",
+      "weight": 0.8
+    },
+    {
+      "source": "pipeline:.github/workflows/test.yml",
+      "target": "file:scripts/check-versions.js",
+      "type": "calls",
+      "weight": 0.8
+    },
+    {
+      "source": "file:README.md",
+      "target": "file:docs/agent-portability.md",
+      "type": "depends_on",
+      "weight": 0.6
+    },
+    {
+      "source": "file:lib/evolve.js",
+      "target": "file:skills/godkit-evolve/SKILL.md",
+      "type": "configures",
+      "weight": 0.6
     }
   ],
   "layers": [
     {
-      "id": "shared-protocol",
       "name": "Shared protocol and state",
-      "description": "Canonical collaboration rules and the templates copied into each project's .agent directory. Host runtime policy belongs in hooks or skills, not in these state shapes.",
-      "nodeIds": [
-        "file:AGENTS.md",
-        "file:CLAUDE.md",
-        "file:.agents/rules/godkit.md",
-        "file:.github/copilot-instructions.md",
-        "file:templates/BOARD.md",
-        "file:templates/THREAD.md",
-        "file:templates/task.md",
-        "file:templates/log.md",
-        "file:templates/MAP.md",
-        "file:templates/rules/cursor-header.md"
-      ]
+      "description": "AGENTS.md and the committed .agent/ contract every host reads: board, thread, tasks, logs, map. The one canonical copy of each fact.",
+      "nodeIds": []
     },
     {
-      "id": "core-runtime",
-      "name": "CLI and core runtime",
-      "description": "The zero-dependency implementation for project discovery, map scanning/persistence/freshness, project-skill evidence, and lazy-mode state. Host registration details stay outside this layer.",
-      "nodeIds": [
-        "file:bin/godkit.js",
-        "file:lib/paths.js",
-        "file:lib/scan.js",
-        "file:lib/batch.js",
-        "file:lib/graph.js",
-        "file:lib/freshness.js",
-        "file:lib/evolve.js",
-        "file:lib/lazy.js"
-      ]
+      "name": "Session runtime",
+      "description": "lib/session.js, lib/work.js and lib/paths.js — per-session state under an owned root, session-scoped work evidence, and every bounded, symlink-refusing read of shared state.",
+      "nodeIds": []
     },
     {
-      "id": "hooks",
       "name": "Hook enforcement",
-      "description": "Fail-open lifecycle handlers that brief arriving sessions, track lazy policy, watch map freshness, and require handoff evidence. Installation and registry files adapt the same handlers to hook-capable hosts.",
-      "nodeIds": [
-        "file:hooks/brief.js",
-        "file:hooks/clockout.js",
-        "file:hooks/map-watch.js",
-        "file:hooks/lazy-activate.js",
-        "file:hooks/lazy-mode-tracker.js",
-        "file:hooks/lazy-subagent.js",
-        "file:hooks/install.js",
-        "file:hooks/godkit-hooks.json"
-      ]
+      "description": "hooks/*.js. brief injects state at session start, work-track records what this session changed, clockout blocks the turn until its log exists, map-watch reports staleness. Generated registrations keep the plugin manifest and the settings installer in step.",
+      "nodeIds": []
     },
     {
-      "id": "agent-guidance",
-      "name": "Skills and analysis prompts",
-      "description": "Installable behavior guides plus the specialized prompts that turn scans into a knowledge graph. Executable safety and state mutation remain in JavaScript, not prompt text.",
-      "nodeIds": [
-        "file:agents/file-analyzer.md",
-        "file:agents/architect.md",
-        "file:skills/godkit/SKILL.md",
-        "file:skills/godkit-plan/SKILL.md",
-        "file:skills/godkit-execute/SKILL.md",
-        "file:skills/godkit-test/SKILL.md",
-        "file:skills/godkit-handoff/SKILL.md",
-        "file:skills/godkit-map/SKILL.md",
-        "file:skills/godkit-evolve/SKILL.md",
-        "file:skills/godkit-git/SKILL.md",
-        "file:skills/godkit-lazy/SKILL.md"
-      ]
+      "name": "Install and ownership",
+      "description": "lib/install.js with hooks/install.js and scripts/uninstall.js. One definition of what godkit created, so nothing it did not create is ever replaced or removed.",
+      "nodeIds": []
     },
     {
-      "id": "host-surface",
-      "name": "Host adapters and commands",
-      "description": "Package manifests, command adapters, compatibility documentation, and generated host entrypoints. They expose canonical skills and hooks without implementing core behavior themselves.",
-      "nodeIds": [
-        "file:.claude-plugin/plugin.json",
-        "file:.claude-plugin/marketplace.json",
-        "file:.codex-plugin/plugin.json",
-        "file:gemini-extension.json",
-        "file:commands/godkit.toml",
-        "file:commands/godkit-help.toml",
-        "file:docs/agent-portability.md",
-        "file:README.md"
-      ]
+      "name": "CLI and map pipeline",
+      "description": "bin/godkit.js over lib/scan.js, lib/batch.js, lib/graph.js, lib/freshness.js and lib/managed.js: scan, analyze, save, and honest staleness.",
+      "nodeIds": []
     },
     {
-      "id": "quality-release",
+      "name": "Skills and evidence",
+      "description": "skills/, agents/, commands/ and lib/evolve.js — the shipped procedures, plus project skills judged by owned snapshots and log-derived trust.",
+      "nodeIds": []
+    },
+    {
       "name": "Verification and release guards",
-      "description": "Node test suites, generated-rule/version checks, package cleanup, and CI workflows. These prove the shipped artifact and shared contracts; they are not runtime dependencies.",
-      "nodeIds": [
-        "file:package.json",
-        "file:scripts/check-versions.js",
-        "file:scripts/sync-rules.js",
-        "file:scripts/uninstall.js",
-        "file:.github/workflows/test.yml",
-        "file:.github/workflows/publish.yml",
-        "file:tests/package.test.js",
-        "file:tests/save.test.js",
-        "file:tests/hooks.test.js",
-        "file:tests/evolve.test.js"
-      ]
+      "description": "tests/, scripts/sync-*.js, scripts/check-versions.js and the workflows. Generated files, agreeing manifests, a tag-only publish, and a packed-install smoke.",
+      "nodeIds": []
     }
   ],
   "tour": [
     {
       "order": 1,
-      "title": "Enter through the CLI",
-      "description": "bin/godkit.js is the executable surface for init, install, map, evidence, doctor, and uninstall operations; start here to see every supported workflow.",
-      "nodeIds": [
-        "file:bin/godkit.js"
-      ]
+      "title": "",
+      "description": "",
+      "nodeIds": []
     },
     {
       "order": 2,
-      "title": "Resolve project and shared state",
-      "description": "lib/paths.js decides which worktree and .agent directory every CLI command or hook reads, so its boundary rules affect the whole package.",
-      "nodeIds": [
-        "file:lib/paths.js",
-        "file:AGENTS.md"
-      ]
+      "title": "",
+      "description": "",
+      "nodeIds": []
     },
     {
       "order": 3,
-      "title": "Follow the map pipeline",
-      "description": "scan -> batch -> graph persists the portable project map, while freshness decides whether the next analysis is partial, architectural, or full.",
-      "nodeIds": [
-        "file:lib/scan.js",
-        "file:lib/batch.js",
-        "file:lib/graph.js",
-        "file:lib/freshness.js"
-      ]
+      "title": "",
+      "description": "",
+      "nodeIds": []
     },
     {
       "order": 4,
-      "title": "Understand project-owned learning",
-      "description": "lib/evolve.js turns .agent skills and session logs into guarded host projections, trust status, and capture candidates.",
-      "nodeIds": [
-        "file:lib/evolve.js",
-        "file:skills/godkit-evolve/SKILL.md"
-      ]
+      "title": "",
+      "description": "",
+      "nodeIds": []
     },
     {
       "order": 5,
-      "title": "See session enforcement",
-      "description": "The hook registry routes session events into brief, clockout, map-watch, and lazy handlers; lib/lazy.js currently owns their shared mode state.",
-      "nodeIds": [
-        "file:hooks/godkit-hooks.json",
-        "file:hooks/brief.js",
-        "file:hooks/clockout.js",
-        "file:lib/lazy.js"
-      ]
+      "title": "",
+      "description": "",
+      "nodeIds": []
     },
     {
       "order": 6,
-      "title": "Trace each host adapter",
-      "description": "Claude, Codex, Gemini, Cursor, and Copilot consume the same skills and rules through small manifests, TOML commands, and generated rule copies.",
-      "nodeIds": [
-        "file:.claude-plugin/plugin.json",
-        "file:.codex-plugin/plugin.json",
-        "file:gemini-extension.json",
-        "file:commands/godkit.toml"
-      ]
+      "title": "",
+      "description": "",
+      "nodeIds": []
     },
     {
       "order": 7,
-      "title": "Prove what ships",
-      "description": "package.json and the Node tests enforce zero dependencies, complete artifacts, synchronized manifests, hook behavior, and safe map persistence before CI or publishing.",
-      "nodeIds": [
-        "file:package.json",
-        "file:tests/package.test.js",
-        "file:.github/workflows/test.yml"
-      ]
+      "title": "",
+      "description": "",
+      "nodeIds": []
+    },
+    {
+      "order": 8,
+      "title": "",
+      "description": "",
+      "nodeIds": []
     }
   ]
 }

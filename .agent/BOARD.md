@@ -15,9 +15,9 @@ Current truth only. Detailed history lives in Git and `.agent/log/`.
 
 | agent | scope (file globs) | task | since (UTC) | status |
 |---|---|---|---|---|
-| root | `.agent/**` | T-001, T-008 | 2026-08-22T14:04Z | active |
+| — | nothing claimed | — | — | the whole repo is free |
 
-| claude | `.agent/**` and read-only repository-wide verification | T-008 | 2026-08-22T16:12Z | active |
+
 
 
 One owner per file. Workers update only their task and unique log; root alone edits this board.
@@ -33,7 +33,7 @@ One owner per file. Workers update only their task and unique log; root alone ed
 | T-005 | install lifecycle ownership | claude | done | `.agent/tasks/T-005-install-lifecycle.md` |
 | T-006 | CLI, freshness, and managed init | claude | done | `.agent/tasks/T-006-cli-integration.md` |
 | T-007 | package, docs, and release contracts | claude | done | `.agent/tasks/T-007-package-docs.md` |
-| T-008 | join verification and handoff | claude | execute | `.agent/tasks/T-008-join-handoff.md` |
+| T-008 | join verification and handoff | claude | done | `.agent/tasks/T-008-join-handoff.md` |
 
 ## Bugs
 
@@ -46,7 +46,7 @@ One owner per file. Workers update only their task and unique log; root alone ed
 - [x] B-007 install/uninstall ownership can remove foreign skills/hooks or mutate unsafe config — fixed in T-005; `link()` in `bin/godkit.js` is the last unguarded delete, owned by T-006.
 - [x] B-008 init overwrites host files instead of managing an isolated, preflighted block — fixed in T-006 (`lib/managed.js`).
 - [x] B-009 host manifests, Gemini commands, package artifacts, and publish gates drift from contract — fixed in T-007.
-- [x] B-010 evolve fixtures leak temporary directories — fixed in T-002. Documentation half moved to T-007.
+- [x] B-010 evolve fixtures leak temporary directories — fixed in T-002; documentation half fixed in T-007.
 
 ## Binding decisions
 
@@ -60,12 +60,14 @@ One owner per file. Workers update only their task and unique log; root alone ed
 
 ## Last 3 handoffs
 
-- 2026-08-22T14:58Z claude — T-002 and T-004 joined at `06b7961`: 129 passed, 0 failed, 1 skipped;
-  t002/t004 worktrees removed; next T-005 (must register `hooks/work-track.js`) and T-007.
-- 2026-08-22T14:29Z Kuhn — T-003 joined at `e8bcf0e`: graph/scan targeted tests 25/25 on branch and root; claim released.
-- 2026-08-22T14:17Z root — T-001 done: baseline 97/97; full map 143 nodes/268 edges, current and integrity-clean; next T-002 ∥ T-003 ∥ T-004.
+- 2026-08-22T16:35Z claude — T-008 join: all eight seams done. 160 passed / 0 failed / 1 skipped,
+  publish dry run clean, map rebuilt to 160 nodes / 314 edges and current. All claims released.
+- 2026-08-22T16:12Z claude — T-007 done: shipped what init reads, tag-only publish, docs corrected.
+- 2026-08-22T15:50Z claude — T-006 done: managed init blocks, fail-closed freshness, hook commands.
 
 ## Open notes
 
-- The map is STALE (20 files, 8 commits behind). Deliberately deferred to T-008 rather than
-  rebuilt three times while T-005/T-006/T-007 are still landing.
+- Nothing is claimed. The remediation branch is `godkit/skill-evidence`.
+- Deliberately NOT done, and the next agent's call: not published to npm, not tagged, not pushed,
+  and not installed into this machine's real home config. This machine has 3 of 10 hooks
+  registered from an older install — `godkit hooks install` fixes that.
