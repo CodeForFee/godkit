@@ -22,10 +22,28 @@ test('sanitizePath reduces anything outside the project to a basename', () => {
   assert.equal(g.sanitizePath('/etc/passwd', '/home/u/p'), 'passwd')
 })
 
-test('sanitizePath handles a different drive, where path.relative returns an absolute path', () => {
+test('sanitizePath handles a different drive, where a relative path cannot be expressed', () => {
   const out = g.sanitizePath('C:/Users/someone/secret/b.ts', 'E:/proj')
   assert.equal(out, 'b.ts')
   assert.ok(!out.includes('someone'), 'the username must not survive')
+})
+
+test('sanitizePath sanitizes Windows paths even when running on POSIX, and vice versa', () => {
+  // A map built on Windows is read on Linux (CI, a teammate, a container). Asking the running
+  // platform whether 'E:/proj/x.ts' is absolute answers FALSE there, and the full path would
+  // ship. Both conventions must be handled on every platform, so these assertions are the same
+  // no matter where the suite runs.
+  assert.equal(g.sanitizePath('E:/proj/src/a.ts', 'E:/proj'), 'src/a.ts')
+  assert.equal(g.sanitizePath('E:/proj/src/a.ts', 'E:/proj/'), 'src/a.ts')
+  assert.equal(g.sanitizePath('C:\\Users\\NEO\\x.ts', 'E:/proj'), 'x.ts')
+  assert.equal(g.sanitizePath('/home/u/proj/src/a.ts', '/home/u/proj'), 'src/a.ts')
+  assert.equal(g.sanitizePath('/etc/shadow', '/home/u/proj'), 'shadow')
+
+  for (const leaky of ['E:/proj/src/a.ts', 'C:\\Users\\NEO\\x.ts', '/home/other/y.ts']) {
+    const out = g.sanitizePath(leaky, '/home/u/proj')
+    assert.ok(!out.includes(':'), leaky + ' left a drive letter behind: ' + out)
+    assert.ok(!out.startsWith('/'), leaky + ' stayed absolute: ' + out)
+  }
 })
 
 test('normalize dedupes nodes by id, last one winning', () => {
