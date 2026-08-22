@@ -1,0 +1,2 @@
+description = "Cut work into seams on file boundaries, assign owners, write the task files"
+prompt = "Use the godkit-plan skill to decompose this into seams and write the task files: $ARGUMENTS"

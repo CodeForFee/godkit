@@ -1,0 +1,2 @@
+description = "Build or refresh the project map in .agent/graph.json and .agent/MAP.md"
+prompt = "Use the godkit-map skill. Build or incrementally refresh the project map. $ARGUMENTS"

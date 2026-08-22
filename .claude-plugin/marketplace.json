@@ -1,0 +1,17 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "godkit",
+  "description": "One shared harness for every AI agent: shared memory, a project map, and a handoff protocol that survives across tools.",
+  "owner": {
+    "name": "CodeForFee",
+    "url": "https://github.com/CodeForFee"
+  },
+  "plugins": [
+    {
+      "name": "godkit",
+      "description": "Shared .agent/ state, an incremental project map, and the claim-and-log protocol that keeps Claude, Cursor, Codex and Antigravity out of each other's way.",
+      "source": "./",
+      "category": "productivity"
+    }
+  ]
+}

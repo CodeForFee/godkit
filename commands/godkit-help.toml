@@ -1,0 +1,2 @@
+description = "Quick reference card: the .agent/ layout, the ladders, the skills, the CLI"
+prompt = "Use the godkit-help skill and show the reference card."

@@ -1,0 +1,2 @@
+description = "The .agent/ protocol: clock in, claim a scope, or clock out with a log entry"
+prompt = "Use the godkit-handoff skill. $ARGUMENTS"

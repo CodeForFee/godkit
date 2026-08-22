@@ -1,0 +1,12 @@
+{
+  "name": "godkit",
+  "version": "1.0.0",
+  "description": "One shared harness for every AI agent. Read .agent/ before you edit, log before you finish — so nothing is redone and nobody edits the same file twice.",
+  "author": {
+    "name": "CodeForFee",
+    "url": "https://github.com/CodeForFee"
+  },
+  "homepage": "https://github.com/CodeForFee/godkit",
+  "license": "MIT",
+  "hooks": "./hooks/godkit-hooks.json"
+}

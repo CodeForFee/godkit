@@ -1,0 +1,2 @@
+description = "Review how the work was organized, or diagnose a run that went wrong"
+prompt = "Use the godkit-review skill. $ARGUMENTS"

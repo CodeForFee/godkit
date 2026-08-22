@@ -1,0 +1,2 @@
+description = "Force the simplest solution that actually works: YAGNI, stdlib first, one line over fifty"
+prompt = "Use the godkit-lazy skill at intensity: $ARGUMENTS"

@@ -1,0 +1,2 @@
+description = "Decide what counts as verified and write the smallest check that would fail"
+prompt = "Use the godkit-test skill. $ARGUMENTS"

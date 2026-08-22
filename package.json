@@ -50,7 +50,7 @@
   },
   "scripts": {
     "test": "node --test tests/*.test.js",
-    "check": "node scripts/check-rule-copies.js && node scripts/check-versions.js",
+    "check": "node scripts/sync-rules.js --check && node scripts/check-versions.js",
     "pretest": "npm run check"
   },
   "publishConfig": {

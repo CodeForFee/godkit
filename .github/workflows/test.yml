@@ -1,0 +1,26 @@
+name: test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        # Windows is not optional here: path handling and hook stdin behave differently there,
+        # and that is where this package is developed.
+        os: [ubuntu-latest, windows-latest]
+        node: ['18', '22', '24']
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+      - run: node scripts/sync-rules.js --check
+      - run: node scripts/check-versions.js
+      - run: node --test tests/*.test.js

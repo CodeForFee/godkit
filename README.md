@@ -1,105 +1,128 @@
-# Subagent
+# Godkit
 
-Workflow skills for AI agents. Ponytail governs **what you build**; subagent governs **how the
-work is organized** — decomposition, delegation, verification, and handoff between agents that
-share one repo.
+**One shared harness for every AI agent.** Claude Code, Cursor, Codex and Antigravity all point at the same repo — so give them the same memory, the same board, and the same rules.
 
-Plain `SKILL.md` files following the [Agent Skills standard](https://agentskills.io/specification),
-so the same files work in Claude Code, Codex, Gemini CLI, Cursor, Copilot, Windsurf, and Kiro.
+```bash
+npx godkit init
+```
 
-## The two rules
+---
 
-**Read `.agent/BOARD.md` before you edit. Write `.agent/log/<entry>.md` before you finish.**
+## The problem
 
-Two things go wrong when several agents share a repo, and neither is a coding mistake: work gets
-redone because nobody logged it, and two agents edit one file from different mental models. Both
-diffs look right alone; together they are a third bug nobody wrote.
+Every agent arrives blind. It does not know what the project is, what was already done, which file someone else is holding, or what was decided last week. So work gets redone, two agents edit the same file, and every session starts by re-reading the codebase from scratch.
 
-## Shared state
+Private memory does not fix this: Cursor cannot read Claude's memory directory, and Claude cannot read Cursor's. **The only shared memory between tools is the filesystem they both open.**
+
+## What Godkit does
+
+It puts one committed directory in your repo, and teaches every agent to use it.
 
 ```
 .agent/
-├── BOARD.md      claims (who owns which files) · bugs B-NNN open/fixed · decisions · last 3 handoffs
-└── log/          one file per session: <UTC>-<agent>[-<session8>].md — append-only, never edited by others
+├── BOARD.md              roster · claims · task index · bugs · decisions — one screen
+├── THREAD.md             append-only conversation between agents
+├── MAP.md                what this codebase is (generated)
+├── graph.json            the machine-readable map
+├── tasks/T-001-*.md      one per task: Plan · Execute · Review · Test · Handoff
+└── log/<UTC>-<agent>.md  one per session, append-only, never edited by others
 ```
 
-Lives in the worked-on repo and is committed to git. In the repo because it is the only memory two
-different tools can both read — Cursor cannot open Claude's memory directory, and vice versa. One
-file per session because two tools writing separate files never conflict, and git merges them
-without a thought.
+Two rules, enforced everywhere:
 
-## Skills
+> **Read `.agent/` before you edit. Write your log before you finish.**
 
-| Skill | Trigger |
-|---|---|
-| `subagent` | any multi-step task; delegate, split, orchestrate |
-| `subagent-handoff` | session start/end, "resume", "who did what", "was this bug already fixed" |
-| `subagent-plan` | "split this up", "who should do what", "can we parallelize" |
-| `subagent-execute` | carrying out a plan, verifying delegated work, deciding whether to retry |
-| `subagent-review` | "review the process", agents colliding, duplicated effort |
-| `subagent-postmortem` | "why did that fail", loops, lost context, agents undoing each other |
-| `subagent-help` | quick reference card |
+An agent arriving at a project reads the board and the map, claims a scope, writes its tasks out as files, and leaves a log the next agent can resume from. Overlapping claims stop it before it edits. On Claude Code, a Stop hook blocks the turn until the log exists.
 
-`subagent/references/PATTERNS.md` loads on demand — harness patterns for when you are designing an
-orchestration mechanism, not for ordinary work.
+Append-only everywhere is deliberate: one log file per session means two tools writing at the same moment never conflict, and git merges them without a thought.
 
 ## Install
 
-**Skills** — copy or symlink the seven skill directories into the tool's skills folder:
+```bash
+npm install -g godkit
 
-| Tool | Path |
-|---|---|
-| Claude Code | `~/.claude/skills/` or `<project>/.claude/skills/` |
-| Codex CLI | `~/.codex/skills/` |
-| Gemini CLI | `~/.gemini/skills/` |
-| Cursor / Copilot / Windsurf / Kiro | their skills folder, same format |
-
-Windows, all projects:
-
-```powershell
-New-Item -ItemType SymbolicLink -Path "$env:USERPROFILE\.claude\skills\subagent" -Target "E:\ClaudeCode\harness\subagent\subagent"
+godkit install          # skills -> claude, codex, antigravity
+godkit init             # scaffold .agent/ + rule files into the current repo
+godkit doctor           # what is set up, and whether the map is stale
 ```
 
-…and the same for each `subagent-*` directory.
+| Tool | Skills | Always-on rules | Hooks |
+|---|---|---|---|
+| **Claude Code** | `~/.claude/skills/` | `CLAUDE.md` | yes |
+| **Cursor** | — | `.cursor/rules/godkit.mdc` | not supported |
+| **Codex** | `~/.agents/skills/` | `AGENTS.md` | yes |
+| **Antigravity** | `~/.gemini/antigravity/skills/godkit` | `.agents/rules/godkit.md` | not supported |
 
-**Enforcement** — a skill is model-invoked, so it can be skipped. These stubs cannot be. Copy them
-into each repo you work in:
+`godkit install` places the skills once per machine; `godkit init` writes the rule files once per project. Every rule file is generated from a single `AGENTS.md`, so they cannot drift apart — CI byte-compares them.
 
-| File | Read by |
-|---|---|
-| `AGENTS.md` | Codex, Cursor, Gemini, and most others |
-| `.cursor/rules/subagent.mdc` | Cursor (`alwaysApply: true`) |
-| `.github/copilot-instructions.md` | Copilot |
+Where a tool has no hook support, the always-on rule file *is* the enforcement. That is why they all say the same thing.
 
-**Claude Code hooks** — the strongest of the lot:
+### Hooks (Claude Code, Codex)
 
 ```bash
-node hooks/install.js              # ~/.claude/settings.json, all projects
-node hooks/install.js .claude/settings.json   # or just this project
+node hooks/install.js                  # ~/.claude/settings.json
 node hooks/install.js --uninstall
 ```
 
-The script path is derived from where `install.js` itself lives, so there is nothing to hand-edit
-and moving the harness is a re-run, not a text hunt. It appends to whatever hooks you already have
-(ponytail's survive), drops its own previous registration first so re-running is idempotent, and
-writes a `.bak` beside the settings file.
+Re-running is safe: it drops its own previous entries first, leaves other tools' hooks alone, and writes a `.bak`. If it cannot parse your settings file it changes nothing and says so.
 
-- `SessionStart` injects `.agent/BOARD.md` and the newest two log entries into context, so the
-  session starts with the handoff whether or not the model thinks to look.
-- `Stop` **blocks the turn** if the working tree is dirty and this session wrote no log entry.
-  Guarded on `stop_hook_active`, so it fires once and cannot loop.
+| Hook | Does |
+|---|---|
+| `SessionStart` | injects the board, map freshness, and the newest log entries |
+| `Stop` | blocks the turn if files changed and no log was written |
+| `PostToolUse` (Bash) | after a commit or merge, says if the map went stale |
 
-Check both without a live session:
+## The project map
+
+`godkit-map` builds a graph of the codebase into `.agent/graph.json`, with a readable `.agent/MAP.md` projection. The deterministic half is a script — walk, categorize, resolve imports, group files that import each other into the same batch:
 
 ```bash
-echo '{"session_id":"82df4726-e3f6","cwd":"/path/to/repo","hook_event_name":"SessionStart"}' \
-  | node hooks/agent-brief.js --session-start        # prints the board
-
-echo '{"session_id":"82df4726-e3f6","cwd":"/path/to/repo","stop_hook_active":false}' \
-  | node hooks/agent-brief.js --stop                 # prints the blocking JSON, or nothing
+godkit scan
 ```
 
-## Related
+The judgment half is the model: what each thing is *for*, how the layers actually divide, and where the landmines are.
 
-- **ponytail** — the coding philosophy these compose with: YAGNI, stdlib first, shortest working
-  diff.
+**Recall is grep, not load.** Node ids are `type:path[:name]`, so finding a concept and then its one-hop neighbourhood costs two greps and no context:
+
+```bash
+rg '"summary"' .agent/graph.json | rg -i token
+rg 'function:src/auth/token.ts:isExpired' .agent/graph.json    # every caller
+```
+
+Refreshes are incremental. The map records the commit it was built at; the classifier decides how much to redo — `SKIP`, `PARTIAL`, `ARCHITECTURE` or `FULL` — so a two-file change never triggers a full rebuild.
+
+A file's structural signature is derived from the graph itself rather than a second store, which means the two can never disagree. The save path also refuses to overwrite a graph it could not read, so one bad parse cannot quietly reset your project's memory.
+
+## Skills
+
+| Skill | Use for |
+|---|---|
+| `godkit` | arriving at a project, synthesizing and splitting the work |
+| `godkit-map` | building or refreshing the project map |
+| `godkit-handoff` | the `.agent/` protocol and its file formats |
+| `godkit-plan` | cutting seams, assigning owners, writing task files |
+| `godkit-execute` | running work through the pipeline, error recovery |
+| `godkit-review` | reviewing the process, or diagnosing a failed run |
+| `godkit-test` | what counts as verified, writing the check |
+| `godkit-lazy` | what to build and what to skip |
+| `godkit-help` | quick reference card |
+
+## Design
+
+- **Zero runtime dependencies.** Node standard library only, in the package and in the tests.
+- **One source of truth per fact.** `AGENTS.md` generates every rule file. `graph.json` generates `MAP.md` and its own freshness signatures.
+- **Hooks never throw.** Malformed input, missing git, absent `.agent/` — all exit 0. A broken hook must not break the session it was meant to help.
+- **Nothing absolute is ever committed.** Paths in the graph are sanitized to the project root, so no machine layout or username ships in your repo.
+- **Deliberate shortcuts are marked** with a `godkit:` comment naming the ceiling and the upgrade path. An unmarked shortcut is indistinguishable from a mistake.
+
+## Development
+
+```bash
+npm test                          # node:test, no framework
+node scripts/sync-rules.js        # regenerate the rule copies
+node scripts/sync-rules.js --check
+```
+
+## License
+
+MIT © [CodeForFee](https://github.com/CodeForFee)

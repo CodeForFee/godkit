@@ -142,6 +142,34 @@ function cmdInstall(args) {
   }
 }
 
+// The deterministic half of building the map: walk, categorize, resolve imports, group into
+// batches. Writes scratch for the analysis pass to consume, and prints what it found.
+function cmdScan(args) {
+  const given = args.find((a) => !a.startsWith('-'))
+  const root = given ? path.resolve(given) : projectRoot(process.cwd())
+  const p = paths(root)
+  const { scan } = require('../lib/scan')
+  const { batch } = require('../lib/batch')
+
+  const result = scan(root)
+  const batches = batch(result)
+
+  fs.mkdirSync(p.tmp, { recursive: true })
+  fs.writeFileSync(path.join(p.tmp, 'scan.json'), JSON.stringify(result, null, 2) + '\n')
+  fs.writeFileSync(path.join(p.tmp, 'batches.json'), JSON.stringify(batches, null, 2) + '\n')
+
+  const byCat = {}
+  for (const f of result.files) byCat[f.category] = (byCat[f.category] || 0) + 1
+
+  log('scanned ' + result.count + ' files in ' + path.basename(root))
+  log('  ' + Object.entries(byCat).map(([k, v]) => k + ' ' + v).join('  '))
+  const langs = Object.entries(result.languages).sort((a, b) => b[1] - a[1]).slice(0, 6)
+  if (langs.length) log('  ' + langs.map(([e, n]) => e + ' ' + n).join('  '))
+  log('  ' + batches.length + ' batches -> .agent/tmp/batches.json')
+  log('')
+  log('Next: analyze each batch (see the godkit-map skill), then save the graph.')
+}
+
 function cmdDoctor() {
   const root = projectRoot(process.cwd())
   const p = paths(root)
@@ -216,6 +244,7 @@ const HELP = `godkit — one shared harness for every AI agent
 
   godkit init [path]        scaffold .agent/ and the per-tool rule files into a project
   godkit install [tool...]  install the skills for claude, codex, antigravity (default: all)
+  godkit scan [path]        walk the project and group it into batches for the map
   godkit doctor             what is set up here, and whether the map is stale
   godkit uninstall [tool]   remove the installed skills (leaves your .agent/ alone)
 
@@ -229,6 +258,8 @@ function main() {
       return cmdInit(args)
     case 'install':
       return cmdInstall(args)
+    case 'scan':
+      return cmdScan(args)
     case 'doctor':
       return cmdDoctor()
     case 'uninstall':

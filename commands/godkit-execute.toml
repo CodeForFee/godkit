@@ -1,0 +1,2 @@
+description = "Run planned work through the five-stage pipeline and verify against the world"
+prompt = "Use the godkit-execute skill. $ARGUMENTS"

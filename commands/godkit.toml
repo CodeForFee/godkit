@@ -1,0 +1,2 @@
+description = "Arrive at this project: read .agent/, refresh the map if stale, synthesize the task, split it, claim your scope"
+prompt = "Use the godkit skill. Run the arrival protocol on this project, then handle: $ARGUMENTS"
