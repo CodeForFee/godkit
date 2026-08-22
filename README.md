@@ -22,6 +22,7 @@ npx godkit init
   - [godkit-lazy modes](#godkit-lazy-modes)
 - [The project map](#the-project-map)
 - [Skills](#skills)
+- [Project skills](#project-skills)
 - [Design](#design)
 - [Development](#development)
 - [License](#license)
@@ -42,6 +43,8 @@ It puts one committed directory in your repo, and teaches every agent to use it.
 ├── THREAD.md             append-only conversation between agents
 ├── MAP.md                what this codebase is (generated)
 ├── graph.json            the machine-readable map
+├── SKILLS.md             this project's own skills (generated)
+├── skills/<name>/        procedures this project repeats, linked into host paths
 ├── tasks/T-001-*.md      one per task: Plan · Execute · Review · Test · Handoff
 └── log/<UTC>-<agent>.md  one per session, append-only, never edited by others
 ```
@@ -61,6 +64,7 @@ npm install -g godkit
 
 godkit install          # skills -> claude, codex, antigravity
 godkit init              # scaffold .agent/ + rule files into the current repo
+godkit skills            # this project's own skills; --link to expose them to hosts
 godkit doctor            # what is set up, and whether the map is stale
 ```
 
@@ -142,7 +146,32 @@ A file's structural signature is derived from the graph itself rather than a sec
 | `godkit-doubt` | pressure-testing a decision before it binds everyone |
 | `godkit-frontend` | design taste — dials, banned defaults, 11 style/workflow variants |
 | `godkit-output-enforcement` | catching stubbed or truncated generated output |
+| `godkit-evolve` | capturing, deriving and fixing this project's own skills |
 | `godkit-help` | quick reference card |
+
+## Project skills
+
+The 13 skills above ship with godkit and are the same everywhere. A *project* also accumulates
+its own procedures — a fixture reset, a release check, a migration dance. Those live in
+`.agent/skills/<name>/SKILL.md`: committed, tool-neutral, and linked into the paths Claude Code
+and Codex actually read.
+
+```bash
+godkit skills                      # list them: origin, safety findings, which hosts see them
+godkit skills --link               # link into .claude/skills/ and .agents/skills/
+godkit skills --unlink
+```
+
+Write one with the `godkit-evolve` skill, or by hand. Two things keep a generated skill from
+being dangerous, and the pattern scan is neither of them: it is **inert until linked** (no host
+reads `.agent/skills/`), and `.agent/` is **committed**, so every skill and every revision lands
+in a diff. On top of those, a scan blocks linking a skill that bundles an executable, carries a
+credential, or tries to override the agent's instructions.
+
+Generated skills (`origin: captured` or `derived`) will not link at all under the default
+`audit_only` mode — they sit in the repo as reviewable, inert markdown until you set
+`GODKIT_EVOLVE_MODE=autonomous` or pass `--force`. `--force` overrides the mode; it never
+overrides a safety block.
 
 ## Design
 

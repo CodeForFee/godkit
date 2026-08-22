@@ -8,6 +8,7 @@ Godkit targets four tools. They agree on almost nothing, so the package keeps **
 |---|---|---|---|---|
 | **Skills** | `~/.claude/skills/<name>/SKILL.md` | not supported | `~/.agents/skills/<name>/SKILL.md` | `~/.gemini/antigravity/skills/godkit/` |
 | **Skill layout** | one link per skill | — | one link per skill | one link for the whole folder |
+| **Project-local skills** | `<project>/.claude/skills/<name>/` | not supported | `<project>/.agents/skills/<name>/` — *unverified against a live Codex* | not supported |
 | **Always-on rules** | `CLAUDE.md` | `.cursor/rules/godkit.mdc` | `AGENTS.md` | `.agents/rules/godkit.md` |
 | **Rules frontmatter** | none | `alwaysApply: true` | none | none |
 | **Hooks** | yes | no | yes, same JSON | no |
@@ -15,6 +16,16 @@ Godkit targets four tools. They agree on almost nothing, so the package keeps **
 | **Invocation** | `/godkit` | ask in prose | `$godkit` | `/godkit` |
 
 Anything not listed reads a plain root `AGENTS.md`, which `godkit init` writes — so an unlisted tool still gets the protocol, just without skills or hooks.
+
+**Project-local skills** (`.agent/skills/`, see the `godkit-evolve` skill) follow the same
+one-canonical-copy rule as the rules files: `.agent/skills/<name>/` is the source, and
+`godkit skills --link` projects it into each host's project path. Cursor and Antigravity have no
+project skill directory, so for them the generated `.agent/SKILLS.md` plus the always-on rule
+file is the whole story — the same enforced-versus-instructed asymmetry as hooks.
+
+Linking is **per skill, never a folder link**. A folder link would clobber a user's own skills at
+that path, and would make a quarantined skill still visible to the host. Per-skill links make
+"not linked" mean something mechanical.
 
 ## The rule copies are generated, never hand-edited
 
@@ -35,7 +46,7 @@ Claude Code and Codex read the same hook JSON. Codex differs in one way that mat
 
 | Hook | Event | Does |
 |---|---|---|
-| `brief.js` | `SessionStart` | injects the board, map freshness, newest log entries, THREAD tail |
+| `brief.js` | `SessionStart` | injects the board, map freshness, newest log entries, THREAD tail, and this project's own skills |
 | `lazy-activate.js` | `SessionStart` | resolves the active `godkit-lazy` mode, injects its ruleset |
 | `clockout.js` | `Stop` | blocks the turn if files changed and no log was written |
 | `map-watch.js` | `PostToolUse` (Bash) | after a commit or merge, says if the map went stale |

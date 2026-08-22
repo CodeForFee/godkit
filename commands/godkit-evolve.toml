@@ -1,0 +1,2 @@
+description = "Capture, derive or fix one of this project's own skills in .agent/skills/"
+prompt = "Use the godkit-evolve skill. $ARGUMENTS"

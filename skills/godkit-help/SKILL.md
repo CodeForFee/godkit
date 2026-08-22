@@ -26,6 +26,8 @@ Everything else is the shape of those two.
 ├── MAP.md                what this codebase is (generated)
 ├── graph.json            the machine-readable map
 ├── meta.json             commit sha the map was built at
+├── SKILLS.md             this project's own skills (generated)
+├── skills/<name>/        procedures this project repeats — see godkit-evolve
 ├── tasks/T-NNN-<slug>.md one per task: Plan · Execute · Review · Test · Handoff
 └── log/<UTC>-<agent>.md  one per session, append-only, never edited by others
 ```
@@ -76,6 +78,7 @@ Plus: input validation at trust boundaries, error handling that prevents data lo
 | `godkit-doubt` | pressure-testing a decision before it binds everyone |
 | `godkit-frontend` | design taste — dials, banned defaults, 11 style/workflow variants |
 | `godkit-output-enforcement` | catching stubbed or truncated generated output |
+| `godkit-evolve` | capturing, deriving and fixing this project's own skills |
 | `godkit-help` | this card |
 
 `skills/godkit/references/PATTERNS.md` — the underlying harness patterns. Load only when designing an orchestration mechanism.
@@ -87,6 +90,8 @@ godkit init [path]        scaffold .agent/ and the per-tool rule files into a pr
 godkit scan [path]        walk the project and group it into batches for the map
 godkit save [file]        save a merged graph as the map (graph.json, MAP.md, meta.json)
 godkit install [tool...]  install the skills (claude, codex, antigravity; default all)
+godkit skills [--link|--unlink] [tool...] [--force]
+                          this project's own skills in .agent/skills/
 godkit doctor             what is set up here, and whether the map is stale
 godkit uninstall [tool]   remove installed skills (leaves your .agent/ alone)
 ```
