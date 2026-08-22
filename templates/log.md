@@ -1,11 +1,11 @@
 ---
-agent: {{AGENT}}
-session: {{SESSION}}
-started: {{STARTED}}
-ended: {{UTC}}
-scope: {{SCOPE}}
-status: done          # done | partial | blocked
-skills:               # .agent/skills/ skills you used, comma-separated. Empty is fine.
+agent: "{{AGENT}}"
+session: "{{SESSION}}"
+started: "{{STARTED}}"
+ended: "{{UTC}}"
+scope: "{{SCOPE}}"
+status: "done"        # done | partial | blocked
+skills: ""            # .agent/skills/ skills you used, comma-separated. Empty is fine.
 ---
 
 ## Task
