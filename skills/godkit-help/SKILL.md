@@ -81,6 +81,7 @@ Plus: input validation at trust boundaries, error handling that prevents data lo
 ```
 godkit init [path]        scaffold .agent/ and the per-tool rule files into a project
 godkit scan [path]        walk the project and group it into batches for the map
+godkit save [file]        save a merged graph as the map (graph.json, MAP.md, meta.json)
 godkit install [tool...]  install the skills (claude, codex, antigravity; default all)
 godkit doctor             what is set up here, and whether the map is stale
 godkit uninstall [tool]   remove installed skills (leaves your .agent/ alone)

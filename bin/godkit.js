@@ -170,6 +170,84 @@ function cmdScan(args) {
   log('Next: analyze each batch (see the godkit-map skill), then save the graph.')
 }
 
+// Save a merged graph as the project's map. Writes in a fixed order, because the order is the
+// crash safety: meta.json last means an interrupted run reads as stale next time rather than
+// being trusted as complete.
+function cmdSave(args) {
+  const root = projectRoot(process.cwd())
+  const p = paths(root)
+  const graphLib = require('../lib/graph')
+
+  const given = args.find((a) => !a.startsWith('-'))
+  const source = given ? path.resolve(given) : path.join(p.tmp, 'graph-merged.json')
+
+  let incoming
+  try {
+    incoming = graphLib.readJson(source)
+  } catch (err) {
+    throw new Error('could not read ' + source + ': ' + err.message)
+  }
+  if (!incoming || !Array.isArray(incoming.nodes)) {
+    throw new Error(
+      'no graph at ' + source + '. Merge the batch output there first (see the godkit-map skill).',
+    )
+  }
+
+  // Load-patch-save: keep whatever the existing map holds for files this pass did not touch.
+  // loadGraph throws rather than reporting an existing non-empty file as empty, so a bad parse
+  // can never quietly reset the memory.
+  const existing = graphLib.loadGraph(p.graph)
+  let merged = incoming
+  if (existing && !args.includes('--replace')) {
+    const touched = new Set(incoming.nodes.map((n) => n.filePath).filter(Boolean))
+    const keptNodes = existing.nodes.filter((n) => !n.filePath || !touched.has(n.filePath))
+    const keptIds = new Set([...keptNodes, ...incoming.nodes].map((n) => n.id))
+    merged = {
+      project: Object.assign({}, existing.project, incoming.project),
+      nodes: keptNodes.concat(incoming.nodes),
+      edges: existing.edges
+        .filter((e) => keptIds.has(e.source) && keptIds.has(e.target))
+        .concat(incoming.edges || []),
+      layers: (incoming.layers && incoming.layers.length ? incoming.layers : existing.layers) || [],
+      tour: (incoming.tour && incoming.tour.length ? incoming.tour : existing.tour) || [],
+    }
+  }
+
+  const { git } = require('../lib/paths')
+  const sha = git(['rev-parse', 'HEAD'], root)
+  merged.project = Object.assign({ name: path.basename(root) }, merged.project, {
+    generatedAt: new Date().toISOString(),
+    sha,
+  })
+
+  const saved = graphLib.saveGraph(p.graph, merged, root)
+  fs.writeFileSync(p.map, graphLib.renderMap(saved))
+  fs.writeFileSync(
+    p.meta,
+    JSON.stringify(
+      { version: graphLib.VERSION, sha, generatedAt: saved.project.generatedAt, nodes: saved.nodes.length },
+      null,
+      2,
+    ) + '\n',
+  )
+
+  // Move scratch aside rather than deleting it: reversible, and it never trips a gate.
+  try {
+    if (fs.existsSync(p.tmp)) fs.renameSync(p.tmp, path.join(p.dir, '.trash-' + Date.now()))
+  } catch {
+    /* scratch is disposable; a locked file must not fail the save */
+  }
+  for (const entry of fs.readdirSync(p.dir)) {
+    if (!entry.startsWith('.trash-')) continue
+    const age = Date.now() - Number(entry.slice(7))
+    if (age > 7 * 24 * 3600 * 1000) fs.rmSync(path.join(p.dir, entry), { recursive: true, force: true })
+  }
+
+  log('saved: ' + saved.nodes.length + ' nodes, ' + saved.edges.length + ' edges, ' +
+      saved.layers.length + ' layers @ ' + (sha ? sha.slice(0, 8) : 'no-git'))
+  log('  .agent/graph.json, .agent/MAP.md, .agent/meta.json')
+}
+
 function cmdDoctor() {
   const root = projectRoot(process.cwd())
   const p = paths(root)
@@ -245,6 +323,7 @@ const HELP = `godkit — one shared harness for every AI agent
   godkit init [path]        scaffold .agent/ and the per-tool rule files into a project
   godkit install [tool...]  install the skills for claude, codex, antigravity (default: all)
   godkit scan [path]        walk the project and group it into batches for the map
+  godkit save [file]        save a merged graph as the map (graph.json, MAP.md, meta.json)
   godkit doctor             what is set up here, and whether the map is stale
   godkit uninstall [tool]   remove the installed skills (leaves your .agent/ alone)
 
@@ -260,6 +339,8 @@ function main() {
       return cmdInstall(args)
     case 'scan':
       return cmdScan(args)
+    case 'save':
+      return cmdSave(args)
     case 'doctor':
       return cmdDoctor()
     case 'uninstall':

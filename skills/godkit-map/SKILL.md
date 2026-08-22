@@ -85,25 +85,31 @@ With the whole node set in view, derive:
 
 See `agents/architect.md`.
 
-### 5. Validate and save
+### 5. Save
 
-Before writing, check: every edge endpoint exists, every layer references real nodes, no node has an empty summary, no absolute paths. Then save — in this order, because the order is the crash-safety:
+Write the merged graph — nodes, edges, layers, tour, project — to `.agent/tmp/graph-merged.json`, then:
 
-1. `.agent/graph.json`
-2. `.agent/MAP.md` (generated from the graph — never hand-edited)
-3. `.agent/meta.json` last, carrying the commit sha
+```
+godkit save
+```
 
-`meta.json` written last means an interrupted run is detected as stale on the next arrival, rather than being trusted as complete.
+That one command does the rest, and does it in the order that makes an interrupted run safe:
 
-Then move `.agent/tmp/` scratch to `.agent/.trash-<epoch>` rather than deleting it, and purge trash older than seven days. A move is reversible and never trips a destructive-action gate.
+1. normalizes and writes `.agent/graph.json` — dedupes ids, drops dangling edges, sanitizes paths
+2. generates `.agent/MAP.md` from it
+3. writes `.agent/meta.json` **last**, carrying the commit sha
+
+`meta.json` last means a crash halfway through reads as stale on the next arrival rather than being trusted as complete. It then moves `.agent/tmp/` to `.agent/.trash-<epoch>` instead of deleting it, and purges trash older than seven days — a move is reversible and never trips a destructive-action gate.
+
+**Do not write these three files by hand.** `MAP.md` is generated, and the save path carries the guards that keep the graph consistent.
 
 ## Refreshing incrementally
 
-`PARTIAL` and `ARCHITECTURE` refreshes must **load, patch, save** — never write only what you just computed.
+`godkit save` is already **load, patch, save**: it keeps every node whose file you did not re-analyze, replaces the ones you did, and preserves the existing layers and tour unless your merged graph supplies new ones. So for a `PARTIAL` refresh you write **only the changed files' nodes** to `graph-merged.json` and save normally.
 
-Writing only the fresh entries discards every other file's nodes. The next refresh then sees those files as new, escalates, and the map is stuck rebuilding from scratch forever. The load path refuses to report an existing non-empty file as empty precisely so this cannot happen quietly — if it throws, fix the file, do not delete it to make the error go away.
+This matters because the alternative fails silently. Writing only the fresh entries over the whole file discards every other file's nodes; the next refresh then sees those files as new, escalates, and the map is stuck rebuilding from scratch forever. The load path refuses to report an existing non-empty file as empty precisely so that cannot happen quietly — **if it throws, fix the file; never delete it to make the error go away.**
 
-To patch: drop every node whose `filePath` is in the changed set, drop every edge touching those nodes, then merge the new batch output in.
+Use `godkit save --replace` only for a genuine `FULL` rebuild, where discarding the old graph is the intent.
 
 ## Rules
 

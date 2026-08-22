@@ -77,7 +77,8 @@ Re-running is safe: it drops its own previous entries first, leaves other tools'
 `godkit-map` builds a graph of the codebase into `.agent/graph.json`, with a readable `.agent/MAP.md` projection. The deterministic half is a script — walk, categorize, resolve imports, group files that import each other into the same batch:
 
 ```bash
-godkit scan
+godkit scan     # walk, categorize, resolve imports, batch
+godkit save     # normalize, write graph.json + MAP.md + meta.json
 ```
 
 The judgment half is the model: what each thing is *for*, how the layers actually divide, and where the landmines are.
