@@ -1,0 +1,2 @@
+description = "Ban placeholder/truncated output, lock a deliverable count before generating"
+prompt = "Use the godkit-output-enforcement skill. $ARGUMENTS"

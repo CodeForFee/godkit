@@ -60,6 +60,29 @@ was made, not that any specific alternative is mandatory.
    is not automatically wrong, but it means dial 1 was probably set too low for the brief — check
    before shipping, not after.
 
+## Variants
+
+The dials and banned-defaults list above are the base system every variant below builds on —
+none of them re-explain it, so load this skill first regardless of which variant applies. Load a
+variant's file only when its trigger matches; each is a delta, not a restatement.
+
+| Load `references/<file>` when... | Covers |
+|---|---|
+| `v1.md` | the brief wants a fixed dial baseline instead of per-brief inference |
+| `strict.md` | prior output kept converging on the same layout across separate generations |
+| `soft.md` | premium/luxury/boutique-agency feel |
+| `minimal.md` | docs site, internal tool, editorial monochrome (Notion/Linear-style) |
+| `brutalist.md` | brief explicitly wants brutalist/industrial/terminal aesthetics (beta) |
+| `redesign.md` | fixing an EXISTING UI's taste, not building new — audit-first workflow |
+| `stitch.md` | producing a design-spec doc for a one-shot screen-generation tool |
+| `image-to-code.md` | generating reference images then implementing code to match |
+| `imagegen-web.md` | web design comps only, no code |
+| `imagegen-mobile.md` | mobile screen/flow comps only, no code |
+| `brandkit.md` | a brand-identity board (logo, palette, applications), image only |
+
+For whether generated code is actually complete rather than stubbed, see the separate
+**godkit-output-enforcement** skill — that is not a frontend concern specifically.
+
 ## Boundaries
 
 This is a taste pass — layout, motion, hierarchy, defaults. It does not replace accessibility
