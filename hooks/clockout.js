@@ -1,64 +1,67 @@
 #!/usr/bin/env node
 'use strict'
-// Stop: refuse to end a session that changed files but left no log entry.
-//
-// This is the only hook that blocks, because an unlogged session is the failure the whole
-// protocol exists to prevent — the next agent cannot tell it from work that never happened.
-// It blocks at most once per turn and never for a read-only session.
+// Stop: a session with recorded project work keeps blocking until its own handoff log exists.
+// Unrelated dirty files and unrelated sessions are never evidence for or against this session.
 
-const fs = require('fs')
 const path = require('path')
 
-function readStdin() {
-  try {
-    return JSON.parse(fs.readFileSync(0, 'utf8') || '{}')
-  } catch {
-    return {}
-  }
+const { findAgentContext, logEntries, logName, readContained, sessionSlug } = require('../lib/paths')
+const { readHookInput, sessionId, warning } = require('../lib/session')
+const { clearWork, didSessionWork } = require('../lib/work')
+
+function frontmatterSession(agentDir, file) {
+  const result = readContained(agentDir, file, 4096, false)
+  if (!result) return null
+  const block = result.text.match(/^---\r?\n([\s\S]*?)\r?\n---/)
+  if (!block) return null
+  const line = block[1].match(/^session:\s*(.+?)\s*$/mi)
+  return line ? line[1].replace(/^['"]|['"]$/g, '').trim() : null
 }
 
-// godkit: a dirty git tree is a proxy for "this session did work". A session that committed
-// everything, or a repo with no git, is not blocked. Tighten by diffing HEAD against the sha at
-// session start if the proxy ever misfires.
-function didWork(root) {
-  const { git } = require('../lib/paths')
-  const out = git(['status', '--porcelain'], root)
-  if (!out) return false // clean tree, no git, or not a repo: nothing to prove
-  return out.split('\n').some((line) => line.trim() && !line.includes('.agent/'))
+function hasSessionLog(agentDir, sid) {
+  const short = sessionSlug(sid)
+  for (const file of logEntries(agentDir)) {
+    const base = path.basename(file)
+    if (short && base.endsWith('-' + short + '.md')) return true
+    const logged = frontmatterSession(agentDir, file)
+    if (logged === sid || (short && logged === short)) return true
+  }
+  return false
 }
 
 function main() {
-  const { findAgentDir, logEntries, logName } = require('../lib/paths')
-  const payload = readStdin()
+  const payload = readHookInput('clockout')
+  if (payload.stop_hook_active) return // already blocked once this turn; blocking again loops forever
+  const sid = sessionId(payload)
+  if (!sid) throw new Error('missing session_id; clockout enforcement skipped')
+  if (!didSessionWork(payload)) return
 
-  if (payload.stop_hook_active) return // already blocked once this turn; never loop
+  const cwd = typeof payload.cwd === 'string' && payload.cwd ? payload.cwd : process.cwd()
+  const context = findAgentContext(cwd)
+  if (!context.agentDir) return
 
-  const cwd = payload.cwd || process.cwd()
-  const agentDir = findAgentDir(cwd)
-  if (!agentDir) return // no protocol here to enforce
+  if (hasSessionLog(context.agentDir, sid)) {
+    clearWork(payload)
+    return
+  }
 
-  if (!didWork(path.dirname(agentDir))) return
-
-  const sid = String(payload.session_id || '').slice(0, 8)
-  if (sid && logEntries(agentDir).some((f) => path.basename(f).includes(sid))) return // already logged
-
-  const name = logName('claude', sid)
+  const agent = process.env.PLUGIN_DATA ? 'codex' : 'claude'
+  const name = logName(agent, sid)
   process.stdout.write(
     JSON.stringify({
       decision: 'block',
       reason:
-        'Clock out first: this session changed files but wrote no handoff log. Write ' +
-        '.agent/log/' + name + ' (agent, session, scope, status, then Did / Verified / Bugs / ' +
-        'Decisions / Left-next), then update .agent/BOARD.md — release your claim, update the ' +
-        'bug list and the handoff list. If another agent is waiting on you, add a block to ' +
-        '.agent/THREAD.md. See the godkit-handoff skill. Then stop.',
+        'Clock out first: this session changed project files but has no exact-session handoff log. ' +
+        'Write .agent/log/' + name + ' (agent, session, scope, status, then Did / Verified / Bugs / ' +
+        'Decisions / Left-next), then update .agent/BOARD.md and THREAD if another agent is ' +
+        'waiting. This check repeats until that log exists; see godkit-handoff.',
     }) + '\n',
   )
 }
 
 try {
   main()
-} catch (err) {
-  process.stderr.write('godkit clockout: ' + (err && err.message) + '\n')
+} catch (error) {
+  warning('clockout', error)
 }
 process.exit(0)

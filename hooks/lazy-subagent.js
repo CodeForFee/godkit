@@ -1,65 +1,39 @@
 #!/usr/bin/env node
 'use strict'
-// SubagentStart: SessionStart context never reaches a spawned subagent, so without this a
-// delegated worker runs godkit-lazy-unaware. When a mode is active this session, inject the same
-// ruleset into each subagent too.
-//
-// Opt-in scoping: set GODKIT_LAZY_SUBAGENT_MATCHER to a regex and the ruleset is injected only
-// into subagents whose agent_type matches (unanchored, case-insensitive). Unset means inject into
-// every subagent, which is the default.
+// SubagentStart: inherit the parent session's lazy rules. When an optional matcher is configured,
+// malformed matcher/input fails closed for injection and warns instead of broadening its scope.
 
-const fs = require('fs')
 const { readMode, getLazyInstructions, writeHookOutput } = require('../lib/lazy')
-
-const mode = readMode()
-
-function inject() {
-  try {
-    writeHookOutput('SubagentStart', mode, getLazyInstructions(mode))
-  } catch {
-    /* a stdout error at hook exit must not surface as a hook failure */
-  }
-}
+const { readHookInput, warning } = require('../lib/session')
 
 function main() {
-  if (!mode) return // no active mode this session, nothing to inject
+  const payload = readHookInput('lazy-subagent')
+  const mode = readMode(payload)
+  if (!mode) return
 
-  let matcher = null
-  try {
-    if (process.env.GODKIT_LAZY_SUBAGENT_MATCHER) {
-      matcher = new RegExp(process.env.GODKIT_LAZY_SUBAGENT_MATCHER, 'i')
+  const source = process.env.GODKIT_LAZY_SUBAGENT_MATCHER
+  if (source) {
+    let matcher
+    try {
+      matcher = new RegExp(source, 'i')
+    } catch (error) {
+      warning('lazy-subagent', new Error('invalid GODKIT_LAZY_SUBAGENT_MATCHER; injection skipped (' + error.message + ')'))
+      return
     }
-  } catch {
-    matcher = null // a bad regex must never block the hook — treat it as no matcher
+    const agentType = typeof payload.agent_type === 'string' ? payload.agent_type.trim() : ''
+    if (!agentType) {
+      warning('lazy-subagent', new Error('matcher configured but agent_type is missing; injection skipped'))
+      return
+    }
+    if (!matcher.test(agentType)) return
   }
 
-  if (!matcher) {
-    inject()
-    return
-  }
-
-  let input = ''
-  try {
-    input = fs.readFileSync(0, 'utf8')
-  } catch {
-    inject() // stdin unreadable — fail open rather than silently dropping the ruleset
-    return
-  }
-
-  let agentType = ''
-  try {
-    agentType = String(JSON.parse(input).agent_type || '').trim()
-  } catch {
-    /* unparseable payload — fall through and inject to be safe */
-  }
-
-  if (agentType && !matcher.test(agentType)) return
-  inject()
+  writeHookOutput('SubagentStart', mode, getLazyInstructions(mode))
 }
 
 try {
   main()
-} catch (err) {
-  process.stderr.write('godkit lazy-subagent: ' + (err && err.message) + '\n')
+} catch (error) {
+  warning('lazy-subagent', error)
 }
 process.exit(0)

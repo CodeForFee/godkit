@@ -7,20 +7,22 @@
 // always exits 0.
 
 const { getDefaultMode, getLazyInstructions, clearMode, setMode, writeHookOutput } = require('../lib/lazy')
+const { readHookInput, sessionId, warning } = require('../lib/session')
 
 function main() {
+  const payload = readHookInput('lazy-activate')
   const mode = getDefaultMode()
 
   // "off" — skip activation entirely, don't write a flag or emit anything.
   if (mode === 'off') {
-    clearMode()
+    if (sessionId(payload)) clearMode(payload)
     return
   }
 
   try {
-    setMode(mode)
-  } catch {
-    /* the flag is best-effort; a failed write must not block the ruleset from loading */
+    setMode(payload, mode)
+  } catch (error) {
+    warning('lazy-activate', error)
   }
 
   writeHookOutput('SessionStart', mode, getLazyInstructions(mode))
