@@ -16,7 +16,7 @@ Current truth only. Detailed history lives in Git and `.agent/log/`.
 | agent | scope (file globs) | task | since (UTC) | status |
 |---|---|---|---|---|
 | root | `.agent/**` | T-001, T-008 | 2026-08-22T14:04Z | active |
-| Singer | install lifecycle files and focused tests | T-005 | 2026-08-22T14:04Z | ready |
+| claude | `lib/install.js`, `hooks/install.js`, `hooks/godkit-hooks.json`, `scripts/uninstall.js`, installer tests | T-005 | 2026-08-22T15:05Z | active |
 | root | CLI/freshness/managed-init files and tests | T-006 | 2026-08-22T14:04Z | blocked on T-005 |
 | Kuhn | package/manifests/commands/workflows/docs/contracts | T-007 | 2026-08-22T14:04Z | ready |
 
@@ -30,7 +30,7 @@ One owner per file. Workers update only their task and unique log; root alone ed
 | T-002 | evolve snapshot and evidence safety | Hooke | done | `.agent/tasks/T-002-evolve-safety.md` |
 | T-003 | graph transaction and scan safety | Kuhn | done | `.agent/tasks/T-003-graph-scan.md` |
 | T-004 | hook runtime and session isolation | Singer | done | `.agent/tasks/T-004-hook-runtime.md` |
-| T-005 | install lifecycle ownership | Singer | plan | `.agent/tasks/T-005-install-lifecycle.md` |
+| T-005 | install lifecycle ownership | claude | execute | `.agent/tasks/T-005-install-lifecycle.md` |
 | T-006 | CLI, freshness, and managed init | root | plan | `.agent/tasks/T-006-cli-integration.md` |
 | T-007 | package, docs, and release contracts | Kuhn | plan | `.agent/tasks/T-007-package-docs.md` |
 | T-008 | join verification and handoff | root | plan | `.agent/tasks/T-008-join-handoff.md` |
