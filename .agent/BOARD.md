@@ -1,54 +1,68 @@
 # Board — godkit
 
-One screen. Current truth. Rewritten often. Read this before you edit anything.
+Current truth only. Detailed history lives in Git and `.agent/log/`.
 
 ## Roster
 
-| provider | can | cost | use for |
-|---|---|---|---|
-| claude-code | repo-wide, shell, plan | high | root cause, multi-file refactor, cutting seams |
-| cursor | open files, shell | low | single-file edits, tests, stubs |
-| codex | repo, shell | low | mechanical passes, scripted repeats |
-| antigravity | repo, browser | low | verification against a running app |
-| commands | `npm test`, `node scripts/*.js`, rg | free | every "does X / did it pass" question |
-
-Route by capability first, then cheapest.
+| provider | can | use for |
+|---|---|---|
+| root | coordinate, integrate, verify | BOARD, CLI join, final gate |
+| Hooke | core runtime | evolve safety |
+| Kuhn | graph and product surface | graph/scan, then package/docs |
+| Singer | hook runtime | sessions, hooks, installer lifecycle |
 
 ## Now (claims)
 
 | agent | scope (file globs) | task | since (UTC) | status |
 |---|---|---|---|---|
+| root | `.agent/**` | T-001, T-008 | 2026-08-22T14:04Z | active |
+| Hooke | `lib/evolve.js`, `templates/log.md`, `tests/evolve.test.js` | T-002 | 2026-08-22T14:04Z | ready |
+| Kuhn | `lib/{graph,scan}.js`, graph/scan tests | T-003 | 2026-08-22T14:04Z | ready |
+| Singer | hook runtime/session files and focused tests | T-004 | 2026-08-22T14:04Z | ready |
+| Singer | install lifecycle files and focused tests | T-005 | 2026-08-22T14:04Z | blocked on T-004 |
+| root | CLI/freshness/managed-init files and tests | T-006 | 2026-08-22T14:04Z | blocked on T-002…T-005 |
+| Kuhn | package/manifests/commands/workflows/docs/contracts | T-007 | 2026-08-22T14:04Z | blocked on stable API |
 
-One owner per file. If your scope overlaps an open row, do not edit — see AGENTS.md.
+One owner per file. Workers update only their task and unique log; root alone edits this board.
 
 ## Tasks
 
 | id | title | owner | phase | file |
 |---|---|---|---|---|
+| T-001 | preflight and map checkpoint | root | done | `.agent/tasks/T-001-preflight.md` |
+| T-002 | evolve snapshot and evidence safety | Hooke | plan | `.agent/tasks/T-002-evolve-safety.md` |
+| T-003 | graph transaction and scan safety | Kuhn | plan | `.agent/tasks/T-003-graph-scan.md` |
+| T-004 | hook runtime and session isolation | Singer | plan | `.agent/tasks/T-004-hook-runtime.md` |
+| T-005 | install lifecycle ownership | Singer | plan | `.agent/tasks/T-005-install-lifecycle.md` |
+| T-006 | CLI, freshness, and managed init | root | plan | `.agent/tasks/T-006-cli-integration.md` |
+| T-007 | package, docs, and release contracts | Kuhn | plan | `.agent/tasks/T-007-package-docs.md` |
+| T-008 | join verification and handoff | root | plan | `.agent/tasks/T-008-join-handoff.md` |
 
 ## Bugs
 
-<!-- B-NNN monotonic, never reused. Fixed bugs stay listed with their root-cause location. -->
+- [x] B-001 absolute cross-drive path could enter the graph — fixed at `lib/graph.js` in the prior session.
+- [ ] B-002 project skill projections can expose unapproved source edits or remove foreign targets.
+- [ ] B-003 partial map refresh can retain deleted nodes/edges and graph writes are not transactional.
+- [ ] B-004 freshness and ignore matching can misclassify changes or crash on valid patterns.
+- [ ] B-005 hook context and brief reads can cross boundaries or exceed bounded budgets.
+- [ ] B-006 lazy/work state is shared across sessions and clockout evidence is not exact.
+- [ ] B-007 install/uninstall ownership can remove foreign skills/hooks or mutate unsafe config.
+- [ ] B-008 init overwrites host files instead of managing an isolated, preflighted block.
+- [ ] B-009 host manifests, Gemini commands, package artifacts, and publish gates drift from contract.
+- [ ] B-010 evolve fixtures leak temporary directories and documentation claims are stale.
 
-- [x] B-001 a path on a different drive leaked in full into the committed graph — fixed 2026-08-22 claude, root cause `sanitizePath` lib/graph.js:96: on Windows `path.relative` across drives returns an absolute path, which passed the bare `..` check (log 2026-08-22T0245Z-claude)
+## Binding decisions
 
-## Decisions
-
-- 2026-08-22 `.agent/` stays the directory name rather than `.god/` — nothing already written breaks. (claude)
-- 2026-08-22 Zero runtime dependencies, Node stdlib only. Buys a no-install-step story and nothing to audit; the cost is greedy batching instead of true clustering, and regex signatures instead of a parser. Both marked with `godkit:` ceilings. (claude)
-- 2026-08-22 Rule files are **generated** from `AGENTS.md`, not hand-maintained copies. A generated file cannot be edited in the wrong place, so `--check` only ever fails because someone forgot to re-run it. (claude)
-- 2026-08-22 A file's structural signature is derived from `graph.json` itself rather than a second store, so the two cannot disagree and strand the project in permanent full rebuilds. (claude)
-- 2026-08-22 `meta.json` is written **last** on save. An interrupted run then reads as stale on the next arrival rather than being trusted as complete. (claude)
-- 2026-08-22 Nothing shipped references any other project by name. Mechanisms were reimplemented from the idea, never copied as files — enforced by a test in `tests/package.test.js`. (claude)
-- 2026-08-22 Audited two sibling skill collections (24 general engineering skills + 12 frontend-taste skills) against godkit's coordination charter. Outcome: 3 new skills where no existing skill owned the topic (`godkit-git` — worktrees/commit-as-checkpoint/`.agent/` merges; `godkit-doubt` — pre-commit pressure-test of a decision before it binds every agent; `godkit-frontend` — UI design-taste dials and banned defaults, added at the user's explicit request after the initial audit scoped it out), 6 small edits where a topic already had a home (`godkit-lazy`, `godkit-plan`, `godkit-test`, `godkit-execute`, `godkit-handoff` ×2), 1 declined merge (`godkit-review` already excludes ordinary code-correctness review by its own Boundaries line), rest out of charter. The banned-name test was extended to cover both source collections' identifiers, which also caught those identifiers appearing in `.agent/BOARD.md` and `.agent/log/` themselves — the walk was never scoped away from `.agent/`, so the same no-attribution policy now applies there too, not just to shipped files. (claude)
-- 2026-08-22 User asked for the full 13-skill frontend-taste collection ported, not just the condensed `godkit-frontend`, then separately asked all of it be organized under one folder rather than scattered as top-level skill directories. Resolution: `godkit-frontend` stays the one real, installable skill; the other 11 frontend-domain variants became `skills/godkit-frontend/references/<name>.md` — loaded on demand, same convention as `skills/godkit/references/PATTERNS.md` — instead of 11 more top-level skill+command pairs. `godkit-output-enforcement` (anti-truncation/anti-stub enforcement) stayed a separate top-level skill since it isn't frontend-specific — applies to any generated deliverable. (claude)
-- 2026-08-22 Ported the always-on mode-injection mechanism from the same sibling lazy-coding project `godkit-lazy` was originally built from: `lib/lazy.js` resolves the active level (`GODKIT_LAZY_MODE` env var → `~/.config/godkit/config.json` → `full`), three new hooks (`lazy-activate.js` on SessionStart, `lazy-subagent.js` on SubagentStart, `lazy-mode-tracker.js` on UserPromptSubmit) keep it active every turn and every spawned subagent, and `/godkit-lazy [lite|full|ultra|off]` switches it mid-session. One shared `lib/lazy.js` instead of the source's four-file split — godkit only supports 2 hook-capable hosts, not ~6. Left out on purpose: the statusline badge and the measured-impact scoreboard — the scoreboard needs real measurement against a real repo, and fabricating numbers was rejected as dishonest. Found and fixed two real bugs while building this: `hooks/install.js` silently dropped `brief.js`'s registration once a second script shared its event (fixed by grouping the `kept`-computation per event, not per script), and the mode-tracker's report-only path read the configured default instead of the session's live mode. (claude)
-- 2026-08-22 Project-local skills live in `.agent/skills/<name>/SKILL.md` and are **linked per skill** into `<project>/.claude/skills/` and `<project>/.agents/skills/` — never a folder link, which would clobber a user's own skills there and would make phase 2's quarantine unenforceable. No new store: the skills directory and the log stream are the store, same argument as the graph being its own signature source. The evolve mode gate (`audit_only` default) is enforced mechanically at the link step, not by asking a skill's instructions nicely — in `audit_only` a generated skill is a committed but inert file no host can load. Dropped from the source design: SQLite + 7 tables (`node:sqlite` is 22+, engines say 18), embedding/BM25 ranking (the host already ranks on `description`), the behaviour-eval worker and skill sandbox (a skill is instructions, not code), staged authoring (git is the audit trail), cloud hub, redaction. Claude Code's project path is verified against two unrelated repos on this machine; **Codex's `.agents/skills/` is inferred and unverified**. (claude)
-- 2026-08-22 **Not SQLite for the evidence store**, asked directly. A `.db` is binary so git cannot merge it, and the whole protocol rests on per-session files that merge without thought — one binary store means every parallel session collides. The logs must stay markdown anyway (humans and every tool read them), so a database could only be a derived cache: the second store that desyncs. And `node:sqlite` is Node 22+ while engines say >=18. Measured before answering: 500 logs = 235 ms end to end, ~40 ms node startup, 180 ms file I/O, **1 ms** for the O(n²) clustering — it is I/O-bound, so a database does not fix what costs. Measuring also exposed `candidates()` re-reading every log `readLogSignals()` had already read; tokens are now computed in the single pass (candidates 153 ms → 1 ms, end-to-end 390 → 235 ms). Ceiling if a project ever hits thousands of logs: a gitignored `.agent/skills/.index.json` keyed by filename+mtime, derived and never authoritative. (claude)
-- 2026-08-22 `.agent/` **stays committed** (user confirmed after asking whether to ignore it). `.agent/tmp/` and `.agent/.trash-*` were already gitignored — that is what shows greyed out in an editor's file tree and prompted the question. Ignoring the rest would remove the product: no board, decisions, bug history or evidence on a fresh clone. (claude)
+- Node 18+ and zero runtime dependencies remain hard constraints; version stays `1.0.0`.
+- `.agent/` remains committed. Generated map files are regenerated, never textually merged.
+- `AGENTS.md` is the canonical rule body; host files preserve user text through managed blocks.
+- Project skills are approved snapshots, not live links; foreign projections are never adopted silently.
+- Codex standalone hooks live in `hooks.json`; plugin hooks require review/trust through `/hooks`.
+- This run may commit locally, but may not publish, tag, push, reinstall plugins, or write real home config.
+- Each implementation seam lands from an isolated worktree after its targeted test passes.
 
 ## Last 3 handoffs
 
-- 2026-08-22T1140Z-claude — done: #5 phase 2, the evidence loop (`godkit evolve`, trust thresholds, `.agent/SKILLS.md`, quarantine enforced at the link gate, 11 more tests → 97 total). Fixed two of my own bugs pre-commit: `section()` used `\Z`, which JS regex lacks, so `## Bugs` never parsed and blame silently never registered; and `cmdEvolve` suppressed capture candidates in the zero-skill case, which is the bootstrapping path. next: nothing planned — both phases of #5 are done.
-- 2026-08-22T1126Z-claude — done: #5 phase 1, project-local skills (`lib/evolve.js`, `godkit skills`, `godkit-evolve` skill, `skills:` log field, 13 tests). Caught a latent `rm -rf` in `bin/godkit.js`'s `link()` that this feature would have pointed at users' own project skills — `lib/evolve.js` uses its own guarded linker instead. next: phase 2 (`godkit/skill-evidence`) — the trust loop, `godkit evolve`, `.agent/SKILLS.md`.
-- 2026-08-22T0419Z-claude — done: polished README.md — badge row (CI/license/node/zero-deps, no npm badge since unpublished), a Contents anchor list, Hooks table switched to filename-keyed to match docs/agent-portability.md. No facts changed. next: nothing planned.
+- 2026-08-22T14:17Z root — T-001 done: baseline 97/97; full map 143 nodes/268 edges, current and integrity-clean; next T-002 ∥ T-003 ∥ T-004.
+- 2026-08-22T11:40Z claude — evidence loop completed; 97 tests green.
+- 2026-08-22T11:26Z claude — project-local skills phase 1 completed.
