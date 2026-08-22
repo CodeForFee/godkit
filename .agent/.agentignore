@@ -1,0 +1,17 @@
+# Paths excluded from the project map. gitignore syntax.
+node_modules/
+dist/
+build/
+out/
+coverage/
+vendor/
+.venv/
+__pycache__/
+*.min.js
+*.map
+*.lock
+package-lock.json
+pnpm-lock.yaml
+yarn.lock
+.git/
+.agent/

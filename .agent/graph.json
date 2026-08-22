@@ -1,0 +1,548 @@
+{
+  "version": "1.0.0",
+  "project": {
+    "name": "godkit",
+    "languages": [
+      "JavaScript",
+      "Markdown"
+    ],
+    "frameworks": [],
+    "description": "One shared harness for every AI agent. A committed .agent/ directory carries the board, the thread, the task files, the logs and the project map; the skills teach agents to read it before editing and write to it before finishing. Zero runtime dependencies. AGENTS.md generates every per-host rule file, and graph.json generates MAP.md plus its own freshness signatures, so no fact has two homes.",
+    "generatedAt": "2026-08-22T02:44:17.852Z",
+    "sha": "e56d0a49bf295bf501a55c10d9ea519c0ea17484"
+  },
+  "nodes": [
+    {
+      "id": "file:AGENTS.md",
+      "type": "file",
+      "name": "AGENTS.md",
+      "filePath": "AGENTS.md",
+      "summary": "The single source for every always-on rule file. Everything else is generated from it.",
+      "tags": [
+        "rules"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:agents/architect.md",
+      "type": "file",
+      "name": "architect.md",
+      "filePath": "agents/architect.md",
+      "summary": "Given a merged knowledge graph of a codebase, derives the architecture layers and an ordered start-here tour, plus the project description, languages and frameworks.",
+      "tags": [
+        "skills"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:agents/file-analyzer.md",
+      "type": "file",
+      "name": "file-analyzer.md",
+      "filePath": "agents/file-analyzer.md",
+      "summary": "Analyzes one batch of source files and emits knowledge-graph nodes and edges describing what they are and how they connect.",
+      "tags": [
+        "skills"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:bin/godkit.js",
+      "type": "file",
+      "name": "godkit.js",
+      "filePath": "bin/godkit.js",
+      "summary": "CLI entry: init, scan, save, install, doctor, uninstall. The only place the per-tool install paths are written down.",
+      "tags": [
+        "cli"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:docs/agent-portability.md",
+      "type": "file",
+      "name": "agent-portability.md",
+      "filePath": "docs/agent-portability.md",
+      "summary": "What each of the four tools reads, and how to add a fifth.",
+      "tags": [
+        "docs"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:hooks/brief.js",
+      "type": "file",
+      "name": "brief.js",
+      "filePath": "hooks/brief.js",
+      "summary": "SessionStart: injects board, map freshness, newest logs, THREAD tail. Never throws.",
+      "tags": [
+        "hooks"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:hooks/clockout.js",
+      "type": "file",
+      "name": "clockout.js",
+      "filePath": "hooks/clockout.js",
+      "summary": "Stop: the only hook that blocks. Refuses to end a session that changed files but wrote no log. Guarded against looping.",
+      "tags": [
+        "hooks"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:hooks/godkit-hooks.json",
+      "type": "file",
+      "name": "godkit-hooks.json",
+      "filePath": "hooks/godkit-hooks.json",
+      "summary": "Hook registration read by both Claude Code and Codex.",
+      "tags": [
+        "config",
+        "hooks"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:hooks/install.js",
+      "type": "file",
+      "name": "install.js",
+      "filePath": "hooks/install.js",
+      "summary": "Registers the hooks in a settings file. Idempotent, leaves other tools alone, refuses to rewrite JSON it could not parse.",
+      "tags": [
+        "hooks",
+        "install"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:hooks/map-watch.js",
+      "type": "file",
+      "name": "map-watch.js",
+      "filePath": "hooks/map-watch.js",
+      "summary": "PostToolUse on Bash: after a commit or merge, says the map went stale, but only when it actually did.",
+      "tags": [
+        "hooks"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:lib/batch.js",
+      "type": "file",
+      "name": "batch.js",
+      "filePath": "lib/batch.js",
+      "summary": "Groups scanned files so files that import each other are described together. Greedy locality, no dependency.",
+      "tags": [
+        "core",
+        "memory"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:lib/freshness.js",
+      "type": "file",
+      "name": "freshness.js",
+      "filePath": "lib/freshness.js",
+      "summary": "Is the map still true? staleness() is git-only and free; classify() decides SKIP/PARTIAL/ARCHITECTURE/FULL. Split by cost on purpose.",
+      "tags": [
+        "core",
+        "memory"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:lib/graph.js",
+      "type": "file",
+      "name": "graph.js",
+      "filePath": "lib/graph.js",
+      "summary": "The memory core: load, normalize, sanitize, save, render. Refuses to report a non-empty graph as empty, and strips any path outside the project to a basename before it is committed.",
+      "tags": [
+        "core",
+        "memory"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "file:lib/paths.js",
+      "type": "file",
+      "name": "paths.js",
+      "filePath": "lib/paths.js",
+      "summary": "Locates the project root and .agent/. Redirects a linked git worktree to the MAIN repo root, so an ephemeral worktree never swallows the memory.",
+      "tags": [
+        "core"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:lib/scan.js",
+      "type": "file",
+      "name": "scan.js",
+      "filePath": "lib/scan.js",
+      "summary": "Walks the project, categorizes files, resolves internal imports. The deterministic half of the map, so it costs no tokens.",
+      "tags": [
+        "core",
+        "memory"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:package.json",
+      "type": "file",
+      "name": "package.json",
+      "filePath": "package.json",
+      "summary": "npm identity: bin, files allowlist, zero dependencies.",
+      "tags": [
+        "config"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:README.md",
+      "type": "file",
+      "name": "README.md",
+      "filePath": "README.md",
+      "summary": "What godkit is and how to install it.",
+      "tags": [
+        "docs"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:scripts/check-versions.js",
+      "type": "file",
+      "name": "check-versions.js",
+      "filePath": "scripts/check-versions.js",
+      "summary": "All four manifests must share one version, and match the tag on a tag push. Catches the case where they agree while all being stale.",
+      "tags": [
+        "build"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:scripts/sync-rules.js",
+      "type": "file",
+      "name": "sync-rules.js",
+      "filePath": "scripts/sync-rules.js",
+      "summary": "Generates every per-host rule file from AGENTS.md. --check fails CI on drift. Generated, so a copy cannot be edited in the wrong place.",
+      "tags": [
+        "build"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:scripts/uninstall.js",
+      "type": "file",
+      "name": "uninstall.js",
+      "filePath": "scripts/uninstall.js",
+      "summary": "Removes what a host uninstall cannot see: linked skills and hook registrations. Leaves every .agent/ alone.",
+      "tags": [
+        "install"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:skills/godkit-execute/SKILL.md",
+      "type": "file",
+      "name": "SKILL.md",
+      "filePath": "skills/godkit-execute/SKILL.md",
+      "summary": "Run planned work through a five-stage pipeline so nothing ships unverified and nothing retries forever: pre-execute (validate scope and capability), guard (deny-only checks), execute (bounded), post-execute (verify against the world, not the return value), checkpoint (record it).",
+      "tags": [
+        "skills"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:skills/godkit-handoff/SKILL.md",
+      "type": "file",
+      "name": "SKILL.md",
+      "filePath": "skills/godkit-handoff/SKILL.md",
+      "summary": "The shared-state protocol for a repo worked on by several AI agents — Claude, Cursor, Codex, Antigravity, or the same tool across different sessions.",
+      "tags": [
+        "skills"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:skills/godkit-help/SKILL.md",
+      "type": "file",
+      "name": "SKILL.md",
+      "filePath": "skills/godkit-help/SKILL.md",
+      "summary": "Quick reference card for godkit — the shared .agent/ layout, the two non-negotiable rules, the ladders, the skill set, the CLI commands and the install paths for Claude Code, Cursor, Codex and Antigravity.",
+      "tags": [
+        "skills"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:skills/godkit-lazy/SKILL.md",
+      "type": "file",
+      "name": "SKILL.md",
+      "filePath": "skills/godkit-lazy/SKILL.md",
+      "summary": "Forces the simplest solution that actually works — shortest, most minimal, least code.",
+      "tags": [
+        "skills"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:skills/godkit-map/SKILL.md",
+      "type": "file",
+      "name": "SKILL.md",
+      "filePath": "skills/godkit-map/SKILL.md",
+      "summary": "Build or refresh the project map — a durable, committed description of what a codebase is, stored as .agent/graph.json with a readable .agent/MAP.md projection, so every agent that arrives later knows the architecture, the entry points and the landmines without re-reading the repo.",
+      "tags": [
+        "skills"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:skills/godkit-plan/SKILL.md",
+      "type": "file",
+      "name": "SKILL.md",
+      "filePath": "skills/godkit-plan/SKILL.md",
+      "summary": "Decompose a task into seams that several agents or tools can work without colliding: read the shared state first, cut on file boundaries, give every seam a scope, an exit condition and a verification, assign an owner from the roster, then write each one out as a task file under .agent/tasks/ and claim what you are taking.",
+      "tags": [
+        "skills"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:skills/godkit-review/SKILL.md",
+      "type": "file",
+      "name": "SKILL.md",
+      "filePath": "skills/godkit-review/SKILL.md",
+      "summary": "Review how work was organized and diagnose runs that went wrong: unclaimed edits, missing handoff logs, seams that share files, delegations with no exit condition, results accepted without verification, loops that never ended, context lost between agents, two agents undoing each other.",
+      "tags": [
+        "skills"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:skills/godkit-test/SKILL.md",
+      "type": "file",
+      "name": "SKILL.md",
+      "filePath": "skills/godkit-test/SKILL.md",
+      "summary": "Decide what counts as verified, and write the smallest check that would fail if the logic broke.",
+      "tags": [
+        "skills"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:skills/godkit/references/PATTERNS.md",
+      "type": "file",
+      "name": "PATTERNS.md",
+      "filePath": "skills/godkit/references/PATTERNS.md",
+      "summary": "Progressive-disclosure reference: ten orchestration failure classes stated as the rule that prevents each. Loaded only when designing a delegation mechanism, never for ordinary work.",
+      "tags": [
+        "skills"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:skills/godkit/SKILL.md",
+      "type": "file",
+      "name": "SKILL.md",
+      "filePath": "skills/godkit/SKILL.md",
+      "summary": "The arrival protocol for a repo worked on by several AI agents.",
+      "tags": [
+        "skills"
+      ],
+      "complexity": "simple"
+    }
+  ],
+  "edges": [
+    {
+      "source": "file:bin/godkit.js",
+      "target": "file:lib/paths.js",
+      "type": "imports",
+      "weight": 0.7
+    },
+    {
+      "source": "file:bin/godkit.js",
+      "target": "file:lib/scan.js",
+      "type": "imports",
+      "weight": 0.7
+    },
+    {
+      "source": "file:bin/godkit.js",
+      "target": "file:lib/batch.js",
+      "type": "imports",
+      "weight": 0.7
+    },
+    {
+      "source": "file:bin/godkit.js",
+      "target": "file:lib/graph.js",
+      "type": "imports",
+      "weight": 0.7
+    },
+    {
+      "source": "file:bin/godkit.js",
+      "target": "file:lib/freshness.js",
+      "type": "imports",
+      "weight": 0.7
+    },
+    {
+      "source": "file:hooks/brief.js",
+      "target": "file:lib/paths.js",
+      "type": "imports",
+      "weight": 0.7
+    },
+    {
+      "source": "file:hooks/brief.js",
+      "target": "file:lib/freshness.js",
+      "type": "imports",
+      "weight": 0.7
+    },
+    {
+      "source": "file:hooks/clockout.js",
+      "target": "file:lib/paths.js",
+      "type": "imports",
+      "weight": 0.7
+    },
+    {
+      "source": "file:hooks/map-watch.js",
+      "target": "file:lib/paths.js",
+      "type": "imports",
+      "weight": 0.7
+    },
+    {
+      "source": "file:hooks/map-watch.js",
+      "target": "file:lib/freshness.js",
+      "type": "imports",
+      "weight": 0.7
+    },
+    {
+      "source": "file:lib/freshness.js",
+      "target": "file:lib/paths.js",
+      "type": "imports",
+      "weight": 0.7
+    },
+    {
+      "source": "file:lib/freshness.js",
+      "target": "file:lib/graph.js",
+      "type": "imports",
+      "weight": 0.7
+    }
+  ],
+  "layers": [
+    {
+      "id": "core",
+      "name": "Core library",
+      "description": "Everything the CLI, the hooks and the skills share. Reading and writing .agent/ lives here; policy does not.",
+      "nodeIds": [
+        "file:lib/batch.js",
+        "file:lib/freshness.js",
+        "file:lib/graph.js",
+        "file:lib/paths.js",
+        "file:lib/scan.js"
+      ]
+    },
+    {
+      "id": "cli",
+      "name": "CLI",
+      "description": "The godkit command. The only place per-tool install paths are written down.",
+      "nodeIds": [
+        "file:bin/godkit.js"
+      ]
+    },
+    {
+      "id": "hooks",
+      "name": "Hooks",
+      "description": "Lifecycle enforcement for Claude Code and Codex. Every one exits 0 no matter what: a broken hook must not break the session it was meant to help.",
+      "nodeIds": [
+        "file:hooks/brief.js",
+        "file:hooks/clockout.js",
+        "file:hooks/godkit-hooks.json",
+        "file:hooks/install.js",
+        "file:hooks/map-watch.js"
+      ]
+    },
+    {
+      "id": "skills",
+      "name": "Skills and agent prompts",
+      "description": "The prompts agents actually load. Behaviour lives here, not in code.",
+      "nodeIds": [
+        "file:agents/architect.md",
+        "file:agents/file-analyzer.md",
+        "file:skills/godkit-execute/SKILL.md",
+        "file:skills/godkit-handoff/SKILL.md",
+        "file:skills/godkit-help/SKILL.md",
+        "file:skills/godkit-lazy/SKILL.md",
+        "file:skills/godkit-map/SKILL.md",
+        "file:skills/godkit-plan/SKILL.md",
+        "file:skills/godkit-review/SKILL.md",
+        "file:skills/godkit-test/SKILL.md",
+        "file:skills/godkit/references/PATTERNS.md",
+        "file:skills/godkit/SKILL.md"
+      ]
+    },
+    {
+      "id": "build",
+      "name": "Guards",
+      "description": "Scripts that fail the build when generated files drift or manifests disagree.",
+      "nodeIds": [
+        "file:scripts/check-versions.js",
+        "file:scripts/sync-rules.js",
+        "file:scripts/uninstall.js"
+      ]
+    },
+    {
+      "id": "rules",
+      "name": "Rules and templates",
+      "description": "AGENTS.md, its generated copies, and what init writes into a project.",
+      "nodeIds": [
+        "file:AGENTS.md"
+      ]
+    }
+  ],
+  "tour": [
+    {
+      "order": 1,
+      "title": "Read the contract first",
+      "description": "AGENTS.md is the whole protocol in one screen, and the source every host rule file is generated from.",
+      "nodeIds": [
+        "file:AGENTS.md"
+      ]
+    },
+    {
+      "order": 2,
+      "title": "How anything is found",
+      "description": "lib/paths.js resolves the project root and .agent/, worktrees included. Every other module starts here.",
+      "nodeIds": [
+        "file:lib/paths.js"
+      ]
+    },
+    {
+      "order": 3,
+      "title": "The memory itself",
+      "description": "lib/graph.js loads, normalizes and saves the map, and holds the two guards that stop it being destroyed.",
+      "nodeIds": [
+        "file:lib/graph.js"
+      ]
+    },
+    {
+      "order": 4,
+      "title": "Knowing when it went stale",
+      "description": "lib/freshness.js splits the cheap git check from the expensive rebuild decision.",
+      "nodeIds": [
+        "file:lib/freshness.js"
+      ]
+    },
+    {
+      "order": 5,
+      "title": "Where agents are made to comply",
+      "description": "hooks/clockout.js is the only thing that blocks a turn; brief.js is what an arriving agent actually reads.",
+      "nodeIds": [
+        "file:hooks/clockout.js",
+        "file:hooks/brief.js"
+      ]
+    },
+    {
+      "order": 6,
+      "title": "What ships and where",
+      "description": "bin/godkit.js holds the per-tool install table, the one place a fifth tool gets added.",
+      "nodeIds": [
+        "file:bin/godkit.js"
+      ]
+    }
+  ]
+}
