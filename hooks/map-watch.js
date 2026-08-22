@@ -5,30 +5,26 @@
 // muted, and then it is worth nothing when it matters.
 
 const fs = require('fs')
-const path = require('path')
 
 const LANDS_A_CHANGE = /\bgit\s+(commit|merge|rebase|cherry-pick|pull|revert)\b/
 
-function readStdin() {
-  try {
-    return JSON.parse(fs.readFileSync(0, 'utf8') || '{}')
-  } catch {
-    return {}
-  }
-}
-
 function main() {
-  const payload = readStdin()
-  const command = (payload.tool_input && payload.tool_input.command) || ''
-  if (!LANDS_A_CHANGE.test(command)) return
+  const { readHookInput } = require('../lib/session')
+  const payload = readHookInput('map-watch')
+  const input = payload.tool_input || {}
+  const command = input.command || input.cmd || ''
+  const text = Array.isArray(command) ? command.join(' ') : String(command)
+  if (!LANDS_A_CHANGE.test(text)) return
 
-  const { findAgentDir, paths } = require('../lib/paths')
-  const agentDir = findAgentDir(payload.cwd || process.cwd())
-  if (!agentDir) return
+  const { containedPath, findAgentContext, paths } = require('../lib/paths')
+  const cwd = typeof payload.cwd === 'string' && payload.cwd ? payload.cwd : process.cwd()
+  const context = findAgentContext(cwd)
+  if (!context.agentDir) return
 
-  const root = path.dirname(agentDir)
+  const p = paths(context.stateRoot)
+  if (fs.existsSync(p.meta) && !containedPath(context.agentDir, p.meta, 'file')) return
   const { staleness, summary } = require('../lib/freshness')
-  const s = staleness(root, paths(root).meta)
+  const s = staleness(context.worktreeRoot, p.meta)
   if (s.state !== 'stale' && s.state !== 'unbuilt') return
 
   process.stdout.write(
