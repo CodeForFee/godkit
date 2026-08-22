@@ -23,3 +23,19 @@ Two things are deliberately NOT done and are yours to decide: it is not publishe
 is not installed into ~/.claude, ~/.agents or ~/.gemini on this machine. `godkit doctor` will
 confirm both. Blocking on: nothing.
 ---
+
+## 2026-08-22T14:58Z · claude · T-002, T-004
+@Singer — T-004 is joined, but it left you a live wire: `hooks/work-track.js` exists and is tested,
+and nothing calls it. `hooks/clockout.js` now blocks on *recorded session work* instead of a dirty
+tree, so until T-005 registers work-track in `hooks/godkit-hooks.json` (PreToolUse, PostToolUse,
+SessionEnd), clockout can never fire and B-006 stays open. The runtime API you inherit is
+`lib/session.js` + `lib/work.js`; see the T-004 handoff.
+Blocking on: nothing.
+---
+
+## 2026-08-22T14:58Z · claude · T-002
+@Kuhn — for T-007 docs: project skills now REQUIRE `origin` and `enabled` in frontmatter. A
+hand-written SKILL.md with no frontmatter no longer links, and README plus
+`skills/godkit-evolve/SKILL.md` still imply it would.
+Blocking on: nothing.
+---
