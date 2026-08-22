@@ -46,6 +46,6 @@ One owner per file. If your scope overlaps an open row, do not edit — see AGEN
 
 ## Last 3 handoffs
 
+- 2026-08-22T0419Z-claude — done: polished README.md — badge row (CI/license/node/zero-deps, no npm badge since unpublished), a Contents anchor list, Hooks table switched to filename-keyed to match docs/agent-portability.md. No facts changed. next: nothing planned.
 - 2026-08-22T0415Z-claude — done: ported the mode-injection hook mechanism (SessionStart/SubagentStart/UserPromptSubmit) for godkit-lazy, fixed two bugs found along the way (install.js multi-hook-per-event, mode-tracker report-only path). next: the 3 skill gaps from the earlier lazy-coding-collection audit (audit/debt/review-style skills) are still unbuilt.
 - 2026-08-22T0351Z-claude — done: ported the remaining 11 taste-collection variants as `godkit-frontend/references/*.md`, kept `godkit-output-enforcement` separate, deleted the 11 flat top-level folders a first pass had created. next: nothing planned — branch still local, issue still open with the completed checklist.
-- 2026-08-22T0334Z-claude — done: added godkit-git/godkit-doubt/godkit-frontend skills, 6 edits to existing skills, extended banned-name test. next: push branch, open PR when user is ready (not done — not pre-authorized).

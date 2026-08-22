@@ -1,5 +1,10 @@
 # Godkit
 
+[![CI](https://github.com/CodeForFee/godkit/actions/workflows/test.yml/badge.svg?branch=main)](https://github.com/CodeForFee/godkit/actions/workflows/test.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Node.js >= 18](https://img.shields.io/badge/node-%3E%3D18-brightgreen.svg)](package.json)
+[![Zero dependencies](https://img.shields.io/badge/dependencies-0-brightgreen.svg)](package.json)
+
 **One shared harness for every AI agent.** Claude Code, Cursor, Codex and Antigravity all point at the same repo — so give them the same memory, the same board, and the same rules.
 
 ```bash
@@ -7,6 +12,19 @@ npx godkit init
 ```
 
 ---
+
+## Contents
+
+- [The problem](#the-problem)
+- [What Godkit does](#what-godkit-does)
+- [Install](#install)
+  - [Hooks](#hooks-claude-code-codex)
+  - [godkit-lazy modes](#godkit-lazy-modes)
+- [The project map](#the-project-map)
+- [Skills](#skills)
+- [Design](#design)
+- [Development](#development)
+- [License](#license)
 
 ## The problem
 
@@ -42,8 +60,8 @@ Append-only everywhere is deliberate: one log file per session means two tools w
 npm install -g godkit
 
 godkit install          # skills -> claude, codex, antigravity
-godkit init             # scaffold .agent/ + rule files into the current repo
-godkit doctor           # what is set up, and whether the map is stale
+godkit init              # scaffold .agent/ + rule files into the current repo
+godkit doctor            # what is set up, and whether the map is stale
 ```
 
 | Tool | Skills | Always-on rules | Hooks |
@@ -66,29 +84,25 @@ node hooks/install.js --uninstall
 
 Re-running is safe: it drops its own previous entries first, leaves other tools' hooks alone, and writes a `.bak`. If it cannot parse your settings file it changes nothing and says so.
 
-| Hook | Does |
-|---|---|
-| `SessionStart` | injects the board, map freshness, and the newest log entries |
-| `SessionStart` | resolves the active `godkit-lazy` mode and injects its ruleset |
-| `Stop` | blocks the turn if files changed and no log was written |
-| `PostToolUse` (Bash) | after a commit or merge, says if the map went stale |
-| `SubagentStart` | injects the same `godkit-lazy` ruleset into spawned subagents |
-| `UserPromptSubmit` | tracks `/godkit-lazy` mode switches for the rest of the session |
+| Hook | Event | Does |
+|---|---|---|
+| `brief.js` | `SessionStart` | injects the board, map freshness, and the newest log entries |
+| `lazy-activate.js` | `SessionStart` | resolves the active `godkit-lazy` mode and injects its ruleset |
+| `lazy-subagent.js` | `SubagentStart` | injects the same `godkit-lazy` ruleset into spawned subagents |
+| `lazy-mode-tracker.js` | `UserPromptSubmit` | tracks `/godkit-lazy` mode switches for the rest of the session |
+| `clockout.js` | `Stop` | blocks the turn if files changed and no log was written |
+| `map-watch.js` | `PostToolUse` (Bash) | after a commit or merge, says if the map went stale |
 
 ### godkit-lazy modes
 
-Where the hooks are installed, `godkit-lazy` runs every session automatically, at a level resolved
-in this order: the `GODKIT_LAZY_MODE` env var, then `defaultMode` in
-`~/.config/godkit/config.json` (`%APPDATA%\godkit\config.json` on Windows), then `full`.
+Where the hooks are installed, `godkit-lazy` runs every session automatically, at a level resolved in this order: the `GODKIT_LAZY_MODE` env var, then `defaultMode` in `~/.config/godkit/config.json` (`%APPDATA%\godkit\config.json` on Windows), then `full`.
 
 ```
 /godkit-lazy [lite|full|ultra|off]           switch for this session (no argument reports the level)
 /godkit-lazy default [lite|full|ultra|off]   persist the default for new sessions
 ```
 
-Injects into every subagent spawned via the Agent tool too — scope that with
-`GODKIT_LAZY_SUBAGENT_MATCHER` (a regex tested against the subagent's type) if some agent types
-should skip it.
+Injects into every subagent spawned via the Agent tool too — scope that with `GODKIT_LAZY_SUBAGENT_MATCHER` (a regex tested against the subagent's type) if some agent types should skip it.
 
 ## The project map
 
