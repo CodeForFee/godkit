@@ -92,6 +92,7 @@ godkit save [file]        save a merged graph as the map (graph.json, MAP.md, me
 godkit install [tool...]  install the skills (claude, codex, antigravity; default all)
 godkit skills [--link|--unlink] [tool...] [--force]
                           this project's own skills in .agent/skills/
+godkit evolve [--write]   what the logs say about each one; --write -> .agent/SKILLS.md
 godkit doctor             what is set up here, and whether the map is stale
 godkit uninstall [tool]   remove installed skills (leaves your .agent/ alone)
 ```

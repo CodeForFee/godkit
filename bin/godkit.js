@@ -319,6 +319,60 @@ function cmdSkills(args) {
   log('`godkit skills --link` to make them visible to claude and codex.')
 }
 
+// Re-read the log stream and say what it implies about each project skill. Derives everything;
+// --write projects it to .agent/SKILLS.md, which is what the hosts with no hooks read.
+function cmdEvolve(args) {
+  const root = projectRoot(process.cwd())
+  const p = paths(root)
+  const evolve = require('../lib/evolve')
+  const rep = evolve.report(root)
+
+  // No skills yet is exactly when capture candidates matter most, so this reports and keeps
+  // going rather than returning early.
+  if (!rep.skills.length) {
+    log('no project skills in .agent/skills/ yet — see the godkit-evolve skill')
+  } else {
+    log('project skills — mode ' + rep.mode)
+  }
+  log('')
+  for (const r of rep.skills) {
+    const e = r.evidence
+    log(
+      '  ' + r.skill.name.padEnd(26) +
+        (r.trust === evolve.TRUST.QUARANTINED ? 'QUARANTINED' : r.trust).padEnd(13) +
+        'ok ' + e.successes + '  bad ' + e.failures + '  sessions ' + e.sessions.length +
+        (r.linked.length ? '  [' + r.linked.join(' ') + ']' : '  [not linked]'),
+    )
+    for (const f of r.findings) {
+      if (f.level === 'block') log('      BLOCK ' + f.rule + ' SKILL.md:' + f.line)
+    }
+    for (const b of e.blamedIn) log('      blamed in ' + path.basename(b))
+  }
+
+  if (rep.candidates.length) {
+    log('')
+    log('capture candidates:')
+    for (const c of rep.candidates) {
+      log('  ' + c.sessions + ' sessions — ' + c.shared.join(' '))
+      for (const f of c.logs) log('      ' + path.basename(f))
+    }
+  }
+
+  // Always report the coverage gap. A system that hides how much of its own input it cannot see
+  // is worse than one with a visible gap.
+  const missing = rep.coverage.total - rep.coverage.attributed
+  log('')
+  log(missing + ' of ' + rep.coverage.total + ' log entries carried no `skills:` frontmatter')
+  log('trust = used, and those sessions finished verified. A correlation, not a quality score.')
+
+  if (args.includes('--write')) {
+    fs.mkdirSync(path.dirname(p.skillsDoc), { recursive: true })
+    fs.writeFileSync(p.skillsDoc, evolve.renderSkillsDoc(root, rep))
+    log('')
+    log('wrote .agent/SKILLS.md')
+  }
+}
+
 function cmdDoctor() {
   const root = projectRoot(process.cwd())
   const p = paths(root)
@@ -409,6 +463,8 @@ const HELP = `godkit — one shared harness for every AI agent
   godkit skills [--link|--unlink] [tool...] [--force]
                             this project's own skills in .agent/skills/: list them, or link
                             them into the paths claude and codex read
+  godkit evolve [--write]   re-read the logs: what each project skill's evidence says.
+                            --write projects it to .agent/SKILLS.md
   godkit doctor             what is set up here, and whether the map is stale
   godkit uninstall [tool]   remove the installed skills (leaves your .agent/ alone)
 
@@ -428,6 +484,8 @@ function main() {
       return cmdSave(args)
     case 'skills':
       return cmdSkills(args)
+    case 'evolve':
+      return cmdEvolve(args)
     case 'doctor':
       return cmdDoctor()
     case 'uninstall':
