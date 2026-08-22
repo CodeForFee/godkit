@@ -61,7 +61,7 @@ test('normalize dedupes nodes by id, last one winning', () => {
   assert.equal(out.nodes[0].summary, 'second')
 })
 
-test('normalize drops duplicate and dangling edges', () => {
+test('normalize keeps the last duplicate edge and drops dangling edges', () => {
   const out = g.normalize(
     {
       nodes: [
@@ -69,15 +69,43 @@ test('normalize drops duplicate and dangling edges', () => {
         { id: 'file:b.ts', type: 'file', name: 'b' },
       ],
       edges: [
-        { source: 'file:a.ts', target: 'file:b.ts', type: 'imports' },
-        { source: 'file:a.ts', target: 'file:b.ts', type: 'imports' },
+        { source: 'file:a.ts', target: 'file:b.ts', type: 'imports', weight: 0.1, description: 'first' },
+        { source: 'file:a.ts', target: 'file:b.ts', type: 'imports', weight: 0.9, description: 'last' },
         { source: 'file:a.ts', target: 'file:missing.ts', type: 'imports' },
       ],
     },
     '/p',
   )
   assert.equal(out.edges.length, 1)
-  assert.equal(out.edges[0].weight, 0.7, 'imports carries its conventional weight')
+  assert.equal(out.edges[0].weight, 0.9)
+  assert.equal(out.edges[0].description, 'last')
+})
+
+test('saveGraph rejects absolute graph IDs before touching the destination', () => {
+  const d = tmp()
+  const f = path.join(d, 'graph.json')
+  const original = 'existing graph bytes\n'
+  fs.writeFileSync(f, original)
+
+  const graphs = [
+    { nodes: [{ id: 'file:/home/user/a.ts' }] },
+    { nodes: [{ id: 'file:C:\\Users\\user\\a.ts' }] },
+    { nodes: [{ id: 'file:\\\\server\\share\\a.ts' }] },
+    {
+      nodes: [{ id: 'file:a.ts' }],
+      edges: [{ source: 'file:a.ts', target: 'file:/etc/passwd', type: 'imports' }],
+    },
+    {
+      nodes: [{ id: 'file:a.ts' }],
+      layers: [{ id: 'l', name: 'L', nodeIds: ['file:C:/secret/a.ts'] }],
+    },
+  ]
+
+  for (const graph of graphs) {
+    assert.throws(() => g.saveGraph(f, graph, d), /absolute path/)
+    assert.equal(fs.readFileSync(f, 'utf8'), original)
+  }
+  fs.rmSync(d, { recursive: true, force: true })
 })
 
 test('normalize strips layer and tour references to nodes that do not exist', () => {
@@ -173,6 +201,32 @@ test('saveGraph round-trips through loadGraph', () => {
   assert.deepEqual(back.nodes, JSON.parse(JSON.stringify(saved.nodes)))
   assert.equal(back.nodes[0].filePath, 'a.ts')
   assert.deepEqual(back.nodes[0].lineRange, [1, 10])
+  fs.rmSync(d, { recursive: true, force: true })
+})
+
+test('atomicWriteFile replaces through a same-directory temp and preserves old bytes on failure', () => {
+  const d = tmp()
+  const f = path.join(d, 'graph.json')
+  fs.writeFileSync(f, 'old')
+  g.atomicWriteFile(f, 'new')
+  assert.equal(fs.readFileSync(f, 'utf8'), 'new')
+
+  fs.writeFileSync(f, 'old')
+  const rename = fs.renameSync
+  let temp
+  fs.renameSync = (from) => {
+    temp = from
+    throw new Error('rename failed')
+  }
+  try {
+    assert.throws(() => g.atomicWriteFile(f, 'new'), /rename failed/)
+  } finally {
+    fs.renameSync = rename
+  }
+
+  assert.equal(path.dirname(temp), d)
+  assert.equal(fs.readFileSync(f, 'utf8'), 'old')
+  assert.deepEqual(fs.readdirSync(d), ['graph.json'])
   fs.rmSync(d, { recursive: true, force: true })
 })
 
