@@ -6,6 +6,17 @@ on:
   pull_request:
   workflow_dispatch:
 
+# This workflow reads the repo and nothing else. Without this block a job inherits whatever the
+# repository default is, which for older repos is a read-write token.
+permissions:
+  contents: read
+
+# A second push supersedes the first: six jobs per run is not worth burning on a stale commit.
+# Never applied to publish, where cancelling a half-finished release is the wrong answer.
+concurrency:
+  group: test-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   test:
     strategy:
@@ -16,11 +27,17 @@ jobs:
         os: [ubuntu-latest, windows-latest]
         node: ['18', '22', '24']
     runs-on: ${{ matrix.os }}
+    # The suite runs in well under a minute. Anything near this cap is a hung hook waiting on
+    # stdin, which would otherwise sit there for six hours across six jobs.
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node }}
+
+      # Generated files first: a stale one fails here with a message saying which generator to
+      # run, instead of failing later as a confusing assertion inside the suite.
       - run: node scripts/sync-rules.js --check
       - run: node scripts/sync-hooks.js --check
       - run: node scripts/check-versions.js

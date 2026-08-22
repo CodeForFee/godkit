@@ -11,8 +11,8 @@
     ],
     "frameworks": [],
     "description": "Zero-runtime-dependency Node.js harness that coordinates Claude Code, Codex, Cursor, Copilot, and Gemini-compatible agents through committed .agent state. Host rule or SessionStart hook -> shared BOARD/map/log context -> CLI and skill workflows -> verified task handoff. Project maps and skill evidence are Markdown/JSON files backed by Git; there is no database or application authentication layer.",
-    "generatedAt": "2026-08-22T15:16:17.222Z",
-    "sha": "efeeca61fe283ccfcf0fea265a352a8df2cdca69"
+    "generatedAt": "2026-08-22T15:25:18.972Z",
+    "sha": "88e579f71cb80568f6438caeb31579374964cf1d"
   },
   "nodes": [
     {
@@ -2367,68 +2367,6 @@
       "complexity": "simple"
     },
     {
-      "id": "file:.github/workflows/publish.yml",
-      "type": "file",
-      "name": "publish.yml",
-      "filePath": ".github/workflows/publish.yml",
-      "lineRange": [
-        1,
-        32
-      ],
-      "summary": "Tag-only publish. workflow_dispatch is deliberately absent: it could publish a branch the tag gate never examined. Runs the rule, hook-manifest and version checks plus the full suite before an OIDC trusted publish.",
-      "tags": [
-        "ci",
-        "release"
-      ],
-      "complexity": "simple"
-    },
-    {
-      "id": "pipeline:.github/workflows/publish.yml",
-      "type": "pipeline",
-      "name": "publish",
-      "filePath": ".github/workflows/publish.yml",
-      "lineRange": [
-        1,
-        32
-      ],
-      "summary": "tag v* -> checkout -> sync-rules --check -> sync-hooks --check -> check-versions -> node --test -> npm publish with provenance.",
-      "tags": [
-        "ci",
-        "release"
-      ],
-      "complexity": "simple"
-    },
-    {
-      "id": "file:.github/workflows/test.yml",
-      "type": "file",
-      "name": "test.yml",
-      "filePath": ".github/workflows/test.yml",
-      "lineRange": [
-        1,
-        27
-      ],
-      "summary": "Matrix CI across ubuntu and windows on Node 18, 22 and 24. Windows is not optional: path handling and hook stdin differ there, and that is where this package is developed.",
-      "tags": [
-        "ci"
-      ],
-      "complexity": "simple"
-    },
-    {
-      "id": "pipeline:.github/workflows/test.yml",
-      "type": "pipeline",
-      "name": "test",
-      "filePath": ".github/workflows/test.yml",
-      "lineRange": [
-        1,
-        27
-      ],
-      "summary": "push/PR -> 6-way matrix -> sync-rules --check -> sync-hooks --check -> check-versions -> node --test.",
-      "tags": [
-        "ci"
-      ],
-      "complexity": "simple"
-    },
-    {
       "id": "file:templates/gitattributes",
       "type": "file",
       "name": "gitattributes",
@@ -2635,6 +2573,69 @@
         "map"
       ],
       "complexity": "moderate"
+    },
+    {
+      "id": "file:.github/workflows/test.yml",
+      "type": "file",
+      "name": "test.yml",
+      "filePath": ".github/workflows/test.yml",
+      "lineRange": [
+        1,
+        43
+      ],
+      "summary": "Matrix CI across ubuntu and windows on Node 18, 22 and 24. Least-privilege token, cancels superseded runs, and caps each job at 10 minutes so a hook hung on stdin fails fast instead of burning six jobs for six hours. Windows is not optional: path handling and hook stdin differ there.",
+      "tags": [
+        "ci",
+        "hardening"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "pipeline:.github/workflows/test.yml",
+      "type": "pipeline",
+      "name": "test",
+      "filePath": ".github/workflows/test.yml",
+      "lineRange": [
+        1,
+        43
+      ],
+      "summary": "push to main / PR / dispatch -> 6-way matrix -> sync-rules --check -> sync-hooks --check -> check-versions -> node --test.",
+      "tags": [
+        "ci"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:.github/workflows/publish.yml",
+      "type": "file",
+      "name": "publish.yml",
+      "filePath": ".github/workflows/publish.yml",
+      "lineRange": [
+        1,
+        43
+      ],
+      "summary": "Tag-only publish. workflow_dispatch is deliberately absent: it could publish a branch the tag gate never examined. Serialised without cancel-in-progress, because interrupting a release half way is worse than running two in order.",
+      "tags": [
+        "ci",
+        "release"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "pipeline:.github/workflows/publish.yml",
+      "type": "pipeline",
+      "name": "publish",
+      "filePath": ".github/workflows/publish.yml",
+      "lineRange": [
+        1,
+        43
+      ],
+      "summary": "tag v* -> generated-file and version checks (the version check also asserts the tag IS the manifest version) -> node --test -> npm pack --dry-run -> OIDC trusted publish with provenance.",
+      "tags": [
+        "ci",
+        "release"
+      ],
+      "complexity": "simple"
     }
   ],
   "edges": [
