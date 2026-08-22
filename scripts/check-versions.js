@@ -60,8 +60,15 @@ function main() {
   // On a tag push, the agreed version must be the tag — otherwise all four files can be stale
   // together and this check would happily pass.
   if (process.env.GITHUB_REF_TYPE === 'tag') {
-    const tag = String(process.env.GITHUB_REF_NAME || '').replace(/^v/, '')
-    if (tag && tag !== version) {
+    const raw = String(process.env.GITHUB_REF_NAME || '').trim()
+    const tag = raw.replace(/^v/, '')
+    // An empty or unparsable tag name used to skip this check silently, which is the one case
+    // where skipping is worst: something is wrong with the ref that is about to be published.
+    if (!/^\d+\.\d+\.\d+/.test(tag)) {
+      console.error('publishing from tag "' + raw + '", which is not a vX.Y.Z release tag')
+      process.exit(1)
+    }
+    if (tag !== version) {
       console.error('tag ' + tag + ' does not match manifest version ' + version)
       process.exit(1)
     }

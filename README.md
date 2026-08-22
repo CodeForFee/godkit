@@ -68,12 +68,25 @@ Append-only everywhere is deliberate: **one log file per session** means two too
 ```bash
 npm install -g godkit
 
-godkit install     # place the skills once per machine
-godkit init        # scaffold .agent/ + rule files into the current repo
-godkit doctor      # what is set up, and whether the map is stale
+godkit install       # place the skills once per machine
+godkit hooks install # register the hooks (claude, codex)
+godkit init          # scaffold .agent/ + rule files into the current repo
+godkit doctor        # what is set up, and whether the map is stale
 ```
 
 `godkit install` places the skills once per machine; `godkit init` writes the rule files once per project. Every rule file is generated from a single `AGENTS.md`, so they cannot drift apart — CI byte-compares them.
+
+Both sides only ever touch what they created. `install` refuses a destination it does not own — a skill directory you wrote by hand is never replaced — and `uninstall` leaves it alone and says so. Add `--dry-run` to either to see what would happen first.
+
+In a project, `init` writes into a marked block:
+
+```
+<!-- godkit:start -->
+...the rules...
+<!-- godkit:end -->
+```
+
+Everything outside those markers is yours and is never touched, so an existing `CLAUDE.md` keeps whatever you had in it. If the markers have been hand-edited into something ambiguous, `init` refuses that file and tells you, rather than guessing. `init` also adds the `-merge` lines for the generated map files to your `.gitattributes`.
 
 ### Compatibility
 
@@ -89,11 +102,15 @@ Where a tool has no hook support, the always-on rule file *is* the enforcement. 
 ### Hooks
 
 ```bash
-node hooks/install.js              # registers into ~/.claude/settings.json
-node hooks/install.js --uninstall
+godkit hooks status       # how many are registered, and where
+godkit hooks install      # into ~/.claude/settings.json and ~/.codex/settings.json
+godkit hooks uninstall
+godkit hooks install --dry-run
 ```
 
-Re-running is safe: it drops its own previous entries first, leaves other tools' hooks alone, and writes a `.bak`. If it cannot parse your settings file it changes nothing and says so.
+(`$CLAUDE_CONFIG_DIR` and `$CODEX_HOME` are honoured if set.)
+
+Re-running is safe: it drops its own previous entries first and writes a `.bak`. Other tools' hooks are left alone — including one that shares a group with ours, because entries are matched one handler at a time, not one group at a time. The write is a temp-and-rename compared against the bytes it read, so a settings file edited underneath it is never silently clobbered. If it cannot parse your settings file it changes nothing and says so.
 
 | Hook | Event | Does |
 |---|---|---|
@@ -101,8 +118,11 @@ Re-running is safe: it drops its own previous entries first, leaves other tools'
 | `lazy-activate.js` | `SessionStart` | resolves the active `godkit-lazy` mode and injects its ruleset |
 | `lazy-subagent.js` | `SubagentStart` | injects the same ruleset into spawned subagents |
 | `lazy-mode-tracker.js` | `UserPromptSubmit` | tracks `/godkit-lazy` mode switches for the session |
-| `clockout.js` | `Stop` | blocks the turn if files changed and no log was written |
+| `work-track.js` | `PreToolUse`, `PostToolUse`, `SessionEnd` | records whether *this* session changed project files |
+| `clockout.js` | `Stop` | blocks the turn if this session changed files and wrote no log |
 | `map-watch.js` | `PostToolUse` (Bash) | after a commit or merge, says if the map went stale |
+
+`clockout.js` judges the session, not the directory: a dirty file someone else left behind is not evidence about you, and a log naming a different session does not clock you out. That is what `work-track.js` is for — without it registered, clockout has nothing to act on.
 
 Hooks never throw. Malformed input, missing git, absent `.agent/` — all exit 0. A broken hook must not break the session it was meant to help.
 
@@ -116,8 +136,9 @@ Hooks never throw. Malformed input, missing git, absent `.agent/` — all exit 0
 | `godkit save [file]` | save a merged graph as the map (`graph.json`, `MAP.md`, `meta.json`) |
 | `godkit skills [--link\|--unlink] [tool...] [--force]` | this project's own skills in `.agent/skills/` |
 | `godkit evolve [--write]` | what the logs say about each project skill; `--write` → `.agent/SKILLS.md` |
-| `godkit doctor` | what is set up here, and whether the map is stale |
-| `godkit uninstall [tool]` | remove the installed skills (leaves your `.agent/` alone) |
+| `godkit hooks [status\|install\|uninstall]` | the hook registrations, with `--dry-run` |
+| `godkit doctor` | what is set up here, whether the map is stale, and which hooks are registered |
+| `godkit uninstall [tool]` | remove the skills godkit installed (leaves your `.agent/` alone) |
 
 ## Skills
 
@@ -173,7 +194,13 @@ godkit skills --link     # link into .claude/skills/ and .agents/skills/
 godkit skills --unlink
 ```
 
-Write one with the `godkit-evolve` skill, or by hand.
+Write one with the `godkit-evolve` skill, or by hand. Every SKILL.md must declare `origin`
+(`authored`, `captured`, `derived` or `fix`) and `enabled` (`true` or `false`) in its frontmatter;
+one that does not, or whose frontmatter will not parse, is a blocking finding and does not link.
+
+What godkit links is an owned **snapshot**, not a live link: the copy carries a digest of the
+source it was taken from, so godkit replaces only what it wrote and never removes something you
+put at that path yourself.
 
 **Two things keep a generated skill from being dangerous, and the pattern scan is neither of them.** It is **inert until linked** — no host reads `.agent/skills/` — and `.agent/` is **committed**, so every skill and every revision lands in a diff. On top of those, a scan blocks linking a skill that bundles an executable, carries a credential, or tries to override the agent's instructions.
 

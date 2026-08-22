@@ -10,13 +10,26 @@ const path = require('node:path')
 const { execFileSync } = require('node:child_process')
 
 const ROOT = path.resolve(__dirname, '..')
+const STATE = fs.mkdtempSync(path.join(os.tmpdir(), 'godkit-hook-state-'))
+process.on('exit', () => fs.rmSync(STATE, { recursive: true, force: true }))
 
-function runHook(script, payload) {
-  return execFileSync(process.execPath, [path.join(ROOT, 'hooks', script)], {
+function runHook(script, payload, argv) {
+  return execFileSync(process.execPath, [path.join(ROOT, 'hooks', script), ...(argv || [])], {
     input: typeof payload === 'string' ? payload : JSON.stringify(payload),
     encoding: 'utf8',
     stdio: ['pipe', 'pipe', 'pipe'],
+    // Session state must never land in the real home directory during a test run.
+    env: { ...process.env, CLAUDE_CONFIG_DIR: STATE, PLUGIN_DATA: '', CODEX_HOME: '' },
   })
+}
+
+// Work is session-owned evidence now: a dirty tree alone proves nothing about THIS session.
+function recordWork(dir, sid, file) {
+  runHook(
+    'work-track.js',
+    { cwd: dir, session_id: sid, tool_name: 'Edit', tool_input: { file_path: path.join(dir, file) } },
+    ['edit'],
+  )
 }
 
 function repo() {
@@ -83,15 +96,26 @@ test('clockout stays silent for a session that changed nothing', () => {
   fs.rmSync(d, { recursive: true, force: true })
 })
 
-test('clockout blocks when files changed and no log was written', () => {
+test('clockout blocks when this session worked and no log was written', () => {
   const d = repo()
   fs.mkdirSync(path.join(d, '.agent', 'log'), { recursive: true })
   fs.writeFileSync(path.join(d, 'code.js'), 'changed\n')
+  recordWork(d, 'block001', 'code.js')
 
-  const out = runHook('clockout.js', { cwd: d, session_id: 'abcd1234' })
+  const out = runHook('clockout.js', { cwd: d, session_id: 'block001' })
   const decision = JSON.parse(out)
   assert.equal(decision.decision, 'block')
   assert.match(decision.reason, /Clock out first/)
+  fs.rmSync(d, { recursive: true, force: true })
+})
+
+test('a dirty tree this session did not touch is not evidence against it', () => {
+  const d = repo()
+  fs.mkdirSync(path.join(d, '.agent', 'log'), { recursive: true })
+  fs.writeFileSync(path.join(d, 'code.js'), 'someone else changed this\n')
+  recordWork(d, 'other001', 'code.js')
+
+  assert.equal(runHook('clockout.js', { cwd: d, session_id: 'clean001' }).trim(), '')
   fs.rmSync(d, { recursive: true, force: true })
 })
 
@@ -100,9 +124,23 @@ test('clockout accepts a log entry carrying this session id', () => {
   const log = path.join(d, '.agent', 'log')
   fs.mkdirSync(log, { recursive: true })
   fs.writeFileSync(path.join(d, 'code.js'), 'changed\n')
+  recordWork(d, 'abcd1234', 'code.js')
   fs.writeFileSync(path.join(log, '2026-08-22T1200Z-claude-abcd1234.md'), 'logged\n')
 
   assert.equal(runHook('clockout.js', { cwd: d, session_id: 'abcd1234' }).trim(), '')
+  fs.rmSync(d, { recursive: true, force: true })
+})
+
+test('a log naming a different session does not clock this one out', () => {
+  const d = repo()
+  const log = path.join(d, '.agent', 'log')
+  fs.mkdirSync(log, { recursive: true })
+  fs.writeFileSync(path.join(d, 'code.js'), 'changed\n')
+  recordWork(d, 'mine0001', 'code.js')
+  fs.writeFileSync(path.join(log, '2026-08-22T1200Z-claude-theirs01.md'), 'logged\n')
+
+  const decision = JSON.parse(runHook('clockout.js', { cwd: d, session_id: 'mine0001' }))
+  assert.equal(decision.decision, 'block')
   fs.rmSync(d, { recursive: true, force: true })
 })
 
@@ -111,7 +149,8 @@ test('clockout never blocks twice in one turn', () => {
   fs.mkdirSync(path.join(d, '.agent', 'log'), { recursive: true })
   fs.writeFileSync(path.join(d, 'code.js'), 'changed\n')
 
-  const out = runHook('clockout.js', { cwd: d, session_id: 'abcd1234', stop_hook_active: true })
+  recordWork(d, 'loop0001', 'code.js')
+  const out = runHook('clockout.js', { cwd: d, session_id: 'loop0001', stop_hook_active: true })
   assert.equal(out.trim(), '', 'stop_hook_active must short-circuit, or the turn loops forever')
   fs.rmSync(d, { recursive: true, force: true })
 })
@@ -120,8 +159,9 @@ test('changes confined to .agent/ do not count as work needing a log', () => {
   const d = repo()
   fs.mkdirSync(path.join(d, '.agent', 'log'), { recursive: true })
   fs.writeFileSync(path.join(d, '.agent', 'BOARD.md'), '# Board\n')
+  recordWork(d, 'agent001', path.join('.agent', 'BOARD.md'))
 
-  assert.equal(runHook('clockout.js', { cwd: d, session_id: 'abcd1234' }).trim(), '')
+  assert.equal(runHook('clockout.js', { cwd: d, session_id: 'agent001' }).trim(), '')
   fs.rmSync(d, { recursive: true, force: true })
 })
 

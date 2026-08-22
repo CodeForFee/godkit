@@ -5,7 +5,7 @@ const fs = require('node:fs')
 const os = require('node:os')
 const path = require('node:path')
 
-const { scan, category } = require('../lib/scan')
+const { scan, category, loadIgnore } = require('../lib/scan')
 const { batch } = require('../lib/batch')
 
 function fixture() {
@@ -75,6 +75,41 @@ test('scan honours .agentignore', () => {
   const r = scan(d)
   assert.ok(!r.files.some((f) => f.path.startsWith('src/deep/')), 'ignored directory is skipped')
   assert.ok(r.files.some((f) => f.path === 'src/a.js'), 'siblings are still scanned')
+  fs.rmSync(d, { recursive: true, force: true })
+})
+
+test('ignore matcher safely supports wildcards, anchoring, paths, and directories', () => {
+  const d = fixture()
+  const file = path.join(d, '.gitignore')
+  fs.writeFileSync(file, [
+    '*.tmp',
+    'file?.js',
+    '?leading.js',
+    '/root.js',
+    'docs/*.md',
+    'src/generated/',
+    'plain/',
+    '!keep.js',
+    'src/**/deep.js',
+    '[literal].js',
+  ].join('\n'))
+  const ignored = loadIgnore(file)
+
+  assert.equal(ignored('nested/a.tmp', false), true)
+  assert.equal(ignored('file1.js', false), true)
+  assert.equal(ignored('file12.js', false), false)
+  assert.equal(ignored('aleading.js', false), true, 'a leading ? is safe and matches one character')
+  assert.equal(ignored('root.js', false), true)
+  assert.equal(ignored('nested/root.js', false), false)
+  assert.equal(ignored('docs/a.md', false), true)
+  assert.equal(ignored('nested/docs/a.md', false), false)
+  assert.equal(ignored('src/generated', true), true)
+  assert.equal(ignored('src/generated', false), false)
+  assert.equal(ignored('nested/plain', true), true)
+  assert.equal(ignored('keep.js', false), false, 'negation is unsupported and skipped')
+  assert.equal(ignored('src/x/deep.js', false), false, 'mid-path ** is unsupported and skipped')
+  assert.equal(ignored('[literal].js', false), true, 'regex punctuation stays literal')
+
   fs.rmSync(d, { recursive: true, force: true })
 })
 

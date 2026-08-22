@@ -4,12 +4,15 @@
     "name": "godkit",
     "languages": [
       "JavaScript",
-      "Markdown"
+      "Markdown",
+      "TOML",
+      "YAML",
+      "JSON"
     ],
     "frameworks": [],
-    "description": "One shared harness for every AI agent. A committed .agent/ directory carries the board, the thread, the task files, the logs and the project map; the skills teach agents to read it before editing and write to it before finishing. Zero runtime dependencies. AGENTS.md generates every per-host rule file, and graph.json generates MAP.md plus its own freshness signatures, so no fact has two homes.",
-    "generatedAt": "2026-08-22T02:46:54.451Z",
-    "sha": "6491b07fe4b0563c1068fd30170cf1749632d087"
+    "description": "Zero-runtime-dependency Node.js harness that coordinates Claude Code, Codex, Cursor, Copilot, and Gemini-compatible agents through committed .agent state. Host rule or SessionStart hook -> shared BOARD/map/log context -> CLI and skill workflows -> verified task handoff. Project maps and skill evidence are Markdown/JSON files backed by Git; there is no database or application authentication layer.",
+    "generatedAt": "2026-08-22T15:16:17.222Z",
+    "sha": "efeeca61fe283ccfcf0fea265a352a8df2cdca69"
   },
   "nodes": [
     {
@@ -17,9 +20,134 @@
       "type": "file",
       "name": "AGENTS.md",
       "filePath": "AGENTS.md",
-      "summary": "The single source for every always-on rule file. Everything else is generated from it.",
+      "lineRange": [
+        1,
+        76
+      ],
+      "summary": "Canonical always-on collaboration protocol for every host: inspect shared .agent state, claim file scopes before edits, and log verified outcomes at clock-out. The other host-specific rule files are generated from this one.",
       "tags": [
-        "rules"
+        "agents",
+        "handoff",
+        "canonical-rules"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:CLAUDE.md",
+      "type": "file",
+      "name": "CLAUDE.md",
+      "filePath": "CLAUDE.md",
+      "lineRange": [
+        1,
+        76
+      ],
+      "summary": "Generated Claude-facing copy of AGENTS.md. It carries the full shared-state and file-ownership protocol so Claude sessions receive it without relying on hooks alone; edit AGENTS.md and regenerate instead of changing this file.",
+      "tags": [
+        "claude",
+        "agents",
+        "generated"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:gemini-extension.json",
+      "type": "file",
+      "name": "gemini-extension.json",
+      "filePath": "gemini-extension.json",
+      "lineRange": [
+        1,
+        8
+      ],
+      "summary": "Antigravity/Gemini extension manifest. It exposes the packaged skills and agents directories and selects AGENTS.md as the extension context file.",
+      "tags": [
+        "manifest",
+        "antigravity",
+        "gemini"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:.agents/rules/godkit.md",
+      "type": "file",
+      "name": "godkit.md",
+      "filePath": ".agents/rules/godkit.md",
+      "lineRange": [
+        1,
+        76
+      ],
+      "summary": "Generated Antigravity-facing copy of the canonical AGENTS.md protocol. It is byte-for-byte rule content for a host with no hook enforcement, so changes belong in AGENTS.md and the sync generator.",
+      "tags": [
+        "antigravity",
+        "agents",
+        "generated"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:.claude-plugin/marketplace.json",
+      "type": "file",
+      "name": "marketplace.json",
+      "filePath": ".claude-plugin/marketplace.json",
+      "lineRange": [
+        1,
+        17
+      ],
+      "summary": "Claude plugin marketplace entry for the local godkit package, including owner metadata, description, category, and local source root.",
+      "tags": [
+        "claude",
+        "marketplace",
+        "manifest"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:.claude-plugin/plugin.json",
+      "type": "file",
+      "name": "plugin.json",
+      "filePath": ".claude-plugin/plugin.json",
+      "lineRange": [
+        1,
+        12
+      ],
+      "summary": "Claude Code plugin manifest. It publishes the godkit package identity and points Claude at the shared hook registry rather than duplicating hook definitions.",
+      "tags": [
+        "claude",
+        "plugin",
+        "hooks"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:.codex-plugin/plugin.json",
+      "type": "file",
+      "name": "plugin.json",
+      "filePath": ".codex-plugin/plugin.json",
+      "lineRange": [
+        1,
+        14
+      ],
+      "summary": "Codex plugin manifest exposing the package's shared skills, agents, and hook registry. Keeping these as paths makes Codex consume the same canonical assets as the other hosts.",
+      "tags": [
+        "codex",
+        "plugin",
+        "hooks"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:.github/copilot-instructions.md",
+      "type": "file",
+      "name": "copilot-instructions.md",
+      "filePath": ".github/copilot-instructions.md",
+      "lineRange": [
+        1,
+        76
+      ],
+      "summary": "Generated GitHub Copilot-facing copy of the canonical AGENTS.md collaboration rules. It exists as a host adapter and must be regenerated from AGENTS.md rather than edited independently.",
+      "tags": [
+        "copilot",
+        "agents",
+        "generated"
       ],
       "complexity": "simple"
     },
@@ -28,146 +156,32 @@
       "type": "file",
       "name": "architect.md",
       "filePath": "agents/architect.md",
-      "summary": "Given a merged knowledge graph of a codebase, derives the architecture layers and an ordered start-here tour, plus the project description, languages and frameworks.",
-      "tags": [
-        "skills"
+      "lineRange": [
+        1,
+        79
       ],
-      "complexity": "simple"
+      "summary": "Prompt contract for the architecture synthesis pass after batch graphs are merged. It derives project metadata, 3-8 named layers, and a 5-9 step start-here tour without inventing framework or runtime claims.",
+      "tags": [
+        "agent",
+        "architecture",
+        "map"
+      ],
+      "complexity": "moderate"
     },
     {
       "id": "file:agents/file-analyzer.md",
       "type": "file",
       "name": "file-analyzer.md",
       "filePath": "agents/file-analyzer.md",
-      "summary": "Analyzes one batch of source files and emits knowledge-graph nodes and edges describing what they are and how they connect.",
-      "tags": [
-        "skills"
+      "lineRange": [
+        1,
+        97
       ],
-      "complexity": "simple"
-    },
-    {
-      "id": "file:bin/godkit.js",
-      "type": "file",
-      "name": "godkit.js",
-      "filePath": "bin/godkit.js",
-      "summary": "CLI entry: init, scan, save, install, doctor, uninstall. The only place the per-tool install paths are written down.",
+      "summary": "Prompt and schema contract for turning one scan batch into graph nodes and observed edges. It requires every assigned file to be read, stable relative-path IDs, actionable summaries, no guessed relationships, and exactly one scratch JSON output.",
       "tags": [
-        "cli"
-      ],
-      "complexity": "moderate"
-    },
-    {
-      "id": "file:docs/agent-portability.md",
-      "type": "file",
-      "name": "agent-portability.md",
-      "filePath": "docs/agent-portability.md",
-      "summary": "What each of the four tools reads, and how to add a fifth.",
-      "tags": [
-        "docs"
-      ],
-      "complexity": "simple"
-    },
-    {
-      "id": "file:hooks/brief.js",
-      "type": "file",
-      "name": "brief.js",
-      "filePath": "hooks/brief.js",
-      "summary": "SessionStart: injects board, map freshness, newest logs, THREAD tail. Never throws.",
-      "tags": [
-        "hooks"
-      ],
-      "complexity": "simple"
-    },
-    {
-      "id": "file:hooks/clockout.js",
-      "type": "file",
-      "name": "clockout.js",
-      "filePath": "hooks/clockout.js",
-      "summary": "Stop: the only hook that blocks. Refuses to end a session that changed files but wrote no log. Guarded against looping.",
-      "tags": [
-        "hooks"
-      ],
-      "complexity": "moderate"
-    },
-    {
-      "id": "file:hooks/godkit-hooks.json",
-      "type": "file",
-      "name": "godkit-hooks.json",
-      "filePath": "hooks/godkit-hooks.json",
-      "summary": "Hook registration read by both Claude Code and Codex.",
-      "tags": [
-        "config",
-        "hooks"
-      ],
-      "complexity": "simple"
-    },
-    {
-      "id": "file:hooks/install.js",
-      "type": "file",
-      "name": "install.js",
-      "filePath": "hooks/install.js",
-      "summary": "Registers the hooks in a settings file. Idempotent, leaves other tools alone, refuses to rewrite JSON it could not parse.",
-      "tags": [
-        "hooks",
-        "install"
-      ],
-      "complexity": "moderate"
-    },
-    {
-      "id": "file:hooks/map-watch.js",
-      "type": "file",
-      "name": "map-watch.js",
-      "filePath": "hooks/map-watch.js",
-      "summary": "PostToolUse on Bash: after a commit or merge, says the map went stale, but only when it actually did.",
-      "tags": [
-        "hooks"
-      ],
-      "complexity": "simple"
-    },
-    {
-      "id": "file:lib/batch.js",
-      "type": "file",
-      "name": "batch.js",
-      "filePath": "lib/batch.js",
-      "summary": "Groups scanned files so files that import each other are described together. Greedy locality, no dependency.",
-      "tags": [
-        "core",
-        "memory"
-      ],
-      "complexity": "simple"
-    },
-    {
-      "id": "file:lib/freshness.js",
-      "type": "file",
-      "name": "freshness.js",
-      "filePath": "lib/freshness.js",
-      "summary": "Is the map still true? staleness() is git-only and free; classify() decides SKIP/PARTIAL/ARCHITECTURE/FULL. Split by cost on purpose.",
-      "tags": [
-        "core",
-        "memory"
-      ],
-      "complexity": "moderate"
-    },
-    {
-      "id": "file:lib/graph.js",
-      "type": "file",
-      "name": "graph.js",
-      "filePath": "lib/graph.js",
-      "summary": "The memory core: load, normalize, sanitize, save, render. Refuses to report a non-empty graph as empty, and strips any path outside the project to a basename before it is committed.",
-      "tags": [
-        "core",
-        "memory"
-      ],
-      "complexity": "complex"
-    },
-    {
-      "id": "file:lib/paths.js",
-      "type": "file",
-      "name": "paths.js",
-      "filePath": "lib/paths.js",
-      "summary": "Locates the project root and .agent/. Redirects a linked git worktree to the MAIN repo root, so an ephemeral worktree never swallows the memory.",
-      "tags": [
-        "core"
+        "agent",
+        "analysis",
+        "graph-schema"
       ],
       "complexity": "moderate"
     },
@@ -176,164 +190,638 @@
       "type": "file",
       "name": "scan.js",
       "filePath": "lib/scan.js",
-      "summary": "Walks the project, categorizes files, resolves internal imports. The deterministic half of the map, so it costs no tokens.",
+      "lineRange": [
+        1,
+        182
+      ],
+      "summary": "Deterministic filesystem scanner that categorizes authored files, applies hard skips plus a documented subset of .agentignore/.gitignore, and regex-extracts resolvable relative imports. Unknown types and files over 400 KiB are intentionally absent from the map input.",
       "tags": [
-        "core",
-        "memory"
+        "scanner",
+        "imports",
+        "ignore"
       ],
       "complexity": "moderate"
     },
     {
-      "id": "file:package.json",
-      "type": "file",
-      "name": "package.json",
-      "filePath": "package.json",
-      "summary": "npm identity: bin, files allowlist, zero dependencies.",
+      "id": "function:lib/scan.js:scan",
+      "type": "function",
+      "name": "scan",
+      "filePath": "lib/scan.js",
+      "lineRange": [
+        114,
+        180
+      ],
+      "summary": "Walks a root in stable path order, skips unreadable or ignored entries, reads code to resolve internal imports, and returns file/category/size/line metadata plus language counts. Absolute paths are removed unless keepAbs is explicitly requested.",
       "tags": [
-        "config"
+        "scanner",
+        "filesystem",
+        "imports"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:lib/batch.js",
+      "type": "file",
+      "name": "batch.js",
+      "filePath": "lib/batch.js",
+      "lineRange": [
+        1,
+        91
+      ],
+      "summary": "Greedy deterministic clusterer for semantic-analysis calls. It favors import-connected files, then same-directory neighbors, under a 60 KiB budget while guaranteeing every non-data file is placed once even when one file exceeds budget.",
+      "tags": [
+        "batching",
+        "map",
+        "locality"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:lib/batch.js:batch",
+      "type": "function",
+      "name": "batch",
+      "filePath": "lib/batch.js",
+      "lineRange": [
+        30,
+        89
+      ],
+      "summary": "Builds stable analysis batches by traversing undirected import adjacency before filling with directory neighbors. Oversized seeds are retained rather than dropped, preserving full scan coverage.",
+      "tags": [
+        "batching",
+        "imports",
+        "coverage"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:lib/graph.js",
+      "type": "file",
+      "name": "graph.js",
+      "filePath": "lib/graph.js",
+      "lineRange": [
+        1,
+        263
+      ],
+      "summary": "Persistence and projection layer for project memory: guarded graph loading, portable path sanitization, node/edge normalization, saving, structural signatures, and generated MAP.md rendering. Node IDs are identity, duplicate nodes resolve last-wins, and dangling edges are dropped.",
+      "tags": [
+        "graph",
+        "persistence",
+        "map"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "function:lib/graph.js:loadGraph",
+      "type": "function",
+      "name": "loadGraph",
+      "filePath": "lib/graph.js",
+      "lineRange": [
+        65,
+        99
+      ],
+      "summary": "Loads an existing graph but refuses to turn a nonempty malformed or graph-shaped-invalid file into an empty result. This guard prevents a parse failure from silently resetting committed project memory.",
+      "tags": [
+        "graph",
+        "load",
+        "safety"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:lib/graph.js:normalize",
+      "type": "function",
+      "name": "normalize",
+      "filePath": "lib/graph.js",
+      "lineRange": [
+        123,
+        178
+      ],
+      "summary": "Sanitizes node paths and complexity, deduplicates nodes by ID with last-write-wins semantics, deduplicates typed edges, drops dangling endpoints, and filters layer/tour references to known nodes.",
+      "tags": [
+        "graph",
+        "normalization",
+        "security"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "function:lib/graph.js:saveGraph",
+      "type": "function",
+      "name": "saveGraph",
+      "filePath": "lib/graph.js",
+      "lineRange": [
+        180,
+        187
+      ],
+      "summary": "Normalizes a graph, creates the destination directory, and writes the canonical pretty-printed graph JSON. All callers receive the cleaned in-memory value that was persisted.",
+      "tags": [
+        "graph",
+        "save",
+        "normalization"
       ],
       "complexity": "simple"
     },
     {
-      "id": "file:README.md",
-      "type": "file",
-      "name": "README.md",
-      "filePath": "README.md",
-      "summary": "What godkit is and how to install it.",
+      "id": "function:lib/graph.js:renderMap",
+      "type": "function",
+      "name": "renderMap",
+      "filePath": "lib/graph.js",
+      "lineRange": [
+        200,
+        250
+      ],
+      "summary": "Projects graph metadata, architecture layers, and the ordered start-here tour into generated Markdown, then appends recall instructions that tell later agents to grep the graph rather than load it whole.",
       "tags": [
-        "docs"
+        "graph",
+        "markdown",
+        "map"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:tests/freshness.test.js",
+      "type": "file",
+      "name": "freshness.test.js",
+      "filePath": "tests/freshness.test.js",
+      "lineRange": [
+        1,
+        77
+      ],
+      "summary": "Unit tests for rebuild classification thresholds, top-level path normalization, human freshness summaries, and exclusion of .agent from staleness checks. They exercise classify directly but do not create git repositories to cover staleness command failures.",
+      "tags": [
+        "test",
+        "freshness",
+        "map"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:commands/godkit-doubt.toml",
+      "type": "file",
+      "name": "godkit-doubt.toml",
+      "filePath": "commands/godkit-doubt.toml",
+      "lineRange": [
+        1,
+        2
+      ],
+      "summary": "Command adapter that forwards arguments to the godkit-doubt skill for pressure-testing a decision before it is recorded on the board.",
+      "tags": [
+        "command",
+        "skill",
+        "decision"
       ],
       "complexity": "simple"
     },
     {
-      "id": "file:scripts/check-versions.js",
+      "id": "file:commands/godkit-evolve.toml",
       "type": "file",
-      "name": "check-versions.js",
-      "filePath": "scripts/check-versions.js",
-      "summary": "All four manifests must share one version, and match the tag on a tag push. Catches the case where they agree while all being stale.",
+      "name": "godkit-evolve.toml",
+      "filePath": "commands/godkit-evolve.toml",
+      "lineRange": [
+        1,
+        2
+      ],
+      "summary": "Command adapter that forwards arguments to godkit-evolve for capturing, deriving, or repairing project-owned skills under .agent/skills.",
       "tags": [
-        "build"
+        "command",
+        "skill",
+        "evolution"
       ],
       "complexity": "simple"
+    },
+    {
+      "id": "file:commands/godkit-execute.toml",
+      "type": "file",
+      "name": "godkit-execute.toml",
+      "filePath": "commands/godkit-execute.toml",
+      "lineRange": [
+        1,
+        2
+      ],
+      "summary": "Command adapter that invokes the five-stage godkit-execute pipeline and passes through the requested plan or execution context.",
+      "tags": [
+        "command",
+        "skill",
+        "execution"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:commands/godkit-frontend.toml",
+      "type": "file",
+      "name": "godkit-frontend.toml",
+      "filePath": "commands/godkit-frontend.toml",
+      "lineRange": [
+        1,
+        2
+      ],
+      "summary": "Command adapter for the godkit-frontend design-taste skill, forwarding UI context and arguments to its visual direction workflow.",
+      "tags": [
+        "command",
+        "skill",
+        "frontend"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:commands/godkit-git.toml",
+      "type": "file",
+      "name": "godkit-git.toml",
+      "filePath": "commands/godkit-git.toml",
+      "lineRange": [
+        1,
+        2
+      ],
+      "summary": "Command adapter for parallel-agent git mechanics, including worktrees, commit checkpoints, and shared .agent merges.",
+      "tags": [
+        "command",
+        "skill",
+        "git"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:commands/godkit-handoff.toml",
+      "type": "file",
+      "name": "godkit-handoff.toml",
+      "filePath": "commands/godkit-handoff.toml",
+      "lineRange": [
+        1,
+        2
+      ],
+      "summary": "Command adapter for clock-in, scope claiming, and evidence-bearing clock-out through the godkit-handoff skill.",
+      "tags": [
+        "command",
+        "skill",
+        "handoff"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:commands/godkit-help.toml",
+      "type": "file",
+      "name": "godkit-help.toml",
+      "filePath": "commands/godkit-help.toml",
+      "lineRange": [
+        1,
+        2
+      ],
+      "summary": "Argument-free command adapter that asks godkit-help to display the shared-state layout, ladders, skills, and CLI reference card.",
+      "tags": [
+        "command",
+        "skill",
+        "help"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:commands/godkit-lazy.toml",
+      "type": "file",
+      "name": "godkit-lazy.toml",
+      "filePath": "commands/godkit-lazy.toml",
+      "lineRange": [
+        1,
+        2
+      ],
+      "summary": "Command adapter that passes the requested lite, full, ultra, or off intensity to godkit-lazy, including mode switching and reporting.",
+      "tags": [
+        "command",
+        "skill",
+        "lazy"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:commands/godkit-map.toml",
+      "type": "file",
+      "name": "godkit-map.toml",
+      "filePath": "commands/godkit-map.toml",
+      "lineRange": [
+        1,
+        2
+      ],
+      "summary": "Command adapter that directs godkit-map to build or incrementally refresh graph.json and MAP.md with any caller-supplied scope.",
+      "tags": [
+        "command",
+        "skill",
+        "map"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:commands/godkit-output-enforcement.toml",
+      "type": "file",
+      "name": "godkit-output-enforcement.toml",
+      "filePath": "commands/godkit-output-enforcement.toml",
+      "lineRange": [
+        1,
+        2
+      ],
+      "summary": "Command adapter for locking deliverable counts and rejecting placeholder or truncated output through godkit-output-enforcement.",
+      "tags": [
+        "command",
+        "skill",
+        "output"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:commands/godkit-plan.toml",
+      "type": "file",
+      "name": "godkit-plan.toml",
+      "filePath": "commands/godkit-plan.toml",
+      "lineRange": [
+        1,
+        2
+      ],
+      "summary": "Command adapter that asks godkit-plan to split work on file boundaries, assign owners, and write the resulting task files.",
+      "tags": [
+        "command",
+        "skill",
+        "planning"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:commands/godkit-review.toml",
+      "type": "file",
+      "name": "godkit-review.toml",
+      "filePath": "commands/godkit-review.toml",
+      "lineRange": [
+        1,
+        2
+      ],
+      "summary": "Command adapter for reviewing orchestration quality or diagnosing a failed multi-agent run with godkit-review.",
+      "tags": [
+        "command",
+        "skill",
+        "review"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:commands/godkit-test.toml",
+      "type": "file",
+      "name": "godkit-test.toml",
+      "filePath": "commands/godkit-test.toml",
+      "lineRange": [
+        1,
+        2
+      ],
+      "summary": "Command adapter for defining verification and the smallest regression check that proves requested behavior through godkit-test.",
+      "tags": [
+        "command",
+        "skill",
+        "testing"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:commands/godkit.toml",
+      "type": "file",
+      "name": "godkit.toml",
+      "filePath": "commands/godkit.toml",
+      "lineRange": [
+        1,
+        2
+      ],
+      "summary": "Top-level arrival command adapter: load shared state, refresh a stale map, synthesize and split the task, then claim scope before handling forwarded arguments.",
+      "tags": [
+        "command",
+        "skill",
+        "arrival"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:lib/lazy.js",
+      "type": "file",
+      "name": "lazy.js",
+      "filePath": "lib/lazy.js",
+      "lineRange": [
+        1,
+        174
+      ],
+      "summary": "Centralizes lazy-mode configuration, runtime state, host-specific hook output, and instruction loading. Runtime mode is stored in one host-wide .godkit-lazy-active file, so concurrent sessions currently share and overwrite the same state.",
+      "tags": [
+        "lazy-mode",
+        "hooks",
+        "configuration",
+        "state"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:lib/lazy.js:isDeactivationCommand",
+      "type": "function",
+      "name": "isDeactivationCommand",
+      "filePath": "lib/lazy.js",
+      "lineRange": [
+        28,
+        31
+      ],
+      "summary": "Recognizes only whole-message lazy-mode shutdown phrases, avoiding accidental deactivation when ordinary prompts merely mention normal mode.",
+      "tags": [
+        "lazy-mode",
+        "parsing"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:lib/lazy.js:configPath",
+      "type": "function",
+      "name": "configPath",
+      "filePath": "lib/lazy.js",
+      "lineRange": [
+        50,
+        52
+      ],
+      "summary": "Returns the cross-platform Godkit config.json path used by both lazy and evolve settings.",
+      "tags": [
+        "configuration",
+        "paths"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:lib/lazy.js:getDefaultMode",
+      "type": "function",
+      "name": "getDefaultMode",
+      "filePath": "lib/lazy.js",
+      "lineRange": [
+        54,
+        61
+      ],
+      "summary": "Resolves the default lazy intensity from GODKIT_LAZY_MODE, persisted config, then full.",
+      "tags": [
+        "lazy-mode",
+        "configuration"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:lib/lazy.js:writeDefaultMode",
+      "type": "function",
+      "name": "writeDefaultMode",
+      "filePath": "lib/lazy.js",
+      "lineRange": [
+        65,
+        74
+      ],
+      "summary": "Persists a validated defaultMode while retaining other parsed config keys; malformed config currently falls back to an empty object and is overwritten non-atomically.",
+      "tags": [
+        "lazy-mode",
+        "configuration",
+        "filesystem"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:lib/lazy.js:statePath",
+      "type": "function",
+      "name": "statePath",
+      "filePath": "lib/lazy.js",
+      "lineRange": [
+        86,
+        88
+      ],
+      "summary": "Selects the single runtime flag under Codex PLUGIN_DATA or the Claude config directory; it is host-scoped rather than session-scoped.",
+      "tags": [
+        "lazy-mode",
+        "state",
+        "paths"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:lib/lazy.js:setMode",
+      "type": "function",
+      "name": "setMode",
+      "filePath": "lib/lazy.js",
+      "lineRange": [
+        90,
+        94
+      ],
+      "summary": "Writes the active lazy intensity into the shared runtime flag.",
+      "tags": [
+        "lazy-mode",
+        "state"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:lib/lazy.js:clearMode",
+      "type": "function",
+      "name": "clearMode",
+      "filePath": "lib/lazy.js",
+      "lineRange": [
+        96,
+        102
+      ],
+      "summary": "Deletes the shared lazy runtime flag and treats absence as already off.",
+      "tags": [
+        "lazy-mode",
+        "state"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:lib/lazy.js:readMode",
+      "type": "function",
+      "name": "readMode",
+      "filePath": "lib/lazy.js",
+      "lineRange": [
+        105,
+        111
+      ],
+      "summary": "Reads and validates the currently active intensity from the shared runtime flag; missing or invalid state is inactive.",
+      "tags": [
+        "lazy-mode",
+        "state"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:lib/lazy.js:writeHookOutput",
+      "type": "function",
+      "name": "writeHookOutput",
+      "filePath": "lib/lazy.js",
+      "lineRange": [
+        115,
+        129
+      ],
+      "summary": "Serializes injected lazy context in the shape expected by Codex or Claude hook events, with raw stdout reserved for Claude SessionStart.",
+      "tags": [
+        "lazy-mode",
+        "hooks",
+        "hosts"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:lib/lazy.js:getLazyInstructions",
+      "type": "function",
+      "name": "getLazyInstructions",
+      "filePath": "lib/lazy.js",
+      "lineRange": [
+        144,
+        157
+      ],
+      "summary": "Loads the shipped lazy skill, removes frontmatter, keeps only the requested intensity row, and falls back to a compact built-in instruction if the skill file is unavailable.",
+      "tags": [
+        "lazy-mode",
+        "skills",
+        "hooks"
+      ],
+      "complexity": "moderate"
     },
     {
       "id": "file:scripts/sync-rules.js",
       "type": "file",
       "name": "sync-rules.js",
       "filePath": "scripts/sync-rules.js",
-      "summary": "Generates every per-host rule file from AGENTS.md. --check fails CI on drift. Generated, so a copy cannot be edited in the wrong place.",
+      "lineRange": [
+        1,
+        65
+      ],
+      "summary": "Generates every host's always-on rule file from AGENTS.md, adding Cursor frontmatter only where required. --check turns the same projection into a CI drift detector.",
       "tags": [
-        "build"
+        "rules",
+        "generation",
+        "ci"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:scripts/sync-rules.js:build",
+      "type": "function",
+      "name": "build",
+      "filePath": "scripts/sync-rules.js",
+      "lineRange": [
+        24,
+        26
+      ],
+      "summary": "Builds a rule copy, optionally prefixing Cursor's generated .mdc frontmatter.",
+      "tags": [
+        "rules",
+        "generation"
       ],
       "complexity": "simple"
     },
     {
-      "id": "file:scripts/uninstall.js",
-      "type": "file",
-      "name": "uninstall.js",
-      "filePath": "scripts/uninstall.js",
-      "summary": "Removes what a host uninstall cannot see: linked skills and hook registrations. Leaves every .agent/ alone.",
-      "tags": [
-        "install"
+      "id": "function:scripts/sync-rules.js:main",
+      "type": "function",
+      "name": "main",
+      "filePath": "scripts/sync-rules.js",
+      "lineRange": [
+        28,
+        63
       ],
-      "complexity": "simple"
-    },
-    {
-      "id": "file:skills/godkit-execute/SKILL.md",
-      "type": "file",
-      "name": "SKILL.md",
-      "filePath": "skills/godkit-execute/SKILL.md",
-      "summary": "Run planned work through a five-stage pipeline so nothing ships unverified and nothing retries forever: pre-execute (validate scope and capability), guard (deny-only checks), execute (bounded), post-execute (verify against the world, not the return value), checkpoint (record it).",
+      "summary": "Compares or rewrites four host rule targets from the canonical AGENTS.md body and fails CI with actionable drift output in check mode.",
       "tags": [
-        "skills"
-      ],
-      "complexity": "simple"
-    },
-    {
-      "id": "file:skills/godkit-handoff/SKILL.md",
-      "type": "file",
-      "name": "SKILL.md",
-      "filePath": "skills/godkit-handoff/SKILL.md",
-      "summary": "The shared-state protocol for a repo worked on by several AI agents — Claude, Cursor, Codex, Antigravity, or the same tool across different sessions.",
-      "tags": [
-        "skills"
-      ],
-      "complexity": "simple"
-    },
-    {
-      "id": "file:skills/godkit-help/SKILL.md",
-      "type": "file",
-      "name": "SKILL.md",
-      "filePath": "skills/godkit-help/SKILL.md",
-      "summary": "Quick reference card for godkit — the shared .agent/ layout, the two non-negotiable rules, the ladders, the skill set, the CLI commands and the install paths for Claude Code, Cursor, Codex and Antigravity.",
-      "tags": [
-        "skills"
-      ],
-      "complexity": "simple"
-    },
-    {
-      "id": "file:skills/godkit-lazy/SKILL.md",
-      "type": "file",
-      "name": "SKILL.md",
-      "filePath": "skills/godkit-lazy/SKILL.md",
-      "summary": "Forces the simplest solution that actually works — shortest, most minimal, least code.",
-      "tags": [
-        "skills"
-      ],
-      "complexity": "simple"
-    },
-    {
-      "id": "file:skills/godkit-map/SKILL.md",
-      "type": "file",
-      "name": "SKILL.md",
-      "filePath": "skills/godkit-map/SKILL.md",
-      "summary": "Build or refresh the project map — a durable, committed description of what a codebase is, stored as .agent/graph.json with a readable .agent/MAP.md projection, so every agent that arrives later knows the architecture, the entry points and the landmines without re-reading the repo.",
-      "tags": [
-        "skills"
-      ],
-      "complexity": "simple"
-    },
-    {
-      "id": "file:skills/godkit-plan/SKILL.md",
-      "type": "file",
-      "name": "SKILL.md",
-      "filePath": "skills/godkit-plan/SKILL.md",
-      "summary": "Decompose a task into seams that several agents or tools can work without colliding: read the shared state first, cut on file boundaries, give every seam a scope, an exit condition and a verification, assign an owner from the roster, then write each one out as a task file under .agent/tasks/ and claim what you are taking.",
-      "tags": [
-        "skills"
-      ],
-      "complexity": "simple"
-    },
-    {
-      "id": "file:skills/godkit-review/SKILL.md",
-      "type": "file",
-      "name": "SKILL.md",
-      "filePath": "skills/godkit-review/SKILL.md",
-      "summary": "Review how work was organized and diagnose runs that went wrong: unclaimed edits, missing handoff logs, seams that share files, delegations with no exit condition, results accepted without verification, loops that never ended, context lost between agents, two agents undoing each other.",
-      "tags": [
-        "skills"
-      ],
-      "complexity": "simple"
-    },
-    {
-      "id": "file:skills/godkit-test/SKILL.md",
-      "type": "file",
-      "name": "SKILL.md",
-      "filePath": "skills/godkit-test/SKILL.md",
-      "summary": "Decide what counts as verified, and write the smallest check that would fail if the logic broke.",
-      "tags": [
-        "skills"
-      ],
-      "complexity": "simple"
-    },
-    {
-      "id": "file:skills/godkit/references/PATTERNS.md",
-      "type": "file",
-      "name": "PATTERNS.md",
-      "filePath": "skills/godkit/references/PATTERNS.md",
-      "summary": "Progressive-disclosure reference: ten orchestration failure classes stated as the rule that prevents each. Loaded only when designing a delegation mechanism, never for ordinary work.",
-      "tags": [
-        "skills"
+        "rules",
+        "generation",
+        "ci"
       ],
       "complexity": "moderate"
     },
@@ -342,207 +830,3784 @@
       "type": "file",
       "name": "SKILL.md",
       "filePath": "skills/godkit/SKILL.md",
-      "summary": "The arrival protocol for a repo worked on by several AI agents.",
+      "lineRange": [
+        1,
+        147
+      ],
+      "summary": "Primary tech-lead arrival and orchestration protocol: inspect shared state, synthesize work, cut file-boundary seams, route them by capability and cost, verify results, and clock out. Its non-negotiables are reading the board, claiming scope, verifying delegation, and logging work.",
+      "tags": [
+        "skill",
+        "orchestration",
+        "multi-agent",
+        "protocol"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "file:skills/godkit-doubt/SKILL.md",
+      "type": "file",
+      "name": "SKILL.md",
+      "filePath": "skills/godkit-doubt/SKILL.md",
+      "lineRange": [
+        1,
+        57
+      ],
+      "summary": "Pre-commit adversarial pass for consequential board decisions: state the choice and reason, argue the strongest contrary case, check shared-state contradictions, then record one resolved decision. It is intentionally not a postmortem or an open-ended debate.",
+      "tags": [
+        "skill",
+        "decisions",
+        "review",
+        "protocol"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:skills/godkit-execute/SKILL.md",
+      "type": "file",
+      "name": "SKILL.md",
+      "filePath": "skills/godkit-execute/SKILL.md",
+      "lineRange": [
+        1,
+        89
+      ],
+      "summary": "Five-stage execution protocol covering preflight, deny-only guards, bounded action, independent verification, and checkpointing. Its recovery rule permits retries only after measurable state advancement and stops repeated or unproven loops.",
+      "tags": [
+        "skill",
+        "execution",
+        "verification",
+        "recovery"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "file:skills/godkit-frontend/SKILL.md",
+      "type": "file",
+      "name": "SKILL.md",
+      "filePath": "skills/godkit-frontend/SKILL.md",
+      "lineRange": [
+        1,
+        91
+      ],
+      "summary": "Base frontend taste system that derives variance, motion, and density dials from the brief, rejects common generic UI defaults, and routes specialized visual workflows to twelve reference variants. It governs visual judgment, not accessibility, correctness, or performance.",
+      "tags": [
+        "skill",
+        "frontend",
+        "design-system",
+        "ui"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:skills/godkit-frontend/references/brandkit.md",
+      "type": "file",
+      "name": "brandkit.md",
+      "filePath": "skills/godkit-frontend/references/brandkit.md",
+      "lineRange": [
+        1,
+        57
+      ],
+      "summary": "Image-only workflow for a cohesive 3x3 brand identity board spanning strategy-derived logo concept, palette, type, and digital/physical applications. It deliberately produces a presentation reference, not usable logo assets or UI screens.",
+      "tags": [
+        "frontend",
+        "brand",
+        "image-generation",
+        "reference"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:skills/godkit-frontend/references/brutalist.md",
+      "type": "file",
+      "name": "brutalist.md",
+      "filePath": "skills/godkit-frontend/references/brutalist.md",
+      "lineRange": [
+        1,
+        44
+      ],
+      "summary": "Opt-in brutalist/industrial preset with high layout variance, mechanical motion, bimodal density, one committed substrate, and hard zero-radius/grid-line rules. It is explicitly unsafe as a style fallback when the brief is silent.",
+      "tags": [
+        "frontend",
+        "brutalist",
+        "design-variant"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:skills/godkit-frontend/references/image-to-code.md",
+      "type": "file",
+      "name": "image-to-code.md",
+      "filePath": "skills/godkit-frontend/references/image-to-code.md",
+      "lineRange": [
+        1,
+        61
+      ],
+      "summary": "Image-first implementation pipeline that generates one reference per section, extracts concrete design properties, and then translates them faithfully into code. Ambiguity triggers a new detail image rather than cropping or generic guesswork.",
+      "tags": [
+        "frontend",
+        "image-generation",
+        "implementation",
+        "workflow"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:skills/godkit-frontend/references/imagegen-mobile.md",
+      "type": "file",
+      "name": "imagegen-mobile.md",
+      "filePath": "skills/godkit-frontend/references/imagegen-mobile.md",
+      "lineRange": [
+        1,
+        57
+      ],
+      "summary": "Image-only mobile comp workflow that locks one platform idiom and design bible across a logically connected screen flow. Phone framing, safe areas, readable type, and mobile-native hierarchy are non-negotiable.",
+      "tags": [
+        "frontend",
+        "mobile",
+        "image-generation",
+        "reference"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:skills/godkit-frontend/references/imagegen-web.md",
+      "type": "file",
+      "name": "imagegen-web.md",
+      "filePath": "skills/godkit-frontend/references/imagegen-web.md",
+      "lineRange": [
+        1,
+        62
+      ],
+      "summary": "Image-only web-comp workflow that generates one horizontal image per requested section while holding palette, type, CTA family, radius logic, and color grade consistent across the set. It supplies concrete default section counts and resists repeated template compositions.",
+      "tags": [
+        "frontend",
+        "web",
+        "image-generation",
+        "reference"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:skills/godkit-frontend/references/minimal.md",
+      "type": "file",
+      "name": "minimal.md",
+      "filePath": "skills/godkit-frontend/references/minimal.md",
+      "lineRange": [
+        1,
+        46
+      ],
+      "summary": "Editorial-minimal preset for calm working surfaces, using restrained dials, distinct sans/serif/mono roles, warm monochrome surfaces, small pastel accents, hairline borders, and nearly invisible motion.",
+      "tags": [
+        "frontend",
+        "minimal",
+        "design-variant"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:skills/godkit-frontend/references/redesign.md",
+      "type": "file",
+      "name": "redesign.md",
+      "filePath": "skills/godkit-frontend/references/redesign.md",
+      "lineRange": [
+        1,
+        66
+      ],
+      "summary": "Audit-first workflow for improving an existing UI inside its current stack: inventory, set dials, diagnose against a fixed checklist, then apply independently shippable fixes in impact/risk order. It explicitly prohibits framework migration and rewrite-sized diffs.",
+      "tags": [
+        "frontend",
+        "redesign",
+        "audit",
+        "workflow"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:skills/godkit-frontend/references/soft.md",
+      "type": "file",
+      "name": "soft.md",
+      "filePath": "skills/godkit-frontend/references/soft.md",
+      "lineRange": [
+        1,
+        46
+      ],
+      "summary": "Calm/premium style preset that biases toward whitespace, spring-like motion, and one committed glass, editorial-warm, or soft-structuralist archetype. It supplies nested shell/core components and rejects hard generic shadows and equal card grids.",
+      "tags": [
+        "frontend",
+        "premium",
+        "design-variant"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:skills/godkit-frontend/references/stitch-DESIGN.md",
+      "type": "file",
+      "name": "stitch-DESIGN.md",
+      "filePath": "skills/godkit-frontend/references/stitch-DESIGN.md",
+      "lineRange": [
+        1,
+        86
+      ],
+      "summary": "Fill-in design-spec template for one-shot screen generators, covering dial values, atmosphere, exact palette/type/layout/component choices, static versus deferred motion intent, and restated banned defaults. Every bracket must be resolved before handoff.",
+      "tags": [
+        "frontend",
+        "template",
+        "design-spec"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:skills/godkit-frontend/references/stitch.md",
+      "type": "file",
+      "name": "stitch.md",
+      "filePath": "skills/godkit-frontend/references/stitch.md",
+      "lineRange": [
+        1,
+        49
+      ],
+      "summary": "Workflow for producing a concrete single-file design spec for one-shot static screen generators. It moves iterative checks into explicit values and separates what renders now from interaction/motion intent implemented later.",
+      "tags": [
+        "frontend",
+        "design-spec",
+        "workflow"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:skills/godkit-frontend/references/strict.md",
+      "type": "file",
+      "name": "strict.md",
+      "filePath": "skills/godkit-frontend/references/strict.md",
+      "lineRange": [
+        1,
+        42
+      ],
+      "summary": "Verify-first variant that forces stable-but-varied layout/type/motion choices and a written preflight before code. The preflight proves headline wrapping, complete grid occupancy, real labels, and explicit composition decisions.",
+      "tags": [
+        "frontend",
+        "verification",
+        "design-variant"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:skills/godkit-frontend/references/v1.md",
+      "type": "file",
+      "name": "v1.md",
+      "filePath": "skills/godkit-frontend/references/v1.md",
+      "lineRange": [
+        1,
+        46
+      ],
+      "summary": "Fixed-baseline frontend preset for consistency across runs, starting at variance 8, motion 6, and density 4 unless the user explicitly redirects. It also bundles React/Next, CSS Grid, dynamic-viewport, and dependency-reuse conventions.",
+      "tags": [
+        "frontend",
+        "baseline",
+        "design-variant"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:skills/godkit-git/SKILL.md",
+      "type": "file",
+      "name": "SKILL.md",
+      "filePath": "skills/godkit-git/SKILL.md",
+      "lineRange": [
+        1,
+        90
+      ],
+      "summary": "Git mechanics for multi-agent work: isolated worktrees enforce disjoint claims, verified commits are checkpoints, and generated map conflicts are resolved by taking one valid side then regenerating. Shared append-oriented state is committed with the code it describes.",
+      "tags": [
+        "skill",
+        "git",
+        "worktrees",
+        "multi-agent"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:skills/godkit-handoff/SKILL.md",
+      "type": "file",
+      "name": "SKILL.md",
+      "filePath": "skills/godkit-handoff/SKILL.md",
+      "lineRange": [
+        1,
+        204
+      ],
+      "summary": "Authoritative shared-state and lifecycle protocol for BOARD, THREAD, task files, session logs, project skills, and generated maps. It defines clock-in/out, ownership collision rules, monotonic bug/task IDs, memory placement, and the join gate that makes work resumable across tools.",
+      "tags": [
+        "skill",
+        "handoff",
+        "multi-agent",
+        "shared-state"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "file:skills/godkit-help/SKILL.md",
+      "type": "file",
+      "name": "SKILL.md",
+      "filePath": "skills/godkit-help/SKILL.md",
+      "lineRange": [
+        1,
+        115
+      ],
+      "summary": "One-shot reference card for Godkit's shared-state layout, lifecycle checklists, work/cost/code ladders, skill catalog, CLI, and per-host install locations. Because it duplicates CLI and integration details for discoverability, it must stay synchronized with implementation changes.",
+      "tags": [
+        "skill",
+        "help",
+        "reference",
+        "documentation"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:skills/godkit-lazy/SKILL.md",
+      "type": "file",
+      "name": "SKILL.md",
+      "filePath": "skills/godkit-lazy/SKILL.md",
+      "lineRange": [
+        1,
+        128
+      ],
+      "summary": "Defines the godkit-lazy skill: choose the minimum viable implementation through a YAGNI/reuse/stdlib/native/dependency ladder, preserve safety and correctness boundaries, and verify non-trivial logic with one focused check.",
+      "tags": [
+        "skill",
+        "minimalism",
+        "yagni",
+        "implementation",
+        "hooks"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:skills/godkit-map/SKILL.md",
+      "type": "file",
+      "name": "SKILL.md",
+      "filePath": "skills/godkit-map/SKILL.md",
+      "lineRange": [
+        1,
+        134
+      ],
+      "summary": "Defines the incremental project-mapping workflow: classify freshness, scan and batch files, analyze nodes and edges, merge safely, derive architecture and tour data, then save graph, MAP, and metadata in crash-safe order.",
+      "tags": [
+        "skill",
+        "project-map",
+        "code-graph",
+        "incremental",
+        "architecture"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "file:skills/godkit-output-enforcement/SKILL.md",
+      "type": "file",
+      "name": "SKILL.md",
+      "filePath": "skills/godkit-output-enforcement/SKILL.md",
+      "lineRange": [
+        1,
+        60
+      ],
+      "summary": "Defines output-completeness enforcement for generated artifacts: inventory requested deliverables, prohibit placeholders and silent truncation, cross-check output against the inventory, and pause only at clean resumable boundaries.",
+      "tags": [
+        "skill",
+        "output",
+        "completeness",
+        "generation",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:skills/godkit-plan/SKILL.md",
+      "type": "file",
+      "name": "SKILL.md",
+      "filePath": "skills/godkit-plan/SKILL.md",
+      "lineRange": [
+        1,
+        114
+      ],
+      "summary": "Defines multi-agent task decomposition into disjoint file-owned vertical seams, with explicit scope, exit conditions, verification, dependency order, capability-aware assignment, written task files, and join gates.",
+      "tags": [
+        "skill",
+        "planning",
+        "delegation",
+        "seams",
+        "coordination"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:skills/godkit-review/SKILL.md",
+      "type": "file",
+      "name": "SKILL.md",
+      "filePath": "skills/godkit-review/SKILL.md",
+      "lineRange": [
+        1,
+        134
+      ],
+      "summary": "Defines evidence-based review of multi-agent organization using BOARD, task, log, THREAD, and git evidence; reports compact process findings or traces a failed run to its first divergence and root cause.",
+      "tags": [
+        "skill",
+        "orchestration",
+        "review",
+        "postmortem",
+        "coordination"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:skills/godkit-test/SKILL.md",
+      "type": "file",
+      "name": "SKILL.md",
+      "filePath": "skills/godkit-test/SKILL.md",
+      "lineRange": [
+        1,
+        92
+      ],
+      "summary": "Defines the smallest meaningful verification strategy, prioritizing existing commands and focused assertions while requiring real output, regression coverage of both the symptom and sibling callers, and explicit evidence rather than claims.",
+      "tags": [
+        "skill",
+        "testing",
+        "verification",
+        "regression",
+        "evidence"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:skills/godkit/references/PATTERNS.md",
+      "type": "file",
+      "name": "PATTERNS.md",
+      "filePath": "skills/godkit/references/PATTERNS.md",
+      "lineRange": [
+        1,
+        188
+      ],
+      "summary": "Reference catalog of orchestration mechanisms covering capability seams, hook pipelines, append-only state, guarded execution, bounded delegation and retries, asynchronous runs, trust boundaries, quality gates, and progressive disclosure.",
+      "tags": [
+        "reference",
+        "orchestration",
+        "architecture",
+        "safety",
+        "delegation"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "file:templates/BOARD.md",
+      "type": "file",
+      "name": "BOARD.md",
+      "filePath": "templates/BOARD.md",
+      "lineRange": [
+        1,
+        39
+      ],
+      "summary": "Canonical one-screen shared-state template for agent roster, exclusive file claims, active tasks, known bugs, binding decisions, and the three latest handoffs.",
+      "tags": [
+        "template",
+        "shared-state",
+        "coordination",
+        "claims"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:templates/MAP.md",
+      "type": "file",
+      "name": "MAP.md",
+      "filePath": "templates/MAP.md",
+      "lineRange": [
+        1,
+        9
+      ],
+      "summary": "Initial placeholder project-map template that marks the map as not built and directs an agent to run the godkit-map workflow.",
+      "tags": [
+        "template",
+        "project-map",
+        "placeholder"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:templates/task.md",
+      "type": "file",
+      "name": "task.md",
+      "filePath": "templates/task.md",
+      "lineRange": [
+        1,
+        29
+      ],
+      "summary": "Per-task lifecycle template defining ownership, file scope, exit condition, phase, and structured Plan, Execute, Review, Test, and Handoff evidence sections.",
+      "tags": [
+        "template",
+        "task",
+        "lifecycle",
+        "handoff"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:templates/THREAD.md",
+      "type": "file",
+      "name": "THREAD.md",
+      "filePath": "templates/THREAD.md",
+      "lineRange": [
+        1,
+        18
+      ],
+      "summary": "Append-only inter-agent message template for timestamped, attributed, task-linked actionable communication, including recipients and blockers.",
+      "tags": [
+        "template",
+        "thread",
+        "communication",
+        "append-only"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:templates/rules/cursor-header.md",
+      "type": "file",
+      "name": "cursor-header.md",
+      "filePath": "templates/rules/cursor-header.md",
+      "lineRange": [
+        1,
+        5
+      ],
+      "summary": "Cursor-rule frontmatter template that marks generated Godkit rules as always active with an empty glob filter and a shared-protocol description.",
+      "tags": [
+        "template",
+        "cursor",
+        "rules",
+        "configuration"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:tests/save.test.js",
+      "type": "file",
+      "name": "save.test.js",
+      "filePath": "tests/save.test.js",
+      "lineRange": [
+        1,
+        186
+      ],
+      "summary": "CLI integration tests for graph save behavior, including graph/MAP/meta output, partial retention versus full replacement, corruption and missing-input refusal, tmp cleanup, path privacy, and freshness status.",
+      "tags": [
+        "test",
+        "graph",
+        "save",
+        "cli",
+        "freshness"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "file:lib/session.js",
+      "type": "file",
+      "name": "session.js",
+      "filePath": "lib/session.js",
+      "lineRange": [
+        1,
+        185
+      ],
+      "summary": "Host-neutral hook input and per-session runtime state. Session ids are hashed before they become path components and state lives only under a godkit-owned directory, so one session can never read or clear another. Also the atomic writer (temp + fsync + rename, optional compare-and-swap and .bak) that every config write in the package goes through.",
+      "tags": [
+        "runtime",
+        "session-state",
+        "atomic-write",
+        "security"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:lib/session.js:readHookInput",
+      "type": "function",
+      "name": "readHookInput",
+      "filePath": "lib/session.js",
+      "lineRange": [
+        1,
+        1
+      ],
+      "summary": "Reads and validates a hook payload from stdin; malformed input warns and yields {} rather than throwing, because a hook that throws breaks the session it exists to help.",
+      "tags": [],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:lib/session.js:statePath",
+      "type": "function",
+      "name": "statePath",
+      "filePath": "lib/session.js",
+      "lineRange": [
+        1,
+        1
+      ],
+      "summary": "Resolves a state file path from namespace + session id. Rejects unknown namespaces, missing session ids and unsafe leaf names; the raw host id is hashed, never used as a path component.",
+      "tags": [
+        "security"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:lib/session.js:atomicWriteFile",
+      "type": "function",
+      "name": "atomicWriteFile",
+      "filePath": "lib/session.js",
+      "lineRange": [
+        1,
+        1
+      ],
+      "summary": "Temp-and-rename write with fsync, optional expectedRaw compare-and-swap and optional .bak. The one write path for settings, config and map files.",
+      "tags": [
+        "atomic-write"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:lib/session.js:clearSession",
+      "type": "function",
+      "name": "clearSession",
+      "filePath": "lib/session.js",
+      "lineRange": [
+        1,
+        1
+      ],
+      "summary": "Removes every namespace for one session. Refuses any cleanup target that resolves outside the owned state root.",
+      "tags": [
+        "security"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:lib/work.js",
+      "type": "file",
+      "name": "work.js",
+      "filePath": "lib/work.js",
+      "lineRange": [
+        1,
+        205
+      ],
+      "summary": "Session-owned evidence that a tool changed project files — the thing clockout judges. Shell tools compare a before/after Git fingerprint that excludes .agent/, edit tools mark work only for successful paths outside it. A dirty working tree is deliberately NOT evidence: it says nothing about which session made it.",
+      "tags": [
+        "runtime",
+        "session-state",
+        "git",
+        "enforcement"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "function:lib/work.js:fingerprint",
+      "type": "function",
+      "name": "fingerprint",
+      "filePath": "lib/work.js",
+      "lineRange": [
+        1,
+        1
+      ],
+      "summary": "SHA-256 over the non-.agent tree plus working-tree status and content, so an .agent-only checkpoint does not count as product work while a source commit does.",
+      "tags": [
+        "git"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:lib/work.js:statusPaths",
+      "type": "function",
+      "name": "statusPaths",
+      "filePath": "lib/work.js",
+      "lineRange": [
+        1,
+        1
+      ],
+      "summary": "Parses git porcelain -z records into paths, consuming the second path of a rename or copy record. Shared with lib/freshness so neither invents a filename out of \"old -> new\".",
+      "tags": [
+        "git"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:lib/work.js:recordDirectEdit",
+      "type": "function",
+      "name": "recordDirectEdit",
+      "filePath": "lib/work.js",
+      "lineRange": [
+        1,
+        1
+      ],
+      "summary": "Marks work for a successful Edit/Write/apply_patch/NotebookEdit whose target lands inside the project and outside .agent/.",
+      "tags": [],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:lib/work.js:didSessionWork",
+      "type": "function",
+      "name": "didSessionWork",
+      "filePath": "lib/work.js",
+      "lineRange": [
+        1,
+        1
+      ],
+      "summary": "The question clockout asks: did THIS session change project files?",
+      "tags": [
+        "enforcement"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:lib/install.js",
+      "type": "file",
+      "name": "install.js",
+      "filePath": "lib/install.js",
+      "lineRange": [
+        1,
+        215
+      ],
+      "summary": "The single source of truth for what godkit installs and what it may remove. HOOKS lists every registration once; both the standalone settings installer and the generated plugin manifest derive from it. Ownership is the safety property: a destination is ours only if it is a link back into this package or a copy carrying our marker, and anything else is refused rather than replaced.",
+      "tags": [
+        "install",
+        "ownership",
+        "hooks",
+        "security"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "function:lib/install.js:stripOurHooks",
+      "type": "function",
+      "name": "stripOurHooks",
+      "filePath": "lib/install.js",
+      "lineRange": [
+        1,
+        1
+      ],
+      "summary": "Filters hook HANDLERS, not groups. Dropping a whole group to remove ours used to take a user hook sharing that group with it.",
+      "tags": [
+        "security"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:lib/install.js:applyHooks",
+      "type": "function",
+      "name": "applyHooks",
+      "filePath": "lib/install.js",
+      "lineRange": [
+        1,
+        1
+      ],
+      "summary": "Returns a new settings object with our registrations replaced or removed; never mutates the caller's copy, so a failed write leaves nothing half-edited.",
+      "tags": [],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:lib/install.js:ownership",
+      "type": "function",
+      "name": "ownership",
+      "filePath": "lib/install.js",
+      "lineRange": [
+        1,
+        1
+      ],
+      "summary": "absent | ours-link | ours-copy | ours-broken-link | foreign. The guard that stops install and uninstall from touching a directory the user created.",
+      "tags": [
+        "ownership",
+        "security"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:lib/install.js:installOne",
+      "type": "function",
+      "name": "installOne",
+      "filePath": "lib/install.js",
+      "lineRange": [
+        1,
+        1
+      ],
+      "summary": "Symlink, then Windows junction, then a marked copy. Refuses a foreign destination outright.",
+      "tags": [
+        "install"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:lib/install.js:settingsTargets",
+      "type": "function",
+      "name": "settingsTargets",
+      "filePath": "lib/install.js",
+      "lineRange": [
+        1,
+        1
+      ],
+      "summary": "Claude and Codex settings paths, honouring CLAUDE_CONFIG_DIR and CODEX_HOME — which is also what lets tests run without touching real home config.",
+      "tags": [],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:lib/managed.js",
+      "type": "file",
+      "name": "managed.js",
+      "filePath": "lib/managed.js",
+      "lineRange": [
+        1,
+        85
+      ],
+      "summary": "A managed block is godkit's few lines inside a file the user also owns. init used to skip any host file that already existed, which silently meant \"this project gets no rules\"; overwriting would have eaten the user's text. Marked blocks do neither, and ambiguous or hand-edited markers are refused rather than guessed at.",
+      "tags": [
+        "init",
+        "host-files",
+        "idempotence"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:lib/managed.js:applyBlock",
+      "type": "function",
+      "name": "applyBlock",
+      "filePath": "lib/managed.js",
+      "lineRange": [
+        1,
+        1
+      ],
+      "summary": "Creates, appends, updates or reports-unchanged the marked block, leaving every byte outside the markers alone.",
+      "tags": [],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:lib/managed.js:locate",
+      "type": "function",
+      "name": "locate",
+      "filePath": "lib/managed.js",
+      "lineRange": [
+        1,
+        1
+      ],
+      "summary": "Finds the single marker pair, throwing on a duplicate, unbalanced, or reversed pair.",
+      "tags": [
+        "safety"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:lib/paths.js",
+      "type": "file",
+      "name": "paths.js",
+      "filePath": "lib/paths.js",
+      "lineRange": [
+        1,
+        300
+      ],
+      "summary": "Locating shared project state, and every bounded read of it. Hooks execute in the active worktree while .agent/ belongs to the MAIN worktree, so state survives linked-worktree removal and stays common to every agent. Reads below .agent/ reject symlinks and stop at a byte budget, so a project-controlled file cannot turn a session brief into a local-file reader.",
+      "tags": [
+        "runtime",
+        "worktrees",
+        "security",
+        "bounded-reads"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "function:lib/paths.js:findAgentContext",
+      "type": "function",
+      "name": "findAgentContext",
+      "filePath": "lib/paths.js",
+      "lineRange": [
+        1,
+        1
+      ],
+      "summary": "Returns worktreeRoot, stateRoot and the canonical agentDir. A linked worktree's local .agent is ignored unless it resolves exactly to the main copy.",
+      "tags": [
+        "worktrees"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:lib/paths.js:containedPath",
+      "type": "function",
+      "name": "containedPath",
+      "filePath": "lib/paths.js",
+      "lineRange": [
+        1,
+        1
+      ],
+      "summary": "lstat-validates every path component before returning it; any symlink below the root is refused.",
+      "tags": [
+        "security"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:lib/paths.js:readContained",
+      "type": "function",
+      "name": "readContained",
+      "filePath": "lib/paths.js",
+      "lineRange": [
+        1,
+        1
+      ],
+      "summary": "O_NOFOLLOW read capped at a byte budget, reporting truncation, without splitting a multi-byte character.",
+      "tags": [
+        "bounded-reads"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:lib/paths.js:fitBytes",
+      "type": "function",
+      "name": "fitBytes",
+      "filePath": "lib/paths.js",
+      "lineRange": [
+        1,
+        1
+      ],
+      "summary": "Trims text to a byte budget from either end without producing a replacement character.",
+      "tags": [],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:lib/paths.js:logEntries",
+      "type": "function",
+      "name": "logEntries",
+      "filePath": "lib/paths.js",
+      "lineRange": [
+        1,
+        1
+      ],
+      "summary": "Newest-first .md entries under .agent/log, through the bounded contained walk.",
+      "tags": [],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:lib/freshness.js",
+      "type": "file",
+      "name": "freshness.js",
+      "filePath": "lib/freshness.js",
+      "lineRange": [
+        1,
+        105
+      ],
+      "summary": "Is the map still true? staleness() is git-only and safe on every session start; classify() decides how much to rebuild. It fails CLOSED: an unreadable status, a meta sha the repo no longer has, or a failed diff all report unknown or stale — never fresh. A hook that blesses a map nobody verified is the one wrong answer.",
+      "tags": [
+        "map",
+        "git",
+        "fail-closed"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:lib/freshness.js:staleness",
+      "type": "function",
+      "name": "staleness",
+      "filePath": "lib/freshness.js",
+      "lineRange": [
+        1,
+        1
+      ],
+      "summary": "fresh | stale | unbuilt | unknown, from HEAD, the working tree, and whether meta.sha is still reachable.",
+      "tags": [
+        "fail-closed"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:lib/freshness.js:classify",
+      "type": "function",
+      "name": "classify",
+      "filePath": "lib/freshness.js",
+      "lineRange": [
+        1,
+        1
+      ],
+      "summary": "SKIP | PARTIAL | ARCHITECTURE | FULL, from how many files moved and whether a new top-level directory appeared.",
+      "tags": [],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:lib/evolve.js",
+      "type": "file",
+      "name": "evolve.js",
+      "filePath": "lib/evolve.js",
+      "lineRange": [
+        1,
+        780
+      ],
+      "summary": "Project skills in .agent/skills/: what they are, whether they are safe to project into a host path, and what the log stream says about each. Projections are owned SHA-256 snapshots, not live links, so godkit replaces only what it wrote and never removes a foreign target. Trust is derived from logs alone — there is no separate store.",
+      "tags": [
+        "skills",
+        "evidence",
+        "ownership",
+        "security"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "function:lib/evolve.js:frontmatter",
+      "type": "function",
+      "name": "frontmatter",
+      "filePath": "lib/evolve.js",
+      "lineRange": [
+        1,
+        1
+      ],
+      "summary": "A deliberate YAML subset — quoted scalars, comments, block scalars, duplicate-key detection — reporting malformed metadata as blocking findings. Hand-rolled because zero runtime dependencies is a hard constraint.",
+      "tags": [
+        "parsing"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:lib/evolve.js:scanSkill",
+      "type": "function",
+      "name": "scanSkill",
+      "filePath": "lib/evolve.js",
+      "lineRange": [
+        1,
+        1
+      ],
+      "summary": "Blocks linking on symlinks, executable extensions, executable mode bits, executable magic bytes, credentials and instruction-override text.",
+      "tags": [
+        "security"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:lib/evolve.js:ownership",
+      "type": "function",
+      "name": "ownership",
+      "filePath": "lib/evolve.js",
+      "lineRange": [
+        1,
+        1
+      ],
+      "summary": "absent | ours-link | ours-copy | ours-snapshot | ours-stale | foreign, by marker plus tree hash.",
+      "tags": [
+        "ownership"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:lib/evolve.js:linkProjectSkills",
+      "type": "function",
+      "name": "linkProjectSkills",
+      "filePath": "lib/evolve.js",
+      "lineRange": [
+        1,
+        1
+      ],
+      "summary": "Projects approved skills as owned snapshots, revoking a projection that becomes quarantined or mode-gated.",
+      "tags": [],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:lib/evolve.js:trustOf",
+      "type": "function",
+      "name": "trustOf",
+      "filePath": "lib/evolve.js",
+      "lineRange": [
+        1,
+        1
+      ],
+      "summary": "Trust from distinct verified sessions, demoted by a blaming Bugs bullet and reset when revised: moves.",
+      "tags": [
+        "evidence"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:hooks/work-track.js",
+      "type": "file",
+      "name": "work-track.js",
+      "filePath": "hooks/work-track.js",
+      "lineRange": [
+        1,
+        45
+      ],
+      "summary": "The lifecycle hook that feeds work evidence: pre captures a fingerprint, post compares, edit records a direct edit, end clears the session. Registered on PreToolUse, PostToolUse and SessionEnd — without it nothing records work and clockout can never fire.",
+      "tags": [
+        "hooks",
+        "session-state",
+        "enforcement"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:hooks/clockout.js",
+      "type": "file",
+      "name": "clockout.js",
+      "filePath": "hooks/clockout.js",
+      "lineRange": [
+        1,
+        66
+      ],
+      "summary": "Stop hook. Blocks the turn when THIS session changed project files and has no log naming it, and keeps blocking until that log exists. Judges the session, not the directory: another agent's dirty file is not evidence about you, and a log naming a different session does not clock you out. stop_hook_active short-circuits, or a blocked turn would loop forever.",
+      "tags": [
+        "hooks",
+        "enforcement",
+        "handoff"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:hooks/brief.js",
+      "type": "file",
+      "name": "brief.js",
+      "filePath": "hooks/brief.js",
+      "lineRange": [
+        1,
+        135
+      ],
+      "summary": "SessionStart hook. Injects a bounded, no-follow view of shared state — board, map freshness, project skills, newest logs, THREAD tail — under one total budget, so an arriving agent starts from the same truth without a project file being able to steer what it reads.",
+      "tags": [
+        "hooks",
+        "handoff",
+        "bounded-reads"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:hooks/install.js",
+      "type": "file",
+      "name": "install.js",
+      "filePath": "hooks/install.js",
+      "lineRange": [
+        1,
+        45
+      ],
+      "summary": "Standalone hook registration for a settings file: a thin CLI over lib/install.js with --uninstall and --dry-run. Paths derive from where this file actually lives, so moving the package is a re-run rather than a text hunt.",
+      "tags": [
+        "hooks",
+        "install"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:hooks/lazy-activate.js",
+      "type": "file",
+      "name": "lazy-activate.js",
+      "filePath": "hooks/lazy-activate.js",
+      "lineRange": [
+        1,
+        32
+      ],
+      "summary": "SessionStart hook that resolves the godkit-lazy mode for this session and injects its ruleset. Mode state is per session, under the owned state root.",
+      "tags": [
+        "hooks",
+        "lazy"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:hooks/lazy-subagent.js",
+      "type": "file",
+      "name": "lazy-subagent.js",
+      "filePath": "hooks/lazy-subagent.js",
+      "lineRange": [
+        1,
+        40
+      ],
+      "summary": "SubagentStart hook. Inherits the parent session's lazy rules; a malformed matcher fails closed and warns rather than broadening its own scope.",
+      "tags": [
+        "hooks",
+        "lazy"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:hooks/lazy-mode-tracker.js",
+      "type": "file",
+      "name": "lazy-mode-tracker.js",
+      "filePath": "hooks/lazy-mode-tracker.js",
+      "lineRange": [
+        1,
+        75
+      ],
+      "summary": "UserPromptSubmit hook tracking /godkit-lazy switches and deactivation for the session.",
+      "tags": [
+        "hooks",
+        "lazy"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:hooks/map-watch.js",
+      "type": "file",
+      "name": "map-watch.js",
+      "filePath": "hooks/map-watch.js",
+      "lineRange": [
+        1,
+        40
+      ],
+      "summary": "PostToolUse (Bash) hook. After a command that lands a change, says whether the map went stale — and stays quiet otherwise, because a warning that fires constantly gets muted.",
+      "tags": [
+        "hooks",
+        "map"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:hooks/godkit-hooks.json",
+      "type": "file",
+      "name": "godkit-hooks.json",
+      "filePath": "hooks/godkit-hooks.json",
+      "lineRange": [
+        1,
+        120
+      ],
+      "summary": "The plugin hook manifest read by Claude Code and Codex. GENERATED from the HOOKS list in lib/install.js by scripts/sync-hooks.js; CI fails if it drifted. It was hand-maintained until a hook was added to the settings installer and not to this file.",
+      "tags": [
+        "hooks",
+        "generated",
+        "manifest"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "config:hooks/godkit-hooks.json",
+      "type": "config",
+      "name": "godkit-hooks.json",
+      "filePath": "hooks/godkit-hooks.json",
+      "lineRange": [
+        1,
+        120
+      ],
+      "summary": "Ten registrations across SessionStart, UserPromptSubmit, SubagentStart, PreToolUse, PostToolUse, Stop and SessionEnd. Matchers are chosen to mean the same under Claude Code (literal or regex) and Codex (always regex).",
+      "tags": [
+        "hooks",
+        "manifest"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:bin/godkit.js",
+      "type": "file",
+      "name": "godkit.js",
+      "filePath": "bin/godkit.js",
+      "lineRange": [
+        1,
+        590
+      ],
+      "summary": "The CLI: init, install, hooks, scan, save, skills, evolve, doctor, uninstall. It owns no policy — ownership lives in lib/install.js, managed blocks in lib/managed.js, graph rules in lib/graph.js — so every command is a thin, testable shell over a library.",
+      "tags": [
+        "cli",
+        "entrypoint"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "function:bin/godkit.js:cmdInit",
+      "type": "function",
+      "name": "cmdInit",
+      "filePath": "bin/godkit.js",
+      "lineRange": [
+        1,
+        1
+      ],
+      "summary": "Scaffolds .agent/ and writes the rules into managed blocks in AGENTS.md, CLAUDE.md, the Cursor and Antigravity rule files, and .gitattributes. Preserves user text; refuses a file whose markers were hand-mangled.",
+      "tags": [
+        "init"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:bin/godkit.js:cmdInstall",
+      "type": "function",
+      "name": "cmdInstall",
+      "filePath": "bin/godkit.js",
+      "lineRange": [
+        1,
+        1
+      ],
+      "summary": "Places the skills per tool through installOne, refusing any destination godkit does not own. --dry-run reports without writing.",
+      "tags": [
+        "install",
+        "ownership"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:bin/godkit.js:cmdHooks",
+      "type": "function",
+      "name": "cmdHooks",
+      "filePath": "bin/godkit.js",
+      "lineRange": [
+        1,
+        1
+      ],
+      "summary": "status | install | uninstall for the Claude and Codex settings files, with --dry-run. Replaces \"go run this script by hand\".",
+      "tags": [
+        "hooks"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:bin/godkit.js:cmdSave",
+      "type": "function",
+      "name": "cmdSave",
+      "filePath": "bin/godkit.js",
+      "lineRange": [
+        1,
+        1
+      ],
+      "summary": "Load-patch-save of the map: replaces re-analyzed files, keeps untouched ones, DROPS nodes whose file no longer exists, then writes graph, MAP.md and meta.json in that order so an interrupted save reads as stale.",
+      "tags": [
+        "map"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:bin/godkit.js:cmdScan",
+      "type": "function",
+      "name": "cmdScan",
+      "filePath": "bin/godkit.js",
+      "lineRange": [
+        1,
+        1
+      ],
+      "summary": "Deterministic walk, categorize, resolve imports and batch — the token-free half of building the map.",
+      "tags": [
+        "map"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:bin/godkit.js:cmdSkills",
+      "type": "function",
+      "name": "cmdSkills",
+      "filePath": "bin/godkit.js",
+      "lineRange": [
+        1,
+        1
+      ],
+      "summary": "Lists project skills with origin, findings and which hosts see them; --link/--unlink projects them.",
       "tags": [
         "skills"
       ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:bin/godkit.js:cmdEvolve",
+      "type": "function",
+      "name": "cmdEvolve",
+      "filePath": "bin/godkit.js",
+      "lineRange": [
+        1,
+        1
+      ],
+      "summary": "Re-reads the log stream and reports what the evidence implies about each project skill.",
+      "tags": [
+        "skills",
+        "evidence"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:bin/godkit.js:cmdDoctor",
+      "type": "function",
+      "name": "cmdDoctor",
+      "filePath": "bin/godkit.js",
+      "lineRange": [
+        1,
+        1
+      ],
+      "summary": "What is set up here: .agent files, map freshness, project skills, installed skills per tool, and which hooks are registered.",
+      "tags": [
+        "diagnostics"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:bin/godkit.js:cmdUninstall",
+      "type": "function",
+      "name": "cmdUninstall",
+      "filePath": "bin/godkit.js",
+      "lineRange": [
+        1,
+        1
+      ],
+      "summary": "Removes only the skill directories godkit owns, and says what it kept.",
+      "tags": [
+        "ownership"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:bin/godkit.js:main",
+      "type": "function",
+      "name": "main",
+      "filePath": "bin/godkit.js",
+      "lineRange": [
+        1,
+        1
+      ],
+      "summary": "Command dispatch and help.",
+      "tags": [],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:scripts/uninstall.js",
+      "type": "file",
+      "name": "uninstall.js",
+      "filePath": "scripts/uninstall.js",
+      "lineRange": [
+        1,
+        100
+      ],
+      "summary": "Removes what a host's own uninstall cannot see: installed skill directories, hook registrations, and the session-state root. Shares every ownership decision with lib/install.js, so what install created is exactly what uninstall removes — nothing else.",
+      "tags": [
+        "install",
+        "ownership",
+        "lifecycle"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:scripts/uninstall.js:removeSkills",
+      "type": "function",
+      "name": "removeSkills",
+      "filePath": "scripts/uninstall.js",
+      "lineRange": [
+        1,
+        1
+      ],
+      "summary": "Per-tool removal through removeOne; a foreign directory is kept and reported.",
+      "tags": [
+        "ownership"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:scripts/uninstall.js:removeHooks",
+      "type": "function",
+      "name": "removeHooks",
+      "filePath": "scripts/uninstall.js",
+      "lineRange": [
+        1,
+        1
+      ],
+      "summary": "Strips our handlers from each settings file, leaving other tools' hooks — including ones sharing a group.",
+      "tags": [],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:scripts/uninstall.js:removeRuntimeState",
+      "type": "function",
+      "name": "removeRuntimeState",
+      "filePath": "scripts/uninstall.js",
+      "lineRange": [
+        1,
+        1
+      ],
+      "summary": "Clears the per-session state root. The persisted lazy default mode is user config and is left alone.",
+      "tags": [],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:scripts/sync-hooks.js",
+      "type": "file",
+      "name": "sync-hooks.js",
+      "filePath": "scripts/sync-hooks.js",
+      "lineRange": [
+        1,
+        68
+      ],
+      "summary": "Generates hooks/godkit-hooks.json from the HOOKS list in lib/install.js; --check fails if it drifted. A generated manifest cannot disagree with the installer, which is exactly how work-track came to be missing from one of them.",
+      "tags": [
+        "generated",
+        "hooks",
+        "ci"
+      ],
       "complexity": "simple"
+    },
+    {
+      "id": "file:scripts/check-versions.js",
+      "type": "file",
+      "name": "check-versions.js",
+      "filePath": "scripts/check-versions.js",
+      "lineRange": [
+        1,
+        80
+      ],
+      "summary": "Every version-bearing manifest must carry the same version, and on a tag push that version must equal the tag. An empty or non-release tag now fails instead of skipping the check — the case where skipping is most dangerous.",
+      "tags": [
+        "ci",
+        "release",
+        "fail-closed"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:scripts/check-versions.js:main",
+      "type": "function",
+      "name": "main",
+      "filePath": "scripts/check-versions.js",
+      "lineRange": [
+        1,
+        1
+      ],
+      "summary": "Compares four manifests, then the agreed version against GITHUB_REF_NAME when the ref is a tag.",
+      "tags": [
+        "release"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:package.json",
+      "type": "file",
+      "name": "package.json",
+      "filePath": "package.json",
+      "lineRange": [
+        1,
+        60
+      ],
+      "summary": "Zero runtime dependencies, Node 18+, bin godkit. `files` is the allowlist that decides what an installed package actually contains — a runtime file missing from it works in a checkout and 404s for everyone else, which the packed-install smoke test now catches. pretest runs the generated-file and version checks.",
+      "tags": [
+        "manifest",
+        "packaging"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:.github/workflows/publish.yml",
+      "type": "file",
+      "name": "publish.yml",
+      "filePath": ".github/workflows/publish.yml",
+      "lineRange": [
+        1,
+        32
+      ],
+      "summary": "Tag-only publish. workflow_dispatch is deliberately absent: it could publish a branch the tag gate never examined. Runs the rule, hook-manifest and version checks plus the full suite before an OIDC trusted publish.",
+      "tags": [
+        "ci",
+        "release"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "pipeline:.github/workflows/publish.yml",
+      "type": "pipeline",
+      "name": "publish",
+      "filePath": ".github/workflows/publish.yml",
+      "lineRange": [
+        1,
+        32
+      ],
+      "summary": "tag v* -> checkout -> sync-rules --check -> sync-hooks --check -> check-versions -> node --test -> npm publish with provenance.",
+      "tags": [
+        "ci",
+        "release"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:.github/workflows/test.yml",
+      "type": "file",
+      "name": "test.yml",
+      "filePath": ".github/workflows/test.yml",
+      "lineRange": [
+        1,
+        27
+      ],
+      "summary": "Matrix CI across ubuntu and windows on Node 18, 22 and 24. Windows is not optional: path handling and hook stdin differ there, and that is where this package is developed.",
+      "tags": [
+        "ci"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "pipeline:.github/workflows/test.yml",
+      "type": "pipeline",
+      "name": "test",
+      "filePath": ".github/workflows/test.yml",
+      "lineRange": [
+        1,
+        27
+      ],
+      "summary": "push/PR -> 6-way matrix -> sync-rules --check -> sync-hooks --check -> check-versions -> node --test.",
+      "tags": [
+        "ci"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:templates/gitattributes",
+      "type": "file",
+      "name": "gitattributes",
+      "filePath": "templates/gitattributes",
+      "lineRange": [
+        1,
+        14
+      ],
+      "summary": "The -merge rules for the generated half of .agent/, shipped as a template because godkit init writes them into every project. They lived only in this repo's own .gitattributes, which npm does not ship, so init crashed from an installed package.",
+      "tags": [
+        "templates",
+        "git",
+        "packaging"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:templates/log.md",
+      "type": "file",
+      "name": "log.md",
+      "filePath": "templates/log.md",
+      "lineRange": [
+        1,
+        30
+      ],
+      "summary": "The session log skeleton. Its frontmatter scalars are quoted so a generated log parses under the stricter skill frontmatter reader.",
+      "tags": [
+        "templates",
+        "handoff"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:README.md",
+      "type": "file",
+      "name": "README.md",
+      "filePath": "README.md",
+      "lineRange": [
+        1,
+        270
+      ],
+      "summary": "The public contract: install, compatibility, hooks, CLI, skills, project skills and evidence. Every claim here is asserted somewhere in tests/ — the compatibility table and the hook table are the two that drift first.",
+      "tags": [
+        "docs"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:docs/agent-portability.md",
+      "type": "file",
+      "name": "agent-portability.md",
+      "filePath": "docs/agent-portability.md",
+      "lineRange": [
+        1,
+        107
+      ],
+      "summary": "What each host actually reads, and which of those claims are verified versus best-effort. The honesty convention matters more than the table: an unverified adapter is labelled, never presented as certain.",
+      "tags": [
+        "docs",
+        "portability"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:skills/godkit-evolve/SKILL.md",
+      "type": "file",
+      "name": "SKILL.md",
+      "filePath": "skills/godkit-evolve/SKILL.md",
+      "lineRange": [
+        1,
+        190
+      ],
+      "summary": "How a project skill is written, approved and judged. Now states that origin and enabled are required frontmatter — an unreadable declaration is not a safe default to guess at.",
+      "tags": [
+        "skills",
+        "docs"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:tests/runtime.test.js",
+      "type": "file",
+      "name": "runtime.test.js",
+      "filePath": "tests/runtime.test.js",
+      "lineRange": [
+        1,
+        229
+      ],
+      "summary": "The hook runtime boundaries: shared state resolves to the main worktree from a linked one, reads stay inside .agent/ and inside a byte budget, session state is isolated and cleanable, work evidence tracks the session, lazy mode belongs to one session.",
+      "tags": [
+        "tests",
+        "runtime"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:tests/cli.test.js",
+      "type": "file",
+      "name": "cli.test.js",
+      "filePath": "tests/cli.test.js",
+      "lineRange": [
+        1,
+        240
+      ],
+      "summary": "What init and save do to files a user also owns, and what freshness reports when git cannot answer. Every case here is a silently-wrong failure: a rule file that never landed, a map node for a deleted file, a stale map reported as current.",
+      "tags": [
+        "tests",
+        "cli"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:tests/hook-install.test.js",
+      "type": "file",
+      "name": "hook-install.test.js",
+      "filePath": "tests/hook-install.test.js",
+      "lineRange": [
+        1,
+        240
+      ],
+      "summary": "Install idempotence and the ownership rule. The two bugs it exists for: matching our entries by package name (which matched nothing, so re-runs appended), and filtering whole groups (which took a user hook out with ours).",
+      "tags": [
+        "tests",
+        "install"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:tests/hooks.test.js",
+      "type": "file",
+      "name": "hooks.test.js",
+      "filePath": "tests/hooks.test.js",
+      "lineRange": [
+        1,
+        160
+      ],
+      "summary": "Hooks never throw, never block a read-only session, and never loop. Clockout is asserted against recorded session work, not a dirty tree, and every hook runs against a temp CLAUDE_CONFIG_DIR so no test writes real home config.",
+      "tags": [
+        "tests",
+        "hooks"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:tests/package.test.js",
+      "type": "file",
+      "name": "package.test.js",
+      "filePath": "tests/package.test.js",
+      "lineRange": [
+        1,
+        210
+      ],
+      "summary": "Contract tests: the package ships what the README promises, manifests agree, generated files are current, and — the one that catches an allowlist bug — the packed file set can actually run godkit init from a temp directory.",
+      "tags": [
+        "tests",
+        "packaging"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:tests/evolve.test.js",
+      "type": "file",
+      "name": "evolve.test.js",
+      "filePath": "tests/evolve.test.js",
+      "lineRange": [
+        1,
+        640
+      ],
+      "summary": "Project-skill snapshots, quarantine, frontmatter parsing, trust promotion and demotion, and fixture cleanup.",
+      "tags": [
+        "tests",
+        "skills"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:tests/graph.test.js",
+      "type": "file",
+      "name": "graph.test.js",
+      "filePath": "tests/graph.test.js",
+      "lineRange": [
+        1,
+        150
+      ],
+      "summary": "Graph portability and persistence: absolute ids rejected, last-wins edges, atomic write with rollback.",
+      "tags": [
+        "tests",
+        "map"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:tests/scan.test.js",
+      "type": "file",
+      "name": "scan.test.js",
+      "filePath": "tests/scan.test.js",
+      "lineRange": [
+        1,
+        140
+      ],
+      "summary": "Scan, category, import resolution, batching, and the documented .agentignore subset.",
+      "tags": [
+        "tests",
+        "map"
+      ],
+      "complexity": "moderate"
     }
   ],
   "edges": [
     {
+      "source": "file:AGENTS.md",
+      "target": "file:CLAUDE.md",
+      "type": "configures",
+      "weight": 0.6
+    },
+    {
+      "source": "file:AGENTS.md",
+      "target": "file:.agents/rules/godkit.md",
+      "type": "configures",
+      "weight": 0.6
+    },
+    {
+      "source": "file:AGENTS.md",
+      "target": "file:.github/copilot-instructions.md",
+      "type": "configures",
+      "weight": 0.6
+    },
+    {
+      "source": "file:gemini-extension.json",
+      "target": "file:AGENTS.md",
+      "type": "configures",
+      "weight": 0.6
+    },
+    {
+      "source": "file:package.json",
+      "target": "file:bin/godkit.js",
+      "type": "configures",
+      "weight": 0.6
+    },
+    {
+      "source": "file:package.json",
+      "target": "file:scripts/check-versions.js",
+      "type": "triggers",
+      "weight": 0.6
+    },
+    {
+      "source": "file:package.json",
+      "target": "file:scripts/sync-rules.js",
+      "type": "triggers",
+      "weight": 0.6
+    },
+    {
+      "source": "file:.claude-plugin/marketplace.json",
+      "target": "file:.claude-plugin/plugin.json",
+      "type": "configures",
+      "weight": 0.6
+    },
+    {
+      "source": "file:.claude-plugin/plugin.json",
+      "target": "file:hooks/godkit-hooks.json",
+      "type": "configures",
+      "weight": 0.6
+    },
+    {
+      "source": "file:.codex-plugin/plugin.json",
+      "target": "file:hooks/godkit-hooks.json",
+      "type": "configures",
+      "weight": 0.6
+    },
+    {
+      "source": "file:.github/workflows/publish.yml",
+      "target": "pipeline:.github/workflows/publish.yml",
+      "type": "contains",
+      "weight": 1
+    },
+    {
+      "source": "pipeline:.github/workflows/publish.yml",
+      "target": "file:package.json",
+      "type": "depends_on",
+      "weight": 0.6
+    },
+    {
+      "source": "pipeline:.github/workflows/publish.yml",
+      "target": "file:scripts/sync-rules.js",
+      "type": "triggers",
+      "weight": 0.6
+    },
+    {
+      "source": "pipeline:.github/workflows/publish.yml",
+      "target": "file:scripts/check-versions.js",
+      "type": "triggers",
+      "weight": 0.6
+    },
+    {
+      "source": "file:.github/workflows/test.yml",
+      "target": "pipeline:.github/workflows/test.yml",
+      "type": "contains",
+      "weight": 1
+    },
+    {
+      "source": "pipeline:.github/workflows/test.yml",
+      "target": "file:package.json",
+      "type": "depends_on",
+      "weight": 0.6
+    },
+    {
+      "source": "pipeline:.github/workflows/test.yml",
+      "target": "file:scripts/sync-rules.js",
+      "type": "triggers",
+      "weight": 0.6
+    },
+    {
+      "source": "pipeline:.github/workflows/test.yml",
+      "target": "file:scripts/check-versions.js",
+      "type": "triggers",
+      "weight": 0.6
+    },
+    {
+      "source": "file:agents/architect.md",
+      "target": "file:agents/file-analyzer.md",
+      "type": "depends_on",
+      "weight": 0.6
+    },
+    {
+      "source": "file:bin/godkit.js",
+      "target": "function:bin/godkit.js:cmdInit",
+      "type": "contains",
+      "weight": 0.9
+    },
+    {
+      "source": "file:bin/godkit.js",
+      "target": "function:bin/godkit.js:cmdInstall",
+      "type": "contains",
+      "weight": 0.9
+    },
+    {
+      "source": "file:bin/godkit.js",
+      "target": "function:bin/godkit.js:cmdScan",
+      "type": "contains",
+      "weight": 0.9
+    },
+    {
+      "source": "file:bin/godkit.js",
+      "target": "function:bin/godkit.js:cmdSave",
+      "type": "contains",
+      "weight": 0.9
+    },
+    {
+      "source": "file:bin/godkit.js",
+      "target": "function:bin/godkit.js:cmdSkills",
+      "type": "contains",
+      "weight": 0.9
+    },
+    {
+      "source": "file:bin/godkit.js",
+      "target": "function:bin/godkit.js:cmdEvolve",
+      "type": "contains",
+      "weight": 0.9
+    },
+    {
+      "source": "file:bin/godkit.js",
+      "target": "function:bin/godkit.js:cmdDoctor",
+      "type": "contains",
+      "weight": 0.9
+    },
+    {
+      "source": "file:bin/godkit.js",
+      "target": "function:bin/godkit.js:cmdUninstall",
+      "type": "contains",
+      "weight": 0.9
+    },
+    {
+      "source": "file:bin/godkit.js",
+      "target": "function:bin/godkit.js:main",
+      "type": "contains",
+      "weight": 0.9
+    },
+    {
+      "source": "function:bin/godkit.js:main",
+      "target": "function:bin/godkit.js:cmdInit",
+      "type": "calls",
+      "weight": 0.8
+    },
+    {
+      "source": "function:bin/godkit.js:main",
+      "target": "function:bin/godkit.js:cmdInstall",
+      "type": "calls",
+      "weight": 0.8
+    },
+    {
+      "source": "function:bin/godkit.js:main",
+      "target": "function:bin/godkit.js:cmdScan",
+      "type": "calls",
+      "weight": 0.8
+    },
+    {
+      "source": "function:bin/godkit.js:main",
+      "target": "function:bin/godkit.js:cmdSave",
+      "type": "calls",
+      "weight": 0.8
+    },
+    {
+      "source": "function:bin/godkit.js:main",
+      "target": "function:bin/godkit.js:cmdSkills",
+      "type": "calls",
+      "weight": 0.8
+    },
+    {
+      "source": "function:bin/godkit.js:main",
+      "target": "function:bin/godkit.js:cmdEvolve",
+      "type": "calls",
+      "weight": 0.8
+    },
+    {
+      "source": "function:bin/godkit.js:main",
+      "target": "function:bin/godkit.js:cmdDoctor",
+      "type": "calls",
+      "weight": 0.8
+    },
+    {
+      "source": "function:bin/godkit.js:main",
+      "target": "function:bin/godkit.js:cmdUninstall",
+      "type": "calls",
+      "weight": 0.8
+    },
+    {
       "source": "file:bin/godkit.js",
       "target": "file:lib/paths.js",
       "type": "imports",
-      "weight": 0.7
+      "weight": 0.8
     },
     {
       "source": "file:bin/godkit.js",
       "target": "file:lib/scan.js",
       "type": "imports",
-      "weight": 0.7
+      "weight": 0.8
     },
     {
       "source": "file:bin/godkit.js",
       "target": "file:lib/batch.js",
       "type": "imports",
-      "weight": 0.7
+      "weight": 0.8
     },
     {
       "source": "file:bin/godkit.js",
       "target": "file:lib/graph.js",
       "type": "imports",
-      "weight": 0.7
+      "weight": 0.8
+    },
+    {
+      "source": "file:bin/godkit.js",
+      "target": "file:lib/evolve.js",
+      "type": "imports",
+      "weight": 0.8
     },
     {
       "source": "file:bin/godkit.js",
       "target": "file:lib/freshness.js",
       "type": "imports",
-      "weight": 0.7
+      "weight": 0.8
+    },
+    {
+      "source": "function:bin/godkit.js:cmdScan",
+      "target": "function:lib/scan.js:scan",
+      "type": "calls",
+      "weight": 0.8
+    },
+    {
+      "source": "function:bin/godkit.js:cmdScan",
+      "target": "function:lib/batch.js:batch",
+      "type": "calls",
+      "weight": 0.8
+    },
+    {
+      "source": "function:bin/godkit.js:cmdSave",
+      "target": "function:lib/graph.js:loadGraph",
+      "type": "calls",
+      "weight": 0.8
+    },
+    {
+      "source": "function:bin/godkit.js:cmdSave",
+      "target": "function:lib/graph.js:saveGraph",
+      "type": "calls",
+      "weight": 0.8
+    },
+    {
+      "source": "function:bin/godkit.js:cmdSave",
+      "target": "function:lib/graph.js:renderMap",
+      "type": "calls",
+      "weight": 0.8
+    },
+    {
+      "source": "function:bin/godkit.js:cmdDoctor",
+      "target": "function:lib/freshness.js:staleness",
+      "type": "calls",
+      "weight": 0.8
+    },
+    {
+      "source": "file:lib/scan.js",
+      "target": "function:lib/scan.js:scan",
+      "type": "contains",
+      "weight": 1
+    },
+    {
+      "source": "file:lib/batch.js",
+      "target": "function:lib/batch.js:batch",
+      "type": "contains",
+      "weight": 1
+    },
+    {
+      "source": "file:lib/graph.js",
+      "target": "function:lib/graph.js:loadGraph",
+      "type": "contains",
+      "weight": 1
+    },
+    {
+      "source": "file:lib/graph.js",
+      "target": "function:lib/graph.js:normalize",
+      "type": "contains",
+      "weight": 1
+    },
+    {
+      "source": "file:lib/graph.js",
+      "target": "function:lib/graph.js:saveGraph",
+      "type": "contains",
+      "weight": 1
+    },
+    {
+      "source": "file:lib/graph.js",
+      "target": "function:lib/graph.js:renderMap",
+      "type": "contains",
+      "weight": 1
+    },
+    {
+      "source": "function:lib/graph.js:saveGraph",
+      "target": "function:lib/graph.js:normalize",
+      "type": "calls",
+      "weight": 0.8
+    },
+    {
+      "source": "file:lib/freshness.js",
+      "target": "function:lib/freshness.js:staleness",
+      "type": "contains",
+      "weight": 0.9
+    },
+    {
+      "source": "file:lib/freshness.js",
+      "target": "function:lib/freshness.js:classify",
+      "type": "contains",
+      "weight": 0.9
+    },
+    {
+      "source": "file:lib/freshness.js",
+      "target": "file:lib/paths.js",
+      "type": "imports",
+      "weight": 0.8
+    },
+    {
+      "source": "file:lib/freshness.js",
+      "target": "file:lib/graph.js",
+      "type": "imports",
+      "weight": 0.8
     },
     {
       "source": "file:hooks/brief.js",
       "target": "file:lib/paths.js",
       "type": "imports",
-      "weight": 0.7
+      "weight": 0.8
     },
     {
       "source": "file:hooks/brief.js",
       "target": "file:lib/freshness.js",
       "type": "imports",
+      "weight": 0.8
+    },
+    {
+      "source": "file:hooks/brief.js",
+      "target": "file:lib/evolve.js",
+      "type": "imports",
       "weight": 0.7
+    },
+    {
+      "source": "file:hooks/brief.js",
+      "target": "function:lib/freshness.js:staleness",
+      "type": "calls",
+      "weight": 0.8
     },
     {
       "source": "file:hooks/clockout.js",
       "target": "file:lib/paths.js",
       "type": "imports",
-      "weight": 0.7
+      "weight": 0.8
     },
     {
       "source": "file:hooks/map-watch.js",
       "target": "file:lib/paths.js",
       "type": "imports",
-      "weight": 0.7
+      "weight": 0.8
     },
     {
       "source": "file:hooks/map-watch.js",
       "target": "file:lib/freshness.js",
       "type": "imports",
-      "weight": 0.7
+      "weight": 0.8
+    },
+    {
+      "source": "file:hooks/map-watch.js",
+      "target": "function:lib/freshness.js:staleness",
+      "type": "calls",
+      "weight": 0.8
+    },
+    {
+      "source": "file:lib/scan.js",
+      "target": "file:tests/scan.test.js",
+      "type": "tested_by",
+      "weight": 0.9
+    },
+    {
+      "source": "file:lib/batch.js",
+      "target": "file:tests/scan.test.js",
+      "type": "tested_by",
+      "weight": 0.6
     },
     {
       "source": "file:lib/freshness.js",
+      "target": "file:tests/freshness.test.js",
+      "type": "tested_by",
+      "weight": 0.6
+    },
+    {
+      "source": "file:commands/godkit-doubt.toml",
+      "target": "file:skills/godkit-doubt/SKILL.md",
+      "type": "triggers",
+      "weight": 0.6
+    },
+    {
+      "source": "file:commands/godkit-evolve.toml",
+      "target": "file:skills/godkit-evolve/SKILL.md",
+      "type": "triggers",
+      "weight": 0.6
+    },
+    {
+      "source": "file:commands/godkit-execute.toml",
+      "target": "file:skills/godkit-execute/SKILL.md",
+      "type": "triggers",
+      "weight": 0.6
+    },
+    {
+      "source": "file:commands/godkit-frontend.toml",
+      "target": "file:skills/godkit-frontend/SKILL.md",
+      "type": "triggers",
+      "weight": 0.6
+    },
+    {
+      "source": "file:commands/godkit-git.toml",
+      "target": "file:skills/godkit-git/SKILL.md",
+      "type": "triggers",
+      "weight": 0.6
+    },
+    {
+      "source": "file:commands/godkit-handoff.toml",
+      "target": "file:skills/godkit-handoff/SKILL.md",
+      "type": "triggers",
+      "weight": 0.6
+    },
+    {
+      "source": "file:commands/godkit-help.toml",
+      "target": "file:skills/godkit-help/SKILL.md",
+      "type": "triggers",
+      "weight": 0.6
+    },
+    {
+      "source": "file:commands/godkit-lazy.toml",
+      "target": "file:skills/godkit-lazy/SKILL.md",
+      "type": "triggers",
+      "weight": 0.6
+    },
+    {
+      "source": "file:commands/godkit-map.toml",
+      "target": "file:skills/godkit-map/SKILL.md",
+      "type": "triggers",
+      "weight": 0.6
+    },
+    {
+      "source": "file:commands/godkit-output-enforcement.toml",
+      "target": "file:skills/godkit-output-enforcement/SKILL.md",
+      "type": "triggers",
+      "weight": 0.6
+    },
+    {
+      "source": "file:commands/godkit-plan.toml",
+      "target": "file:skills/godkit-plan/SKILL.md",
+      "type": "triggers",
+      "weight": 0.6
+    },
+    {
+      "source": "file:commands/godkit-review.toml",
+      "target": "file:skills/godkit-review/SKILL.md",
+      "type": "triggers",
+      "weight": 0.6
+    },
+    {
+      "source": "file:commands/godkit-test.toml",
+      "target": "file:skills/godkit-test/SKILL.md",
+      "type": "triggers",
+      "weight": 0.6
+    },
+    {
+      "source": "file:commands/godkit.toml",
+      "target": "file:skills/godkit/SKILL.md",
+      "type": "triggers",
+      "weight": 0.6
+    },
+    {
+      "source": "file:hooks/godkit-hooks.json",
+      "target": "config:hooks/godkit-hooks.json",
+      "type": "contains",
+      "weight": 1
+    },
+    {
+      "source": "config:hooks/godkit-hooks.json",
+      "target": "file:hooks/brief.js",
+      "type": "configures",
+      "weight": 0.6
+    },
+    {
+      "source": "config:hooks/godkit-hooks.json",
+      "target": "file:hooks/lazy-activate.js",
+      "type": "configures",
+      "weight": 0.6
+    },
+    {
+      "source": "config:hooks/godkit-hooks.json",
+      "target": "file:hooks/clockout.js",
+      "type": "configures",
+      "weight": 0.6
+    },
+    {
+      "source": "config:hooks/godkit-hooks.json",
+      "target": "file:hooks/map-watch.js",
+      "type": "configures",
+      "weight": 0.6
+    },
+    {
+      "source": "config:hooks/godkit-hooks.json",
+      "target": "file:hooks/lazy-subagent.js",
+      "type": "configures",
+      "weight": 0.6
+    },
+    {
+      "source": "config:hooks/godkit-hooks.json",
+      "target": "file:hooks/lazy-mode-tracker.js",
+      "type": "configures",
+      "weight": 0.6
+    },
+    {
+      "source": "file:hooks/install.js",
+      "target": "file:hooks/brief.js",
+      "type": "configures",
+      "weight": 0.6
+    },
+    {
+      "source": "file:hooks/install.js",
+      "target": "file:hooks/lazy-activate.js",
+      "type": "configures",
+      "weight": 0.6
+    },
+    {
+      "source": "file:hooks/install.js",
+      "target": "file:hooks/clockout.js",
+      "type": "configures",
+      "weight": 0.6
+    },
+    {
+      "source": "file:hooks/install.js",
+      "target": "file:hooks/map-watch.js",
+      "type": "configures",
+      "weight": 0.6
+    },
+    {
+      "source": "file:hooks/install.js",
+      "target": "file:hooks/lazy-subagent.js",
+      "type": "configures",
+      "weight": 0.6
+    },
+    {
+      "source": "file:hooks/install.js",
+      "target": "file:hooks/lazy-mode-tracker.js",
+      "type": "configures",
+      "weight": 0.6
+    },
+    {
+      "source": "file:hooks/lazy-activate.js",
+      "target": "file:lib/lazy.js",
+      "type": "imports",
+      "weight": 0.8
+    },
+    {
+      "source": "file:hooks/lazy-mode-tracker.js",
+      "target": "file:lib/lazy.js",
+      "type": "imports",
+      "weight": 0.8
+    },
+    {
+      "source": "file:hooks/lazy-subagent.js",
+      "target": "file:lib/lazy.js",
+      "type": "imports",
+      "weight": 0.8
+    },
+    {
+      "source": "file:lib/evolve.js",
       "target": "file:lib/paths.js",
       "type": "imports",
-      "weight": 0.7
+      "weight": 0.8
     },
     {
-      "source": "file:lib/freshness.js",
+      "source": "file:lib/evolve.js",
+      "target": "file:lib/lazy.js",
+      "type": "imports",
+      "weight": 0.8
+    },
+    {
+      "source": "file:lib/evolve.js",
+      "target": "function:lib/evolve.js:frontmatter",
+      "type": "contains",
+      "weight": 0.9
+    },
+    {
+      "source": "file:lib/evolve.js",
+      "target": "function:lib/evolve.js:scanSkill",
+      "type": "contains",
+      "weight": 0.9
+    },
+    {
+      "source": "file:lib/evolve.js",
+      "target": "function:lib/evolve.js:ownership",
+      "type": "contains",
+      "weight": 0.9
+    },
+    {
+      "source": "file:lib/evolve.js",
+      "target": "function:lib/evolve.js:linkProjectSkills",
+      "type": "contains",
+      "weight": 0.9
+    },
+    {
+      "source": "file:lib/evolve.js",
+      "target": "function:lib/evolve.js:trustOf",
+      "type": "contains",
+      "weight": 0.9
+    },
+    {
+      "source": "function:lib/evolve.js:linkProjectSkills",
+      "target": "function:lib/evolve.js:scanSkill",
+      "type": "calls",
+      "weight": 0.8
+    },
+    {
+      "source": "function:lib/evolve.js:linkProjectSkills",
+      "target": "function:lib/evolve.js:trustOf",
+      "type": "calls",
+      "weight": 0.8
+    },
+    {
+      "source": "file:lib/lazy.js",
+      "target": "function:lib/lazy.js:isDeactivationCommand",
+      "type": "contains",
+      "weight": 1
+    },
+    {
+      "source": "file:lib/lazy.js",
+      "target": "function:lib/lazy.js:configPath",
+      "type": "contains",
+      "weight": 1
+    },
+    {
+      "source": "file:lib/lazy.js",
+      "target": "function:lib/lazy.js:getDefaultMode",
+      "type": "contains",
+      "weight": 1
+    },
+    {
+      "source": "file:lib/lazy.js",
+      "target": "function:lib/lazy.js:writeDefaultMode",
+      "type": "contains",
+      "weight": 1
+    },
+    {
+      "source": "file:lib/lazy.js",
+      "target": "function:lib/lazy.js:statePath",
+      "type": "contains",
+      "weight": 1
+    },
+    {
+      "source": "file:lib/lazy.js",
+      "target": "function:lib/lazy.js:setMode",
+      "type": "contains",
+      "weight": 1
+    },
+    {
+      "source": "file:lib/lazy.js",
+      "target": "function:lib/lazy.js:clearMode",
+      "type": "contains",
+      "weight": 1
+    },
+    {
+      "source": "file:lib/lazy.js",
+      "target": "function:lib/lazy.js:readMode",
+      "type": "contains",
+      "weight": 1
+    },
+    {
+      "source": "file:lib/lazy.js",
+      "target": "function:lib/lazy.js:writeHookOutput",
+      "type": "contains",
+      "weight": 1
+    },
+    {
+      "source": "file:lib/lazy.js",
+      "target": "function:lib/lazy.js:getLazyInstructions",
+      "type": "contains",
+      "weight": 1
+    },
+    {
+      "source": "function:lib/lazy.js:getDefaultMode",
+      "target": "function:lib/lazy.js:configPath",
+      "type": "calls",
+      "weight": 0.8
+    },
+    {
+      "source": "function:lib/lazy.js:writeDefaultMode",
+      "target": "function:lib/lazy.js:configPath",
+      "type": "calls",
+      "weight": 0.8
+    },
+    {
+      "source": "function:lib/lazy.js:setMode",
+      "target": "function:lib/lazy.js:statePath",
+      "type": "calls",
+      "weight": 0.8
+    },
+    {
+      "source": "function:lib/lazy.js:clearMode",
+      "target": "function:lib/lazy.js:statePath",
+      "type": "calls",
+      "weight": 0.8
+    },
+    {
+      "source": "function:lib/lazy.js:readMode",
+      "target": "function:lib/lazy.js:statePath",
+      "type": "calls",
+      "weight": 0.8
+    },
+    {
+      "source": "file:scripts/check-versions.js",
+      "target": "function:scripts/check-versions.js:main",
+      "type": "contains",
+      "weight": 0.9
+    },
+    {
+      "source": "file:scripts/check-versions.js",
+      "target": "file:package.json",
+      "type": "depends_on",
+      "weight": 0.6
+    },
+    {
+      "source": "file:scripts/check-versions.js",
+      "target": "file:.claude-plugin/plugin.json",
+      "type": "depends_on",
+      "weight": 0.6
+    },
+    {
+      "source": "file:scripts/check-versions.js",
+      "target": "file:.codex-plugin/plugin.json",
+      "type": "depends_on",
+      "weight": 0.6
+    },
+    {
+      "source": "file:scripts/check-versions.js",
+      "target": "file:gemini-extension.json",
+      "type": "depends_on",
+      "weight": 0.6
+    },
+    {
+      "source": "file:scripts/sync-rules.js",
+      "target": "function:scripts/sync-rules.js:build",
+      "type": "contains",
+      "weight": 1
+    },
+    {
+      "source": "file:scripts/sync-rules.js",
+      "target": "function:scripts/sync-rules.js:main",
+      "type": "contains",
+      "weight": 1
+    },
+    {
+      "source": "file:scripts/sync-rules.js",
+      "target": "file:AGENTS.md",
+      "type": "depends_on",
+      "weight": 0.6
+    },
+    {
+      "source": "file:scripts/sync-rules.js",
+      "target": "file:templates/rules/cursor-header.md",
+      "type": "depends_on",
+      "weight": 0.6
+    },
+    {
+      "source": "file:scripts/sync-rules.js",
+      "target": "file:CLAUDE.md",
+      "type": "configures",
+      "weight": 0.6
+    },
+    {
+      "source": "file:scripts/sync-rules.js",
+      "target": "file:.agents/rules/godkit.md",
+      "type": "configures",
+      "weight": 0.6
+    },
+    {
+      "source": "file:scripts/sync-rules.js",
+      "target": "file:.github/copilot-instructions.md",
+      "type": "configures",
+      "weight": 0.6
+    },
+    {
+      "source": "file:scripts/uninstall.js",
+      "target": "function:scripts/uninstall.js:removeSkills",
+      "type": "contains",
+      "weight": 0.9
+    },
+    {
+      "source": "file:scripts/uninstall.js",
+      "target": "function:scripts/uninstall.js:removeHooks",
+      "type": "contains",
+      "weight": 0.9
+    },
+    {
+      "source": "file:scripts/uninstall.js",
+      "target": "file:hooks/install.js",
+      "type": "depends_on",
+      "weight": 0.6
+    },
+    {
+      "source": "file:skills/godkit/SKILL.md",
+      "target": "file:skills/godkit-map/SKILL.md",
+      "type": "depends_on",
+      "weight": 0.6
+    },
+    {
+      "source": "file:skills/godkit/SKILL.md",
+      "target": "file:skills/godkit-handoff/SKILL.md",
+      "type": "depends_on",
+      "weight": 0.6
+    },
+    {
+      "source": "file:skills/godkit/SKILL.md",
+      "target": "file:skills/godkit-plan/SKILL.md",
+      "type": "depends_on",
+      "weight": 0.6
+    },
+    {
+      "source": "file:skills/godkit/SKILL.md",
+      "target": "file:skills/godkit-execute/SKILL.md",
+      "type": "depends_on",
+      "weight": 0.6
+    },
+    {
+      "source": "file:skills/godkit/SKILL.md",
+      "target": "file:skills/godkit-test/SKILL.md",
+      "type": "depends_on",
+      "weight": 0.6
+    },
+    {
+      "source": "file:skills/godkit/SKILL.md",
+      "target": "file:skills/godkit-lazy/SKILL.md",
+      "type": "depends_on",
+      "weight": 0.6
+    },
+    {
+      "source": "file:skills/godkit-doubt/SKILL.md",
+      "target": "file:skills/godkit-handoff/SKILL.md",
+      "type": "depends_on",
+      "weight": 0.6
+    },
+    {
+      "source": "file:skills/godkit-doubt/SKILL.md",
+      "target": "file:skills/godkit-review/SKILL.md",
+      "type": "depends_on",
+      "weight": 0.6
+    },
+    {
+      "source": "file:skills/godkit-evolve/SKILL.md",
+      "target": "file:lib/evolve.js",
+      "type": "depends_on",
+      "weight": 0.6
+    },
+    {
+      "source": "file:skills/godkit-evolve/SKILL.md",
+      "target": "file:skills/godkit-test/SKILL.md",
+      "type": "depends_on",
+      "weight": 0.6
+    },
+    {
+      "source": "file:skills/godkit-evolve/SKILL.md",
+      "target": "file:skills/godkit-review/SKILL.md",
+      "type": "depends_on",
+      "weight": 0.6
+    },
+    {
+      "source": "file:skills/godkit-execute/SKILL.md",
+      "target": "file:skills/godkit-plan/SKILL.md",
+      "type": "depends_on",
+      "weight": 0.6
+    },
+    {
+      "source": "file:skills/godkit-execute/SKILL.md",
+      "target": "file:skills/godkit-handoff/SKILL.md",
+      "type": "depends_on",
+      "weight": 0.6
+    },
+    {
+      "source": "file:skills/godkit-execute/SKILL.md",
+      "target": "file:skills/godkit-lazy/SKILL.md",
+      "type": "depends_on",
+      "weight": 0.6
+    },
+    {
+      "source": "file:skills/godkit-execute/SKILL.md",
+      "target": "file:skills/godkit-git/SKILL.md",
+      "type": "depends_on",
+      "weight": 0.6
+    },
+    {
+      "source": "file:skills/godkit-frontend/SKILL.md",
+      "target": "file:skills/godkit-frontend/references/v1.md",
+      "type": "configures",
+      "weight": 0.6
+    },
+    {
+      "source": "file:skills/godkit-frontend/SKILL.md",
+      "target": "file:skills/godkit-frontend/references/strict.md",
+      "type": "configures",
+      "weight": 0.6
+    },
+    {
+      "source": "file:skills/godkit-frontend/SKILL.md",
+      "target": "file:skills/godkit-frontend/references/soft.md",
+      "type": "configures",
+      "weight": 0.6
+    },
+    {
+      "source": "file:skills/godkit-frontend/SKILL.md",
+      "target": "file:skills/godkit-frontend/references/minimal.md",
+      "type": "configures",
+      "weight": 0.6
+    },
+    {
+      "source": "file:skills/godkit-frontend/SKILL.md",
+      "target": "file:skills/godkit-frontend/references/brutalist.md",
+      "type": "configures",
+      "weight": 0.6
+    },
+    {
+      "source": "file:skills/godkit-frontend/SKILL.md",
+      "target": "file:skills/godkit-frontend/references/redesign.md",
+      "type": "configures",
+      "weight": 0.6
+    },
+    {
+      "source": "file:skills/godkit-frontend/SKILL.md",
+      "target": "file:skills/godkit-frontend/references/stitch.md",
+      "type": "configures",
+      "weight": 0.6
+    },
+    {
+      "source": "file:skills/godkit-frontend/SKILL.md",
+      "target": "file:skills/godkit-frontend/references/image-to-code.md",
+      "type": "configures",
+      "weight": 0.6
+    },
+    {
+      "source": "file:skills/godkit-frontend/SKILL.md",
+      "target": "file:skills/godkit-frontend/references/imagegen-web.md",
+      "type": "configures",
+      "weight": 0.6
+    },
+    {
+      "source": "file:skills/godkit-frontend/SKILL.md",
+      "target": "file:skills/godkit-frontend/references/imagegen-mobile.md",
+      "type": "configures",
+      "weight": 0.6
+    },
+    {
+      "source": "file:skills/godkit-frontend/SKILL.md",
+      "target": "file:skills/godkit-frontend/references/brandkit.md",
+      "type": "configures",
+      "weight": 0.6
+    },
+    {
+      "source": "file:skills/godkit-frontend/references/brandkit.md",
+      "target": "file:skills/godkit-frontend/SKILL.md",
+      "type": "depends_on",
+      "weight": 0.6
+    },
+    {
+      "source": "file:skills/godkit-frontend/references/brutalist.md",
+      "target": "file:skills/godkit-frontend/SKILL.md",
+      "type": "depends_on",
+      "weight": 0.6
+    },
+    {
+      "source": "file:skills/godkit-frontend/references/image-to-code.md",
+      "target": "file:skills/godkit-frontend/SKILL.md",
+      "type": "depends_on",
+      "weight": 0.6
+    },
+    {
+      "source": "file:skills/godkit-frontend/references/image-to-code.md",
+      "target": "file:skills/godkit-frontend/references/imagegen-web.md",
+      "type": "depends_on",
+      "weight": 0.6
+    },
+    {
+      "source": "file:skills/godkit-frontend/references/image-to-code.md",
+      "target": "file:skills/godkit-frontend/references/imagegen-mobile.md",
+      "type": "depends_on",
+      "weight": 0.6
+    },
+    {
+      "source": "file:skills/godkit-frontend/references/imagegen-mobile.md",
+      "target": "file:skills/godkit-frontend/SKILL.md",
+      "type": "depends_on",
+      "weight": 0.6
+    },
+    {
+      "source": "file:skills/godkit-frontend/references/imagegen-mobile.md",
+      "target": "file:skills/godkit-frontend/references/imagegen-web.md",
+      "type": "depends_on",
+      "weight": 0.6
+    },
+    {
+      "source": "file:skills/godkit-frontend/references/imagegen-web.md",
+      "target": "file:skills/godkit-frontend/SKILL.md",
+      "type": "depends_on",
+      "weight": 0.6
+    },
+    {
+      "source": "file:skills/godkit-frontend/references/imagegen-web.md",
+      "target": "file:skills/godkit-frontend/references/image-to-code.md",
+      "type": "depends_on",
+      "weight": 0.6
+    },
+    {
+      "source": "file:skills/godkit-frontend/references/minimal.md",
+      "target": "file:skills/godkit-frontend/SKILL.md",
+      "type": "depends_on",
+      "weight": 0.6
+    },
+    {
+      "source": "file:skills/godkit-frontend/references/redesign.md",
+      "target": "file:skills/godkit-frontend/SKILL.md",
+      "type": "depends_on",
+      "weight": 0.6
+    },
+    {
+      "source": "file:skills/godkit-frontend/references/soft.md",
+      "target": "file:skills/godkit-frontend/SKILL.md",
+      "type": "depends_on",
+      "weight": 0.6
+    },
+    {
+      "source": "file:skills/godkit-frontend/references/stitch.md",
+      "target": "file:skills/godkit-frontend/SKILL.md",
+      "type": "depends_on",
+      "weight": 0.6
+    },
+    {
+      "source": "file:skills/godkit-frontend/references/stitch.md",
+      "target": "file:skills/godkit-frontend/references/stitch-DESIGN.md",
+      "type": "depends_on",
+      "weight": 0.6
+    },
+    {
+      "source": "file:skills/godkit-frontend/references/strict.md",
+      "target": "file:skills/godkit-frontend/SKILL.md",
+      "type": "depends_on",
+      "weight": 0.6
+    },
+    {
+      "source": "file:skills/godkit-frontend/references/v1.md",
+      "target": "file:skills/godkit-frontend/SKILL.md",
+      "type": "depends_on",
+      "weight": 0.6
+    },
+    {
+      "source": "file:skills/godkit-git/SKILL.md",
+      "target": "file:skills/godkit-plan/SKILL.md",
+      "type": "depends_on",
+      "weight": 0.6
+    },
+    {
+      "source": "file:skills/godkit-git/SKILL.md",
+      "target": "file:skills/godkit-execute/SKILL.md",
+      "type": "depends_on",
+      "weight": 0.6
+    },
+    {
+      "source": "file:skills/godkit-git/SKILL.md",
+      "target": "file:skills/godkit-handoff/SKILL.md",
+      "type": "depends_on",
+      "weight": 0.6
+    },
+    {
+      "source": "file:skills/godkit-git/SKILL.md",
+      "target": "file:lib/graph.js",
+      "type": "depends_on",
+      "weight": 0.6
+    },
+    {
+      "source": "file:skills/godkit-handoff/SKILL.md",
+      "target": "file:skills/godkit-map/SKILL.md",
+      "type": "depends_on",
+      "weight": 0.6
+    },
+    {
+      "source": "file:skills/godkit-handoff/SKILL.md",
+      "target": "file:skills/godkit-evolve/SKILL.md",
+      "type": "depends_on",
+      "weight": 0.6
+    },
+    {
+      "source": "file:skills/godkit-handoff/SKILL.md",
+      "target": "file:skills/godkit-doubt/SKILL.md",
+      "type": "depends_on",
+      "weight": 0.6
+    },
+    {
+      "source": "file:skills/godkit-handoff/SKILL.md",
+      "target": "file:skills/godkit-git/SKILL.md",
+      "type": "depends_on",
+      "weight": 0.6
+    },
+    {
+      "source": "file:skills/godkit-handoff/SKILL.md",
+      "target": "file:templates/BOARD.md",
+      "type": "configures",
+      "weight": 0.6
+    },
+    {
+      "source": "file:skills/godkit-handoff/SKILL.md",
+      "target": "file:templates/task.md",
+      "type": "configures",
+      "weight": 0.6
+    },
+    {
+      "source": "file:skills/godkit-handoff/SKILL.md",
+      "target": "file:templates/log.md",
+      "type": "configures",
+      "weight": 0.6
+    },
+    {
+      "source": "file:skills/godkit-handoff/SKILL.md",
+      "target": "file:templates/THREAD.md",
+      "type": "configures",
+      "weight": 0.6
+    },
+    {
+      "source": "file:skills/godkit-help/SKILL.md",
+      "target": "file:skills/godkit/SKILL.md",
+      "type": "depends_on",
+      "weight": 0.6
+    },
+    {
+      "source": "file:skills/godkit-help/SKILL.md",
+      "target": "file:skills/godkit-map/SKILL.md",
+      "type": "depends_on",
+      "weight": 0.6
+    },
+    {
+      "source": "file:skills/godkit-help/SKILL.md",
+      "target": "file:skills/godkit-handoff/SKILL.md",
+      "type": "depends_on",
+      "weight": 0.6
+    },
+    {
+      "source": "file:skills/godkit-help/SKILL.md",
+      "target": "file:skills/godkit-plan/SKILL.md",
+      "type": "depends_on",
+      "weight": 0.6
+    },
+    {
+      "source": "file:skills/godkit-help/SKILL.md",
+      "target": "file:skills/godkit-execute/SKILL.md",
+      "type": "depends_on",
+      "weight": 0.6
+    },
+    {
+      "source": "file:skills/godkit-help/SKILL.md",
+      "target": "file:skills/godkit-review/SKILL.md",
+      "type": "depends_on",
+      "weight": 0.6
+    },
+    {
+      "source": "file:skills/godkit-help/SKILL.md",
+      "target": "file:skills/godkit-test/SKILL.md",
+      "type": "depends_on",
+      "weight": 0.6
+    },
+    {
+      "source": "file:skills/godkit-help/SKILL.md",
+      "target": "file:skills/godkit-lazy/SKILL.md",
+      "type": "depends_on",
+      "weight": 0.6
+    },
+    {
+      "source": "file:skills/godkit-help/SKILL.md",
+      "target": "file:skills/godkit-git/SKILL.md",
+      "type": "depends_on",
+      "weight": 0.6
+    },
+    {
+      "source": "file:skills/godkit-help/SKILL.md",
+      "target": "file:skills/godkit-doubt/SKILL.md",
+      "type": "depends_on",
+      "weight": 0.6
+    },
+    {
+      "source": "file:skills/godkit-help/SKILL.md",
+      "target": "file:skills/godkit-frontend/SKILL.md",
+      "type": "depends_on",
+      "weight": 0.6
+    },
+    {
+      "source": "file:skills/godkit-help/SKILL.md",
+      "target": "file:skills/godkit-output-enforcement/SKILL.md",
+      "type": "depends_on",
+      "weight": 0.6
+    },
+    {
+      "source": "file:skills/godkit-help/SKILL.md",
+      "target": "file:skills/godkit-evolve/SKILL.md",
+      "type": "depends_on",
+      "weight": 0.6
+    },
+    {
+      "source": "file:skills/godkit-help/SKILL.md",
+      "target": "file:bin/godkit.js",
+      "type": "depends_on",
+      "weight": 0.6
+    },
+    {
+      "source": "file:skills/godkit-lazy/SKILL.md",
+      "target": "file:skills/godkit-test/SKILL.md",
+      "type": "depends_on",
+      "weight": 0.6
+    },
+    {
+      "source": "file:skills/godkit-lazy/SKILL.md",
+      "target": "file:skills/godkit-plan/SKILL.md",
+      "type": "depends_on",
+      "weight": 0.6
+    },
+    {
+      "source": "file:skills/godkit-lazy/SKILL.md",
+      "target": "file:skills/godkit-handoff/SKILL.md",
+      "type": "depends_on",
+      "weight": 0.6
+    },
+    {
+      "source": "file:skills/godkit-map/SKILL.md",
+      "target": "file:agents/file-analyzer.md",
+      "type": "depends_on",
+      "weight": 0.6
+    },
+    {
+      "source": "file:skills/godkit-map/SKILL.md",
+      "target": "file:agents/architect.md",
+      "type": "depends_on",
+      "weight": 0.6
+    },
+    {
+      "source": "file:skills/godkit-map/SKILL.md",
+      "target": "file:bin/godkit.js",
+      "type": "depends_on",
+      "weight": 0.6
+    },
+    {
+      "source": "file:skills/godkit-output-enforcement/SKILL.md",
+      "target": "file:skills/godkit-execute/SKILL.md",
+      "type": "depends_on",
+      "weight": 0.6
+    },
+    {
+      "source": "file:skills/godkit-plan/SKILL.md",
+      "target": "file:skills/godkit-handoff/SKILL.md",
+      "type": "depends_on",
+      "weight": 0.6
+    },
+    {
+      "source": "file:skills/godkit-plan/SKILL.md",
+      "target": "file:skills/godkit-execute/SKILL.md",
+      "type": "depends_on",
+      "weight": 0.6
+    },
+    {
+      "source": "file:skills/godkit-plan/SKILL.md",
+      "target": "file:skills/godkit-test/SKILL.md",
+      "type": "depends_on",
+      "weight": 0.6
+    },
+    {
+      "source": "file:skills/godkit-test/SKILL.md",
+      "target": "file:skills/godkit-lazy/SKILL.md",
+      "type": "depends_on",
+      "weight": 0.6
+    },
+    {
+      "source": "file:skills/godkit-test/SKILL.md",
+      "target": "file:skills/godkit-review/SKILL.md",
+      "type": "depends_on",
+      "weight": 0.6
+    },
+    {
+      "source": "file:skills/godkit/references/PATTERNS.md",
+      "target": "file:skills/godkit/SKILL.md",
+      "type": "depends_on",
+      "weight": 0.6
+    },
+    {
+      "source": "file:bin/godkit.js",
+      "target": "file:tests/evolve.test.js",
+      "type": "tested_by",
+      "weight": 0.6
+    },
+    {
+      "source": "file:lib/evolve.js",
+      "target": "file:tests/evolve.test.js",
+      "type": "tested_by",
+      "weight": 0.9
+    },
+    {
+      "source": "file:hooks/brief.js",
+      "target": "file:tests/evolve.test.js",
+      "type": "tested_by",
+      "weight": 0.6
+    },
+    {
+      "source": "file:tests/graph.test.js",
       "target": "file:lib/graph.js",
       "type": "imports",
       "weight": 0.7
+    },
+    {
+      "source": "file:lib/graph.js",
+      "target": "file:tests/graph.test.js",
+      "type": "tested_by",
+      "weight": 0.9
+    },
+    {
+      "source": "file:hooks/install.js",
+      "target": "file:tests/hook-install.test.js",
+      "type": "tested_by",
+      "weight": 0.9
+    },
+    {
+      "source": "file:scripts/uninstall.js",
+      "target": "file:tests/hook-install.test.js",
+      "type": "tested_by",
+      "weight": 0.9
+    },
+    {
+      "source": "file:hooks/brief.js",
+      "target": "file:tests/hooks.test.js",
+      "type": "tested_by",
+      "weight": 0.9
+    },
+    {
+      "source": "file:hooks/clockout.js",
+      "target": "file:tests/hooks.test.js",
+      "type": "tested_by",
+      "weight": 0.9
+    },
+    {
+      "source": "file:hooks/map-watch.js",
+      "target": "file:tests/hooks.test.js",
+      "type": "tested_by",
+      "weight": 0.9
+    },
+    {
+      "source": "file:package.json",
+      "target": "file:tests/package.test.js",
+      "type": "tested_by",
+      "weight": 0.9
+    },
+    {
+      "source": "file:.claude-plugin/plugin.json",
+      "target": "file:tests/package.test.js",
+      "type": "tested_by",
+      "weight": 0.6
+    },
+    {
+      "source": "file:.codex-plugin/plugin.json",
+      "target": "file:tests/package.test.js",
+      "type": "tested_by",
+      "weight": 0.6
+    },
+    {
+      "source": "file:gemini-extension.json",
+      "target": "file:tests/package.test.js",
+      "type": "tested_by",
+      "weight": 0.6
+    },
+    {
+      "source": "file:hooks/godkit-hooks.json",
+      "target": "file:tests/package.test.js",
+      "type": "tested_by",
+      "weight": 0.9
+    },
+    {
+      "source": "file:AGENTS.md",
+      "target": "file:tests/package.test.js",
+      "type": "tested_by",
+      "weight": 0.6
+    },
+    {
+      "source": "file:bin/godkit.js",
+      "target": "file:tests/save.test.js",
+      "type": "tested_by",
+      "weight": 0.6
+    },
+    {
+      "source": "file:lib/graph.js",
+      "target": "file:tests/save.test.js",
+      "type": "tested_by",
+      "weight": 0.6
+    },
+    {
+      "source": "file:lib/freshness.js",
+      "target": "file:tests/save.test.js",
+      "type": "tested_by",
+      "weight": 0.6
+    },
+    {
+      "source": "file:lib/session.js",
+      "target": "function:lib/session.js:readHookInput",
+      "type": "contains",
+      "weight": 0.9
+    },
+    {
+      "source": "file:lib/session.js",
+      "target": "function:lib/session.js:statePath",
+      "type": "contains",
+      "weight": 0.9
+    },
+    {
+      "source": "file:lib/session.js",
+      "target": "function:lib/session.js:atomicWriteFile",
+      "type": "contains",
+      "weight": 0.9
+    },
+    {
+      "source": "file:lib/session.js",
+      "target": "function:lib/session.js:clearSession",
+      "type": "contains",
+      "weight": 0.9
+    },
+    {
+      "source": "file:lib/work.js",
+      "target": "function:lib/work.js:fingerprint",
+      "type": "contains",
+      "weight": 0.9
+    },
+    {
+      "source": "file:lib/work.js",
+      "target": "function:lib/work.js:statusPaths",
+      "type": "contains",
+      "weight": 0.9
+    },
+    {
+      "source": "file:lib/work.js",
+      "target": "function:lib/work.js:recordDirectEdit",
+      "type": "contains",
+      "weight": 0.9
+    },
+    {
+      "source": "file:lib/work.js",
+      "target": "function:lib/work.js:didSessionWork",
+      "type": "contains",
+      "weight": 0.9
+    },
+    {
+      "source": "file:lib/install.js",
+      "target": "function:lib/install.js:stripOurHooks",
+      "type": "contains",
+      "weight": 0.9
+    },
+    {
+      "source": "file:lib/install.js",
+      "target": "function:lib/install.js:applyHooks",
+      "type": "contains",
+      "weight": 0.9
+    },
+    {
+      "source": "file:lib/install.js",
+      "target": "function:lib/install.js:ownership",
+      "type": "contains",
+      "weight": 0.9
+    },
+    {
+      "source": "file:lib/install.js",
+      "target": "function:lib/install.js:installOne",
+      "type": "contains",
+      "weight": 0.9
+    },
+    {
+      "source": "file:lib/install.js",
+      "target": "function:lib/install.js:settingsTargets",
+      "type": "contains",
+      "weight": 0.9
+    },
+    {
+      "source": "file:lib/managed.js",
+      "target": "function:lib/managed.js:applyBlock",
+      "type": "contains",
+      "weight": 0.9
+    },
+    {
+      "source": "file:lib/managed.js",
+      "target": "function:lib/managed.js:locate",
+      "type": "contains",
+      "weight": 0.9
+    },
+    {
+      "source": "file:lib/paths.js",
+      "target": "function:lib/paths.js:findAgentContext",
+      "type": "contains",
+      "weight": 0.9
+    },
+    {
+      "source": "file:lib/paths.js",
+      "target": "function:lib/paths.js:containedPath",
+      "type": "contains",
+      "weight": 0.9
+    },
+    {
+      "source": "file:lib/paths.js",
+      "target": "function:lib/paths.js:readContained",
+      "type": "contains",
+      "weight": 0.9
+    },
+    {
+      "source": "file:lib/paths.js",
+      "target": "function:lib/paths.js:fitBytes",
+      "type": "contains",
+      "weight": 0.9
+    },
+    {
+      "source": "file:lib/paths.js",
+      "target": "function:lib/paths.js:logEntries",
+      "type": "contains",
+      "weight": 0.9
+    },
+    {
+      "source": "file:bin/godkit.js",
+      "target": "function:bin/godkit.js:cmdHooks",
+      "type": "contains",
+      "weight": 0.9
+    },
+    {
+      "source": "file:scripts/uninstall.js",
+      "target": "function:scripts/uninstall.js:removeRuntimeState",
+      "type": "contains",
+      "weight": 0.9
+    },
+    {
+      "source": "file:lib/work.js",
+      "target": "file:lib/session.js",
+      "type": "imports",
+      "weight": 0.8
+    },
+    {
+      "source": "file:lib/work.js",
+      "target": "file:lib/paths.js",
+      "type": "imports",
+      "weight": 0.8
+    },
+    {
+      "source": "file:lib/install.js",
+      "target": "file:lib/session.js",
+      "type": "imports",
+      "weight": 0.8
+    },
+    {
+      "source": "file:lib/install.js",
+      "target": "file:lib/paths.js",
+      "type": "imports",
+      "weight": 0.8
+    },
+    {
+      "source": "file:lib/lazy.js",
+      "target": "file:lib/session.js",
+      "type": "imports",
+      "weight": 0.8
+    },
+    {
+      "source": "file:lib/freshness.js",
+      "target": "file:lib/work.js",
+      "type": "imports",
+      "weight": 0.8
+    },
+    {
+      "source": "file:hooks/brief.js",
+      "target": "file:lib/session.js",
+      "type": "imports",
+      "weight": 0.8
+    },
+    {
+      "source": "file:hooks/clockout.js",
+      "target": "file:lib/session.js",
+      "type": "imports",
+      "weight": 0.8
+    },
+    {
+      "source": "file:hooks/clockout.js",
+      "target": "file:lib/work.js",
+      "type": "imports",
+      "weight": 0.8
+    },
+    {
+      "source": "file:hooks/work-track.js",
+      "target": "file:lib/paths.js",
+      "type": "imports",
+      "weight": 0.8
+    },
+    {
+      "source": "file:hooks/work-track.js",
+      "target": "file:lib/session.js",
+      "type": "imports",
+      "weight": 0.8
+    },
+    {
+      "source": "file:hooks/work-track.js",
+      "target": "file:lib/work.js",
+      "type": "imports",
+      "weight": 0.8
+    },
+    {
+      "source": "file:hooks/map-watch.js",
+      "target": "file:lib/session.js",
+      "type": "imports",
+      "weight": 0.8
+    },
+    {
+      "source": "file:hooks/lazy-activate.js",
+      "target": "file:lib/session.js",
+      "type": "imports",
+      "weight": 0.8
+    },
+    {
+      "source": "file:hooks/lazy-subagent.js",
+      "target": "file:lib/session.js",
+      "type": "imports",
+      "weight": 0.8
+    },
+    {
+      "source": "file:hooks/lazy-mode-tracker.js",
+      "target": "file:lib/session.js",
+      "type": "imports",
+      "weight": 0.8
+    },
+    {
+      "source": "file:hooks/install.js",
+      "target": "file:lib/install.js",
+      "type": "imports",
+      "weight": 0.8
+    },
+    {
+      "source": "file:scripts/uninstall.js",
+      "target": "file:lib/install.js",
+      "type": "imports",
+      "weight": 0.8
+    },
+    {
+      "source": "file:scripts/uninstall.js",
+      "target": "file:lib/session.js",
+      "type": "imports",
+      "weight": 0.8
+    },
+    {
+      "source": "file:scripts/sync-hooks.js",
+      "target": "file:lib/install.js",
+      "type": "imports",
+      "weight": 0.8
+    },
+    {
+      "source": "file:bin/godkit.js",
+      "target": "file:lib/install.js",
+      "type": "imports",
+      "weight": 0.8
+    },
+    {
+      "source": "file:bin/godkit.js",
+      "target": "file:lib/managed.js",
+      "type": "imports",
+      "weight": 0.8
+    },
+    {
+      "source": "file:lib/paths.js",
+      "target": "file:tests/runtime.test.js",
+      "type": "tested_by",
+      "weight": 0.9
+    },
+    {
+      "source": "file:lib/session.js",
+      "target": "file:tests/runtime.test.js",
+      "type": "tested_by",
+      "weight": 0.9
+    },
+    {
+      "source": "file:lib/work.js",
+      "target": "file:tests/runtime.test.js",
+      "type": "tested_by",
+      "weight": 0.9
+    },
+    {
+      "source": "file:lib/lazy.js",
+      "target": "file:tests/runtime.test.js",
+      "type": "tested_by",
+      "weight": 0.9
+    },
+    {
+      "source": "file:bin/godkit.js",
+      "target": "file:tests/cli.test.js",
+      "type": "tested_by",
+      "weight": 0.9
+    },
+    {
+      "source": "file:lib/managed.js",
+      "target": "file:tests/cli.test.js",
+      "type": "tested_by",
+      "weight": 0.9
+    },
+    {
+      "source": "file:lib/freshness.js",
+      "target": "file:tests/cli.test.js",
+      "type": "tested_by",
+      "weight": 0.9
+    },
+    {
+      "source": "file:lib/install.js",
+      "target": "file:tests/hook-install.test.js",
+      "type": "tested_by",
+      "weight": 0.9
+    },
+    {
+      "source": "file:scripts/sync-hooks.js",
+      "target": "file:tests/hook-install.test.js",
+      "type": "tested_by",
+      "weight": 0.9
+    },
+    {
+      "source": "file:hooks/work-track.js",
+      "target": "file:tests/hooks.test.js",
+      "type": "tested_by",
+      "weight": 0.9
+    },
+    {
+      "source": "file:templates/gitattributes",
+      "target": "file:tests/package.test.js",
+      "type": "tested_by",
+      "weight": 0.9
+    },
+    {
+      "source": "file:bin/godkit.js",
+      "target": "file:tests/package.test.js",
+      "type": "tested_by",
+      "weight": 0.9
+    },
+    {
+      "source": "file:templates/log.md",
+      "target": "file:tests/evolve.test.js",
+      "type": "tested_by",
+      "weight": 0.9
+    },
+    {
+      "source": "file:lib/install.js",
+      "target": "file:hooks/godkit-hooks.json",
+      "type": "configures",
+      "weight": 0.9
+    },
+    {
+      "source": "file:scripts/sync-hooks.js",
+      "target": "file:hooks/godkit-hooks.json",
+      "type": "configures",
+      "weight": 0.9
+    },
+    {
+      "source": "config:hooks/godkit-hooks.json",
+      "target": "file:hooks/work-track.js",
+      "type": "triggers",
+      "weight": 0.9
+    },
+    {
+      "source": "config:hooks/godkit-hooks.json",
+      "target": "file:hooks/clockout.js",
+      "type": "triggers",
+      "weight": 0.9
+    },
+    {
+      "source": "config:hooks/godkit-hooks.json",
+      "target": "file:hooks/brief.js",
+      "type": "triggers",
+      "weight": 0.9
+    },
+    {
+      "source": "config:hooks/godkit-hooks.json",
+      "target": "file:hooks/map-watch.js",
+      "type": "triggers",
+      "weight": 0.9
+    },
+    {
+      "source": "config:hooks/godkit-hooks.json",
+      "target": "file:hooks/lazy-activate.js",
+      "type": "triggers",
+      "weight": 0.8
+    },
+    {
+      "source": "config:hooks/godkit-hooks.json",
+      "target": "file:hooks/lazy-subagent.js",
+      "type": "triggers",
+      "weight": 0.8
+    },
+    {
+      "source": "config:hooks/godkit-hooks.json",
+      "target": "file:hooks/lazy-mode-tracker.js",
+      "type": "triggers",
+      "weight": 0.8
+    },
+    {
+      "source": "file:hooks/work-track.js",
+      "target": "file:hooks/clockout.js",
+      "type": "depends_on",
+      "weight": 0.9
+    },
+    {
+      "source": "file:bin/godkit.js",
+      "target": "file:templates/gitattributes",
+      "type": "depends_on",
+      "weight": 0.8
+    },
+    {
+      "source": "file:package.json",
+      "target": "file:.github/workflows/publish.yml",
+      "type": "configures",
+      "weight": 0.7
+    },
+    {
+      "source": "pipeline:.github/workflows/publish.yml",
+      "target": "file:scripts/check-versions.js",
+      "type": "calls",
+      "weight": 0.8
+    },
+    {
+      "source": "pipeline:.github/workflows/publish.yml",
+      "target": "file:scripts/sync-hooks.js",
+      "type": "calls",
+      "weight": 0.8
+    },
+    {
+      "source": "pipeline:.github/workflows/test.yml",
+      "target": "file:scripts/sync-hooks.js",
+      "type": "calls",
+      "weight": 0.8
+    },
+    {
+      "source": "pipeline:.github/workflows/test.yml",
+      "target": "file:scripts/check-versions.js",
+      "type": "calls",
+      "weight": 0.8
+    },
+    {
+      "source": "file:README.md",
+      "target": "file:docs/agent-portability.md",
+      "type": "depends_on",
+      "weight": 0.6
+    },
+    {
+      "source": "file:lib/evolve.js",
+      "target": "file:skills/godkit-evolve/SKILL.md",
+      "type": "configures",
+      "weight": 0.6
     }
   ],
   "layers": [
     {
-      "id": "core",
-      "name": "Core library",
-      "description": "Everything the CLI, the hooks and the skills share. Reading and writing .agent/ lives here; policy does not.",
-      "nodeIds": [
-        "file:lib/batch.js",
-        "file:lib/freshness.js",
-        "file:lib/graph.js",
-        "file:lib/paths.js",
-        "file:lib/scan.js"
-      ]
+      "name": "Shared protocol and state",
+      "description": "AGENTS.md and the committed .agent/ contract every host reads: board, thread, tasks, logs, map. The one canonical copy of each fact.",
+      "nodeIds": []
     },
     {
-      "id": "cli",
-      "name": "CLI",
-      "description": "The godkit command. The only place per-tool install paths are written down.",
-      "nodeIds": [
-        "file:bin/godkit.js"
-      ]
+      "name": "Session runtime",
+      "description": "lib/session.js, lib/work.js and lib/paths.js — per-session state under an owned root, session-scoped work evidence, and every bounded, symlink-refusing read of shared state.",
+      "nodeIds": []
     },
     {
-      "id": "hooks",
-      "name": "Hooks",
-      "description": "Lifecycle enforcement for Claude Code and Codex. Every one exits 0 no matter what: a broken hook must not break the session it was meant to help.",
-      "nodeIds": [
-        "file:hooks/brief.js",
-        "file:hooks/clockout.js",
-        "file:hooks/godkit-hooks.json",
-        "file:hooks/install.js",
-        "file:hooks/map-watch.js"
-      ]
+      "name": "Hook enforcement",
+      "description": "hooks/*.js. brief injects state at session start, work-track records what this session changed, clockout blocks the turn until its log exists, map-watch reports staleness. Generated registrations keep the plugin manifest and the settings installer in step.",
+      "nodeIds": []
     },
     {
-      "id": "skills",
-      "name": "Skills and agent prompts",
-      "description": "The prompts agents actually load. Behaviour lives here, not in code.",
-      "nodeIds": [
-        "file:agents/architect.md",
-        "file:agents/file-analyzer.md",
-        "file:skills/godkit-execute/SKILL.md",
-        "file:skills/godkit-handoff/SKILL.md",
-        "file:skills/godkit-help/SKILL.md",
-        "file:skills/godkit-lazy/SKILL.md",
-        "file:skills/godkit-map/SKILL.md",
-        "file:skills/godkit-plan/SKILL.md",
-        "file:skills/godkit-review/SKILL.md",
-        "file:skills/godkit-test/SKILL.md",
-        "file:skills/godkit/references/PATTERNS.md",
-        "file:skills/godkit/SKILL.md"
-      ]
+      "name": "Install and ownership",
+      "description": "lib/install.js with hooks/install.js and scripts/uninstall.js. One definition of what godkit created, so nothing it did not create is ever replaced or removed.",
+      "nodeIds": []
     },
     {
-      "id": "build",
-      "name": "Guards",
-      "description": "Scripts that fail the build when generated files drift or manifests disagree.",
-      "nodeIds": [
-        "file:scripts/check-versions.js",
-        "file:scripts/sync-rules.js",
-        "file:scripts/uninstall.js"
-      ]
+      "name": "CLI and map pipeline",
+      "description": "bin/godkit.js over lib/scan.js, lib/batch.js, lib/graph.js, lib/freshness.js and lib/managed.js: scan, analyze, save, and honest staleness.",
+      "nodeIds": []
     },
     {
-      "id": "rules",
-      "name": "Rules and templates",
-      "description": "AGENTS.md, its generated copies, and what init writes into a project.",
-      "nodeIds": [
-        "file:AGENTS.md"
-      ]
+      "name": "Skills and evidence",
+      "description": "skills/, agents/, commands/ and lib/evolve.js — the shipped procedures, plus project skills judged by owned snapshots and log-derived trust.",
+      "nodeIds": []
+    },
+    {
+      "name": "Verification and release guards",
+      "description": "tests/, scripts/sync-*.js, scripts/check-versions.js and the workflows. Generated files, agreeing manifests, a tag-only publish, and a packed-install smoke.",
+      "nodeIds": []
     }
   ],
   "tour": [
     {
       "order": 1,
-      "title": "Read the contract first",
-      "description": "AGENTS.md is the whole protocol in one screen, and the source every host rule file is generated from.",
-      "nodeIds": [
-        "file:AGENTS.md"
-      ]
+      "title": "",
+      "description": "",
+      "nodeIds": []
     },
     {
       "order": 2,
-      "title": "How anything is found",
-      "description": "lib/paths.js resolves the project root and .agent/, worktrees included. Every other module starts here.",
-      "nodeIds": [
-        "file:lib/paths.js"
-      ]
+      "title": "",
+      "description": "",
+      "nodeIds": []
     },
     {
       "order": 3,
-      "title": "The memory itself",
-      "description": "lib/graph.js loads, normalizes and saves the map, and holds the two guards that stop it being destroyed.",
-      "nodeIds": [
-        "file:lib/graph.js"
-      ]
+      "title": "",
+      "description": "",
+      "nodeIds": []
     },
     {
       "order": 4,
-      "title": "Knowing when it went stale",
-      "description": "lib/freshness.js splits the cheap git check from the expensive rebuild decision.",
-      "nodeIds": [
-        "file:lib/freshness.js"
-      ]
+      "title": "",
+      "description": "",
+      "nodeIds": []
     },
     {
       "order": 5,
-      "title": "Where agents are made to comply",
-      "description": "hooks/clockout.js is the only thing that blocks a turn; brief.js is what an arriving agent actually reads.",
-      "nodeIds": [
-        "file:hooks/clockout.js",
-        "file:hooks/brief.js"
-      ]
+      "title": "",
+      "description": "",
+      "nodeIds": []
     },
     {
       "order": 6,
-      "title": "What ships and where",
-      "description": "bin/godkit.js holds the per-tool install table, the one place a fifth tool gets added.",
-      "nodeIds": [
-        "file:bin/godkit.js"
-      ]
+      "title": "",
+      "description": "",
+      "nodeIds": []
+    },
+    {
+      "order": 7,
+      "title": "",
+      "description": "",
+      "nodeIds": []
+    },
+    {
+      "order": 8,
+      "title": "",
+      "description": "",
+      "nodeIds": []
     }
   ]
 }

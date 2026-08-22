@@ -92,6 +92,11 @@ enabled: true
 
 `name`, `description` and `license` are what the host reads. The rest is godkit's.
 
+`origin` and `enabled` are **required**, and must be one of `authored`, `captured`, `derived`,
+`fix` and one of `true`, `false`. A SKILL.md missing them, or carrying frontmatter godkit cannot
+parse, is reported as a blocking finding and will not link — an unreadable declaration is not a
+safe default to guess at.
+
 **The `description` is the whole retrieval mechanism.** No index, no embeddings — a host decides
 whether to load a skill by reading that string. Name the trigger, not the topic: "use when a
 suite fails on leftover rows" beats "database utilities".

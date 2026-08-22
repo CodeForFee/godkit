@@ -40,6 +40,30 @@ function writeIfAbsent(file, content) {
   return true
 }
 
+// A host file the user also writes in. We own the marked block and nothing else — and if the
+// markers were hand-edited into something ambiguous we refuse rather than guess.
+function writeManaged(file, content, style) {
+  const { applyBlock } = require('../lib/managed')
+  let existing = null
+  try {
+    existing = fs.readFileSync(file, 'utf8')
+  } catch (err) {
+    if (err.code !== 'ENOENT') return { action: 'refused', reason: err.message }
+  }
+
+  let result
+  try {
+    result = applyBlock(existing, content, style)
+  } catch (err) {
+    return { action: 'refused', reason: err.message }
+  }
+  if (result.action === 'unchanged') return result
+
+  fs.mkdirSync(path.dirname(file), { recursive: true })
+  fs.writeFileSync(file, result.text)
+  return result
+}
+
 function skillNames() {
   try {
     return fs
@@ -52,23 +76,12 @@ function skillNames() {
   }
 }
 
-// Symlinks need elevation on Windows, junctions do not. Copy is the last resort so that a
-// non-admin install still works — it just will not track edits to the package.
-function link(src, dest) {
-  fs.mkdirSync(path.dirname(dest), { recursive: true })
-  try {
-    const st = fs.lstatSync(dest)
-    if (st.isSymbolicLink() || st.isDirectory()) fs.rmSync(dest, { recursive: true, force: true })
-  } catch {
-    /* not there yet */
-  }
-  try {
-    fs.symlinkSync(src, dest, process.platform === 'win32' ? 'junction' : 'dir')
-    return 'linked'
-  } catch {
-    fs.cpSync(src, dest, { recursive: true })
-    return 'copied'
-  }
+// What each tool's install and uninstall actually touch. lib/install.js decides what is ours;
+// this only turns a tool spec into source/destination pairs.
+function skillPairs(spec, names) {
+  const base = path.join(os.homedir(), ...spec.dir)
+  if (spec.style === 'folder') return { base, pairs: [[SKILLS, path.join(base, 'godkit')]] }
+  return { base, pairs: names.map((n) => [path.join(SKILLS, n), path.join(base, n)]) }
 }
 
 function cmdInit(args) {
@@ -86,22 +99,33 @@ function cmdInit(args) {
   if (writeIfAbsent(p.map, tpl('MAP.md', vars))) wrote.push('.agent/MAP.md')
   if (writeIfAbsent(p.ignore, tpl('.agentignore', vars))) wrote.push('.agent/.agentignore')
 
-  // The always-on rules, at the path each host already reads.
+  // The always-on rules, at the path each host already reads. These files belong to the user as
+  // much as to us, so our text goes in a marked block and everything outside it is left alone.
   const body = fs.readFileSync(path.join(ROOT, 'AGENTS.md'), 'utf8')
   const cursorHeader = fs.readFileSync(path.join(TEMPLATES, 'rules', 'cursor-header.md'), 'utf8')
-  const rules = [
-    ['AGENTS.md', body],
-    ['CLAUDE.md', body],
-    [path.join('.cursor', 'rules', 'godkit.mdc'), cursorHeader.trimEnd() + '\n\n' + body],
-    [path.join('.agents', 'rules', 'godkit.md'), body],
+  // From templates/, not from this repo's own .gitattributes: that file is not in the npm
+  // allowlist, so reading it worked from a git checkout and crashed from an installed package.
+  const gitattributes = fs.readFileSync(path.join(TEMPLATES, 'gitattributes'), 'utf8')
+
+  const managed = [
+    ['AGENTS.md', body, 'html'],
+    ['CLAUDE.md', body, 'html'],
+    [path.join('.cursor', 'rules', 'godkit.mdc'), cursorHeader.trimEnd() + '\n\n' + body, 'html'],
+    [path.join('.agents', 'rules', 'godkit.md'), body, 'html'],
+    ['.gitattributes', gitattributes, 'hash'],
   ]
-  for (const [rel, content] of rules) {
-    if (writeIfAbsent(path.join(root, rel), content)) wrote.push(rel.replace(/\\/g, '/'))
+  const refused = []
+  for (const [rel, content, style] of managed) {
+    const result = writeManaged(path.join(root, rel), content, style)
+    const label = rel.replace(/\\/g, '/')
+    if (result.action === 'refused') refused.push(label + ' — ' + result.reason)
+    else if (result.action !== 'unchanged') wrote.push(label + ' (' + result.action + ')')
   }
 
   log('godkit: ' + name)
   if (wrote.length) for (const w of wrote) log('  + ' + w)
   else log('  already set up — nothing to write')
+  for (const r of refused) log('  ! ' + r)
   log('')
   log('Next: run the godkit-map skill to build the project map, then claim your scope on')
   log('.agent/BOARD.md before you edit.')
@@ -109,12 +133,14 @@ function cmdInit(args) {
 
 function cmdInstall(args) {
   const want = args.filter((a) => !a.startsWith('-'))
+  const dryRun = args.includes('--dry-run')
   const targets = want.length ? want : Object.keys(TOOLS)
   const names = skillNames()
   if (!names.length) {
     log('No skills found in ' + SKILLS)
     return
   }
+  const { installOne } = require('../lib/install')
 
   for (const t of targets) {
     const spec = TOOLS[t]
@@ -127,18 +153,71 @@ function cmdInstall(args) {
       continue
     }
 
-    const base = path.join(os.homedir(), ...spec.dir)
-    if (spec.style === 'folder') {
-      const how = link(SKILLS, path.join(base, 'godkit'))
-      log(t + ': ' + how + ' ' + names.length + ' skills -> ' + path.join(base, 'godkit'))
-    } else {
-      let how = ''
-      for (const n of names) how = link(path.join(SKILLS, n), path.join(base, n))
-      log(t + ': ' + how + ' ' + names.length + ' skills -> ' + base)
+    const { base, pairs } = skillPairs(spec, names)
+    let done = 0
+    const refused = []
+    for (const [src, dest] of pairs) {
+      const result = installOne(src, dest, dryRun)
+      if (result.ok) done++
+      else refused.push(path.basename(dest) + ' — ' + result.reason)
     }
-    if (spec.hooks) {
-      log('   hooks: run `node ' + path.join(ROOT, 'hooks', 'install.js') + '` to register them')
+    log(t + ': ' + (dryRun ? 'would install ' : 'installed ') + done + ' of ' + pairs.length + ' -> ' + base)
+    // Refusing is the point: a directory we did not create is the user's, not ours to replace.
+    for (const r of refused) log('   skipped ' + r)
+    if (spec.hooks) log('   hooks: `godkit hooks install` registers them')
+  }
+}
+
+// The hook registrations, as a first-class command instead of a path to hand-run.
+function cmdHooks(args) {
+  const action = args.find((a) => !a.startsWith('-')) || 'status'
+  const dryRun = args.includes('--dry-run')
+  const lib = require('../lib/install')
+
+  if (action === 'status') {
+    for (const [tool, file] of lib.settingsTargets()) {
+      if (!fs.existsSync(file)) {
+        log('  ' + tool.padEnd(8) + 'no settings file  (' + file + ')')
+        continue
+      }
+      let record
+      try {
+        record = lib.readSettings(file)
+      } catch (err) {
+        log('  ' + tool.padEnd(8) + 'UNREADABLE — ' + err.message)
+        continue
+      }
+      let found = 0
+      for (const groups of Object.values((record.settings.hooks) || {})) {
+        for (const group of groups || []) {
+          for (const handler of (group && group.hooks) || []) if (lib.isOurHandler(handler)) found++
+        }
+      }
+      log('  ' + tool.padEnd(8) + found + ' of ' + lib.HOOKS.length + ' godkit hooks registered  (' + file + ')')
     }
+    log('')
+    log('`godkit hooks install` / `godkit hooks uninstall` to change that.')
+    return
+  }
+
+  if (action !== 'install' && action !== 'uninstall') {
+    log('godkit hooks [status|install|uninstall] [--dry-run]')
+    return
+  }
+
+  for (const [tool, file] of lib.settingsTargets()) {
+    if (action === 'uninstall' && !fs.existsSync(file)) continue
+    let record
+    try {
+      record = lib.readSettings(file)
+    } catch (err) {
+      log('  ' + tool.padEnd(8) + 'skipped — ' + err.message)
+      continue
+    }
+    const result = lib.applyHooks(record.settings, { uninstall: action === 'uninstall' })
+    lib.writeSettings(file, result.settings, record, dryRun)
+    log('  ' + tool.padEnd(8) + (dryRun ? 'would ' : '') + action + ': ' +
+        result.added + ' registered, ' + result.removed + ' replaced  (' + file + ')')
   }
 }
 
@@ -200,7 +279,14 @@ function cmdSave(args) {
   let merged = incoming
   if (existing && !args.includes('--replace')) {
     const touched = new Set(incoming.nodes.map((n) => n.filePath).filter(Boolean))
-    const keptNodes = existing.nodes.filter((n) => !n.filePath || !touched.has(n.filePath))
+    // A node for a file that is gone survives every partial refresh otherwise: the pass has
+    // nothing to report about a deleted file, so `touched` never names it and the stale node is
+    // kept forever. Existence on disk is the only honest test.
+    const keptNodes = existing.nodes.filter((n) => {
+      if (!n.filePath) return true
+      if (touched.has(n.filePath)) return false
+      return fs.existsSync(path.resolve(root, n.filePath))
+    })
     const keptIds = new Set([...keptNodes, ...incoming.nodes].map((n) => n.id))
     merged = {
       project: Object.assign({}, existing.project, incoming.project),
@@ -220,9 +306,11 @@ function cmdSave(args) {
     sha,
   })
 
+  // Fixed order, and each write is a temp-and-rename. The order is the crash safety: meta.json
+  // last means an interrupted run reads as stale next time rather than being trusted as complete.
   const saved = graphLib.saveGraph(p.graph, merged, root)
-  fs.writeFileSync(p.map, graphLib.renderMap(saved))
-  fs.writeFileSync(
+  graphLib.atomicWriteFile(p.map, graphLib.renderMap(saved))
+  graphLib.atomicWriteFile(
     p.meta,
     JSON.stringify(
       { version: graphLib.VERSION, sha, generatedAt: saved.project.generatedAt, nodes: saved.nodes.length },
@@ -427,26 +515,34 @@ function cmdDoctor() {
     const probe = spec.style === 'folder' ? path.join(base, 'godkit') : path.join(base, names[0] || 'godkit')
     log('  ' + t.padEnd(13) + (fs.existsSync(probe) ? 'installed' : 'not installed') + '  (' + base + ')')
   }
+
+  // Hooks are the half that fails silently: skills present but hooks unregistered means no brief,
+  // no work tracking and no clockout, with nothing on screen to say so.
+  log('')
+  log('  hooks:')
+  cmdHooks([])
 }
 
 function cmdUninstall(args) {
   const targets = args.filter((a) => !a.startsWith('-'))
+  const dryRun = args.includes('--dry-run')
   const names = skillNames()
+  const { removeOne } = require('../lib/install')
+
   for (const t of targets.length ? targets : Object.keys(TOOLS)) {
     const spec = TOOLS[t]
     if (!spec || spec.style === 'rules-only') continue
-    const base = path.join(os.homedir(), ...spec.dir)
-    const victims = spec.style === 'folder' ? [path.join(base, 'godkit')] : names.map((n) => path.join(base, n))
-    let n = 0
-    for (const v of victims) {
-      try {
-        fs.rmSync(v, { recursive: true, force: true })
-        n++
-      } catch {
-        /* already gone */
-      }
+    const { base, pairs } = skillPairs(spec, names)
+    let removed = 0
+    const kept = []
+    for (const [src, dest] of pairs) {
+      const result = removeOne(dest, src, dryRun)
+      if (result.how === 'absent') continue
+      if (result.ok) removed++
+      else kept.push(path.basename(dest))
     }
-    log(t + ': removed ' + n + ' entries from ' + base)
+    log(t + ': ' + (dryRun ? 'would remove ' : 'removed ') + removed + ' entries from ' + base)
+    if (kept.length) log('   kept (not ours): ' + kept.join(', '))
   }
   log('')
   log('Left in place: this project\'s .agent/ directory and rule files. Delete them by hand if')
@@ -465,6 +561,8 @@ const HELP = `godkit — one shared harness for every AI agent
                             them into the paths claude and codex read
   godkit evolve [--write]   re-read the logs: what each project skill's evidence says.
                             --write projects it to .agent/SKILLS.md
+  godkit hooks [status|install|uninstall] [--dry-run]
+                            the hook registrations in the claude and codex settings files
   godkit doctor             what is set up here, and whether the map is stale
   godkit uninstall [tool]   remove the installed skills (leaves your .agent/ alone)
 
@@ -486,6 +584,8 @@ function main() {
       return cmdSkills(args)
     case 'evolve':
       return cmdEvolve(args)
+    case 'hooks':
+      return cmdHooks(args)
     case 'doctor':
       return cmdDoctor()
     case 'uninstall':
