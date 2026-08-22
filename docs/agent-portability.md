@@ -14,8 +14,20 @@ Godkit targets four tools. They agree on almost nothing, so the package keeps **
 | **Hooks** | yes | no | yes, same JSON | no |
 | **Plugin manifest** | `.claude-plugin/plugin.json` | — | `.codex-plugin/plugin.json` | `gemini-extension.json` |
 | **Invocation** | `/godkit` | ask in prose | `$godkit` | `/godkit` |
+| **Slash commands** | auto-discovered from `commands/` | — | auto-discovered from `commands/` | auto-discovered from `commands/` |
 
 Anything not listed reads a plain root `AGENTS.md`, which `godkit init` writes — so an unlisted tool still gets the protocol, just without skills or hooks.
+
+**The `commands/` directory only reaches a host through a plugin or extension install**, where the
+host discovers it inside the package directory. `npm install -g godkit` places the skills, not the
+commands — the invocation row above describes the plugin install. Nothing places `.toml` command
+files into a host's own commands directory, deliberately: that path is the user's, and one file
+per skill dropped into it is a lot of someone else's clutter.
+
+`gemini-extension.json` carries `skills` and `agents` pointers as a **best-effort** adapter: they
+are how Antigravity's own extension layout names those directories, and are harmless where a host
+ignores an unknown field. What is actually verified is the skills path in the table above, which
+is what `godkit install antigravity` writes.
 
 **Project-local skills** (`.agent/skills/`, see the `godkit-evolve` skill) follow the same
 one-canonical-copy rule as the rules files: `.agent/skills/<name>/` is the source, and
@@ -48,10 +60,16 @@ Claude Code and Codex read the same hook JSON. Codex differs in one way that mat
 |---|---|---|
 | `brief.js` | `SessionStart` | injects the board, map freshness, newest log entries, THREAD tail, and this project's own skills |
 | `lazy-activate.js` | `SessionStart` | resolves the active `godkit-lazy` mode, injects its ruleset |
-| `clockout.js` | `Stop` | blocks the turn if files changed and no log was written |
+| `work-track.js` | `PreToolUse`, `PostToolUse`, `SessionEnd` | records whether this session changed project files |
+| `clockout.js` | `Stop` | blocks the turn if this session changed files and wrote no log |
 | `map-watch.js` | `PostToolUse` (Bash) | after a commit or merge, says if the map went stale |
 | `lazy-subagent.js` | `SubagentStart` | injects the same ruleset into a spawned subagent |
 | `lazy-mode-tracker.js` | `UserPromptSubmit` | tracks `/godkit-lazy` mode switches |
+
+`hooks/godkit-hooks.json` is **generated** from the `HOOKS` list in `lib/install.js` by
+`node scripts/sync-hooks.js`, and CI fails if it drifted. Two registration paths — a plugin
+manifest and a settings file — reading one list is what stops a hook from existing under one host
+and not the other.
 
 `godkit-lazy`'s mode resolves from `GODKIT_LAZY_MODE`, then `~/.config/godkit/config.json`, then
 `full` — see `lib/lazy.js`. Two hooks share `SessionStart`: Claude Code and Codex both run every
@@ -67,16 +85,23 @@ That asymmetry is worth stating plainly: on Claude Code the protocol is *enforce
 ```bash
 godkit install                  # all tools
 godkit install claude codex     # just these
-node hooks/install.js           # register hooks in ~/.claude/settings.json
+godkit install --dry-run        # say what would happen, change nothing
+godkit hooks install            # register hooks for claude and codex
 ```
 
-`godkit install` prefers a symlink, falls back to a directory junction on Windows (which needs no elevation), and copies as a last resort. A copy works but stops tracking package updates — `godkit doctor` shows what is in place.
+`godkit install` prefers a symlink, falls back to a directory junction on Windows (which needs no elevation), and copies as a last resort. A copy works but stops tracking package updates — `godkit doctor` shows what is in place, including which hooks are registered.
+
+It only ever replaces a destination it owns: a link pointing back into this package, or a copy
+carrying its `.godkit-install.json` marker. Anything else at that path is yours, and both install
+and uninstall leave it where it is and say they skipped it.
 
 ## Adding a tool
 
 1. Add its skill directory and layout style to `TOOLS` in `bin/godkit.js`.
 2. Add its rule path to `TARGETS` in `scripts/sync-rules.js`, with a header template if it needs frontmatter.
 3. Add its manifest at whatever path it expects, and add that manifest to `FILES` in `scripts/check-versions.js` if it carries a version.
+   If the manifest is read at runtime by the CLI, add its path to `files` in `package.json` too —
+   the packed-tarball test in `tests/package.test.js` is what catches a forgotten one.
 4. Add a row to the table above.
 
 Keep the adapter thin. If a host supports skills or hooks, point it at the existing `skills/` and `hooks/` files rather than making it a copy. If it only supports project instructions, generate its rule file from `AGENTS.md` like every other one.

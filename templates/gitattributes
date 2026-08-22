@@ -1,0 +1,13 @@
+# The generated half of .agent/ must never be merged textually. Git would inject conflict markers
+# into graph.json, making it invalid JSON — `godkit save` then refuses to overwrite it (correctly)
+# and the map is stuck until someone hand-merges a machine-written node array.
+#
+# Resolve a conflict by taking either side — both are real graphs — then refreshing:
+#   git checkout --ours .agent/graph.json .agent/meta.json .agent/MAP.md
+#   godkit scan && ... && godkit save     # only the delta gets re-analyzed
+#
+# The hand-written half (BOARD.md, THREAD.md, log/, tasks/, skills/) is deliberately NOT listed:
+# those hold work a person or agent actually wrote, and a real textual merge is what you want.
+.agent/graph.json -merge
+.agent/meta.json  -merge
+.agent/MAP.md     -merge

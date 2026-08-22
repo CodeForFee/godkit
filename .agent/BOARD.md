@@ -17,7 +17,7 @@ Current truth only. Detailed history lives in Git and `.agent/log/`.
 |---|---|---|---|---|
 | root | `.agent/**` | T-001, T-008 | 2026-08-22T14:04Z | active |
 
-| claude | manifests, commands, package/workflows, docs, contract tests | T-007 | 2026-08-22T15:50Z | active |
+| claude | `.agent/**` and read-only repository-wide verification | T-008 | 2026-08-22T16:12Z | active |
 
 
 One owner per file. Workers update only their task and unique log; root alone edits this board.
@@ -32,8 +32,8 @@ One owner per file. Workers update only their task and unique log; root alone ed
 | T-004 | hook runtime and session isolation | Singer | done | `.agent/tasks/T-004-hook-runtime.md` |
 | T-005 | install lifecycle ownership | claude | done | `.agent/tasks/T-005-install-lifecycle.md` |
 | T-006 | CLI, freshness, and managed init | claude | done | `.agent/tasks/T-006-cli-integration.md` |
-| T-007 | package, docs, and release contracts | claude | execute | `.agent/tasks/T-007-package-docs.md` |
-| T-008 | join verification and handoff | root | plan | `.agent/tasks/T-008-join-handoff.md` |
+| T-007 | package, docs, and release contracts | claude | done | `.agent/tasks/T-007-package-docs.md` |
+| T-008 | join verification and handoff | claude | execute | `.agent/tasks/T-008-join-handoff.md` |
 
 ## Bugs
 
@@ -45,7 +45,7 @@ One owner per file. Workers update only their task and unique log; root alone ed
 - [x] B-006 lazy/work state is shared across sessions and clockout evidence is not exact — runtime fixed in T-004, work-track registered in T-005.
 - [x] B-007 install/uninstall ownership can remove foreign skills/hooks or mutate unsafe config — fixed in T-005; `link()` in `bin/godkit.js` is the last unguarded delete, owned by T-006.
 - [x] B-008 init overwrites host files instead of managing an isolated, preflighted block — fixed in T-006 (`lib/managed.js`).
-- [ ] B-009 host manifests, Gemini commands, package artifacts, and publish gates drift from contract.
+- [x] B-009 host manifests, Gemini commands, package artifacts, and publish gates drift from contract — fixed in T-007.
 - [x] B-010 evolve fixtures leak temporary directories — fixed in T-002. Documentation half moved to T-007.
 
 ## Binding decisions

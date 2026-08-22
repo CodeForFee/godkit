@@ -40,10 +40,6 @@ function writeIfAbsent(file, content) {
   return true
 }
 
-const GITATTRIBUTES_NOTE =
-  '# The generated half of .agent/ is machine-written; a textual merge produces invalid JSON.\n' +
-  '# Resolve a conflict by taking either side, then re-running `godkit save`.'
-
 // A host file the user also writes in. We own the marked block and nothing else — and if the
 // markers were hand-edited into something ambiguous we refuse rather than guess.
 function writeManaged(file, content, style) {
@@ -107,17 +103,16 @@ function cmdInit(args) {
   // much as to us, so our text goes in a marked block and everything outside it is left alone.
   const body = fs.readFileSync(path.join(ROOT, 'AGENTS.md'), 'utf8')
   const cursorHeader = fs.readFileSync(path.join(TEMPLATES, 'rules', 'cursor-header.md'), 'utf8')
-  const gitattributes = fs.readFileSync(path.join(ROOT, '.gitattributes'), 'utf8')
-    .split(/\r?\n/)
-    .filter((line) => line.startsWith('.agent/'))
-    .join('\n')
+  // From templates/, not from this repo's own .gitattributes: that file is not in the npm
+  // allowlist, so reading it worked from a git checkout and crashed from an installed package.
+  const gitattributes = fs.readFileSync(path.join(TEMPLATES, 'gitattributes'), 'utf8')
 
   const managed = [
     ['AGENTS.md', body, 'html'],
     ['CLAUDE.md', body, 'html'],
     [path.join('.cursor', 'rules', 'godkit.mdc'), cursorHeader.trimEnd() + '\n\n' + body, 'html'],
     [path.join('.agents', 'rules', 'godkit.md'), body, 'html'],
-    ['.gitattributes', GITATTRIBUTES_NOTE + '\n' + gitattributes, 'hash'],
+    ['.gitattributes', gitattributes, 'hash'],
   ]
   const refused = []
   for (const [rel, content, style] of managed) {

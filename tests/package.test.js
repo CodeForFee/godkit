@@ -161,3 +161,54 @@ test('nothing in the shipped package references the tools it was built alongside
   }
   walk(ROOT)
 })
+
+test('the packed tarball can actually run godkit init', () => {
+  // The allowlist bug class: a file the CLI reads at runtime is missing from `files`, so the
+  // package works from a git checkout and crashes for everyone who installed it. Nothing but
+  // installing the allowlist and running the CLI catches that.
+  const { execFileSync } = require('node:child_process')
+  const os = require('node:os')
+
+  const listed = JSON.parse(
+    execFileSync('npm', ['pack', '--dry-run', '--json'], {
+      cwd: ROOT,
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+      shell: process.platform === 'win32',
+    }),
+  )[0].files.map((f) => f.path)
+
+  const installed = fs.mkdtempSync(path.join(os.tmpdir(), 'godkit-pkg-'))
+  const project = fs.mkdtempSync(path.join(os.tmpdir(), 'godkit-proj-'))
+  try {
+    for (const rel of listed) {
+      const dest = path.join(installed, rel)
+      fs.mkdirSync(path.dirname(dest), { recursive: true })
+      fs.copyFileSync(path.join(ROOT, rel), dest)
+    }
+
+    const out = execFileSync(process.execPath, [path.join(installed, 'bin', 'godkit.js'), 'init'], {
+      cwd: project,
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'pipe'],
+    })
+    assert.match(out, /godkit:/)
+    for (const rel of ['.agent/BOARD.md', 'AGENTS.md', 'CLAUDE.md', '.gitattributes']) {
+      assert.ok(fs.existsSync(path.join(project, rel)), rel + ' was not written from the packed files')
+    }
+  } finally {
+    fs.rmSync(installed, { recursive: true, force: true })
+    fs.rmSync(project, { recursive: true, force: true })
+  }
+})
+
+test('the shipped gitattributes template matches this repo own rules', () => {
+  // init writes the template; the repo lives by the same lines. Drift means godkit tells projects
+  // to do something it does not do itself.
+  const template = read('templates/gitattributes')
+  const own = read('.gitattributes')
+  for (const line of template.split('\n')) {
+    if (!line.startsWith('.agent/')) continue
+    assert.ok(own.includes(line), '.gitattributes is missing: ' + line)
+  }
+})

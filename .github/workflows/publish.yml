@@ -1,9 +1,10 @@
 name: publish
 
+# Tag pushes only. There is no manual trigger on purpose: `workflow_dispatch` could publish
+# whatever happened to be on a branch, and check-versions only compares against a tag.
 on:
   push:
     tags: ['v*']
-  workflow_dispatch:
 
 permissions:
   id-token: write
@@ -19,8 +20,9 @@ jobs:
           node-version: '22'
           registry-url: 'https://registry.npmjs.org'
 
-      # check-versions refuses to publish when the tag and the manifests disagree.
+      # Refuse to publish when a generated file is stale or the tag and manifests disagree.
       - run: node scripts/sync-rules.js --check
+      - run: node scripts/sync-hooks.js --check
       - run: node scripts/check-versions.js
       - run: node --test   # no glob: PowerShell does not expand one, and node <20 cannot
 
