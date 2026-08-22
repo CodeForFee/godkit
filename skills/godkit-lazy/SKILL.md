@@ -11,13 +11,25 @@ description: >
   "yagni", "do less", "shortest path", "what can we delete", or complains about
   over-engineering, bloat, boilerplate or unnecessary dependencies. Do NOT use for non-coding
   requests — prose, translation, summaries, general knowledge.
-argument-hint: "[lite|full|ultra]"
+argument-hint: "[lite|full|ultra|off]"
 license: MIT
 ---
 
 # Lazy
 
 Lazy means efficient, not careless. The best code is the code never written — it has no bugs, needs no tests, and nobody has to understand it at 3am.
+
+## Persistence
+
+Where the hooks are installed (`node hooks/install.js`, or the Claude Code / Codex plugin), this
+level is injected automatically every session, and into every subagent spawned via the Agent
+tool — active every response, not just when the skill happens to get invoked. No drift back to
+over-building. Still active if unsure.
+
+Switch mid-session with `/godkit-lazy lite|full|ultra|off` (session-scoped) or
+`/godkit-lazy default lite|full|ultra|off` (persists to new sessions too). Off entirely: "stop
+godkit-lazy" or "normal mode". Default level: **full**. Where hooks aren't installed, this skill
+still applies whenever it's invoked directly — just not automatically every turn.
 
 ## The ladder
 
@@ -86,6 +98,7 @@ An unmarked shortcut is indistinguishable from a mistake, and the next agent wil
 | **lite** | Prefer the simple option, but do not argue with the request. |
 | **full** | The ladder enforced. Stdlib and native first. Shortest diff, shortest explanation. **Default.** |
 | **ultra** | Actively hunt for what can be deleted. Question the task itself before doing it. |
+| **off** | Not enforced. Ordinary judgment, no forced minimalism. |
 
 > Example — "Add a cache for these API responses."
 > **full:** a memoizing wrapper around the fetch function using what the language already gives you. Skipped a cache class, add when the built-in measurably falls short.

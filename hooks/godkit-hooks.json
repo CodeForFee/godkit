@@ -11,6 +11,17 @@
             "statusMessage": "Reading .agent/ handoff"
           }
         ]
+      },
+      {
+        "matcher": "startup|resume|clear|compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/lazy-activate.js\"",
+            "timeout": 5,
+            "statusMessage": "Loading godkit-lazy mode"
+          }
+        ]
       }
     ],
     "Stop": [
@@ -34,6 +45,30 @@
             "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/map-watch.js\"",
             "timeout": 10,
             "statusMessage": "Checking map freshness"
+          }
+        ]
+      }
+    ],
+    "SubagentStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/lazy-subagent.js\"",
+            "timeout": 5,
+            "statusMessage": "Loading godkit-lazy mode"
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/lazy-mode-tracker.js\"",
+            "timeout": 5,
+            "statusMessage": "Tracking godkit-lazy mode"
           }
         ]
       }
