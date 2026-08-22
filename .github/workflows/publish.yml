@@ -7,12 +7,19 @@ on:
     tags: ['v*']
 
 permissions:
-  id-token: write
+  id-token: write # OIDC trusted publishing
   contents: read
+
+# Serialised, and deliberately NOT cancel-in-progress: interrupting a publish half way is worse
+# than running two of them in order.
+concurrency:
+  group: publish
+  cancel-in-progress: false
 
 jobs:
   publish:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -21,10 +28,16 @@ jobs:
           registry-url: 'https://registry.npmjs.org'
 
       # Refuse to publish when a generated file is stale or the tag and manifests disagree.
+      # check-versions reads GITHUB_REF_TYPE/GITHUB_REF_NAME, so on this workflow it also asserts
+      # that the tag being published IS the version in all four manifests.
       - run: node scripts/sync-rules.js --check
       - run: node scripts/sync-hooks.js --check
       - run: node scripts/check-versions.js
       - run: node --test   # no glob: PowerShell does not expand one, and node <20 cannot
+
+      # The one check the suite cannot do for itself: what npm would actually upload. A runtime
+      # file missing from `files` works in a checkout and 404s for everyone who installed it.
+      - run: npm pack --dry-run
 
       # Trusted publishing (OIDC) needs npm >= 11.5.1; Node 22 ships npm 10.
       - run: npm install -g npm@latest
