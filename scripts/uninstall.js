@@ -27,6 +27,9 @@ const SETTINGS = [
   path.join(os.homedir(), '.codex', 'settings.json'),
 ]
 
+// Kept in step with hooks/install.js. These filenames are what identifies our registrations.
+const HOOK_SCRIPTS = ['brief.js', 'clockout.js', 'map-watch.js']
+
 function skillNames() {
   try {
     return fs
@@ -70,14 +73,17 @@ function removeHooks() {
     if (!settings.hooks) continue
 
     // Only our own entries go. Another tool's hooks in the same file are none of our business.
+    // Match the hook script paths, not the package name: the directory godkit is installed into
+    // is arbitrary, so a name marker would match nothing and remove nothing.
+    const ours = (h) => {
+      if (typeof h.command !== 'string') return false
+      const cmd = h.command.replace(/\\/g, '/')
+      return HOOK_SCRIPTS.some((script) => cmd.includes('hooks/' + script))
+    }
+
     let removed = 0
     for (const [event, groups] of Object.entries(settings.hooks)) {
-      const kept = (groups || []).filter(
-        (group) =>
-          !(group.hooks || []).some(
-            (h) => typeof h.command === 'string' && h.command.includes('godkit'),
-          ),
-      )
+      const kept = (groups || []).filter((group) => !(group.hooks || []).some(ours))
       removed += (groups || []).length - kept.length
       if (kept.length) settings.hooks[event] = kept
       else delete settings.hooks[event]

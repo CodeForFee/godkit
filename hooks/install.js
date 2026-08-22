@@ -21,7 +21,16 @@ const HOOKS = [
   ['PostToolUse', 'map-watch.js', 'Bash'],
 ]
 
-const MARKER = 'godkit' // how we recognize our own entries on a re-run
+// Recognize our own entries by the hook script paths, NOT by the package name: the directory
+// godkit is installed into is arbitrary, so a name marker silently matches nothing and every
+// re-run appends a duplicate instead of replacing.
+function isOurs(group) {
+  return (group.hooks || []).some((h) => {
+    if (typeof h.command !== 'string') return false
+    const cmd = h.command.replace(/\\/g, '/')
+    return HOOKS.some(([, script]) => cmd.includes('hooks/' + script))
+  })
+}
 
 function main() {
   const args = process.argv.slice(2)
@@ -43,9 +52,6 @@ function main() {
     }
   }
   settings.hooks = settings.hooks || {}
-
-  const isOurs = (group) =>
-    (group.hooks || []).some((h) => typeof h.command === 'string' && h.command.includes(MARKER))
 
   for (const [event, script, matcher] of HOOKS) {
     const kept = (settings.hooks[event] || []).filter((group) => !isOurs(group))
