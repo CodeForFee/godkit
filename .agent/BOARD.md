@@ -17,8 +17,8 @@ Current truth only. Detailed history lives in Git and `.agent/log/`.
 |---|---|---|---|---|
 | root | `.agent/**` | T-001, T-008 | 2026-08-22T14:04Z | active |
 
-| claude | `bin/godkit.js`, `lib/freshness.js`, `lib/managed.js`, CLI/init/save/freshness tests | T-006 | 2026-08-22T15:25Z | active |
-| Kuhn | package/manifests/commands/workflows/docs/contracts | T-007 | 2026-08-22T14:04Z | ready |
+| claude | manifests, commands, package/workflows, docs, contract tests | T-007 | 2026-08-22T15:50Z | active |
+
 
 One owner per file. Workers update only their task and unique log; root alone edits this board.
 
@@ -31,20 +31,20 @@ One owner per file. Workers update only their task and unique log; root alone ed
 | T-003 | graph transaction and scan safety | Kuhn | done | `.agent/tasks/T-003-graph-scan.md` |
 | T-004 | hook runtime and session isolation | Singer | done | `.agent/tasks/T-004-hook-runtime.md` |
 | T-005 | install lifecycle ownership | claude | done | `.agent/tasks/T-005-install-lifecycle.md` |
-| T-006 | CLI, freshness, and managed init | root | plan | `.agent/tasks/T-006-cli-integration.md` |
-| T-007 | package, docs, and release contracts | Kuhn | plan | `.agent/tasks/T-007-package-docs.md` |
+| T-006 | CLI, freshness, and managed init | claude | done | `.agent/tasks/T-006-cli-integration.md` |
+| T-007 | package, docs, and release contracts | claude | execute | `.agent/tasks/T-007-package-docs.md` |
 | T-008 | join verification and handoff | root | plan | `.agent/tasks/T-008-join-handoff.md` |
 
 ## Bugs
 
 - [x] B-001 absolute cross-drive path could enter the graph — fixed at `lib/graph.js` in the prior session.
 - [x] B-002 project skill projections can expose unapproved source edits or remove foreign targets — fixed in T-002 (owned SHA-256 snapshots).
-- [ ] B-003 partial map refresh can retain deleted nodes/edges and graph writes are not transactional.
-- [ ] B-004 freshness and ignore matching can misclassify changes or crash on valid patterns.
+- [x] B-003 partial map refresh can retain deleted nodes/edges and graph writes are not transactional — fixed in T-003 (atomic) and T-006 (deleted nodes).
+- [x] B-004 freshness and ignore matching can misclassify changes or crash on valid patterns — fixed in T-003 (ignores) and T-006 (fail-closed freshness).
 - [x] B-005 hook context and brief reads can cross boundaries or exceed bounded budgets — fixed in T-004.
 - [x] B-006 lazy/work state is shared across sessions and clockout evidence is not exact — runtime fixed in T-004, work-track registered in T-005.
 - [x] B-007 install/uninstall ownership can remove foreign skills/hooks or mutate unsafe config — fixed in T-005; `link()` in `bin/godkit.js` is the last unguarded delete, owned by T-006.
-- [ ] B-008 init overwrites host files instead of managing an isolated, preflighted block.
+- [x] B-008 init overwrites host files instead of managing an isolated, preflighted block — fixed in T-006 (`lib/managed.js`).
 - [ ] B-009 host manifests, Gemini commands, package artifacts, and publish gates drift from contract.
 - [x] B-010 evolve fixtures leak temporary directories — fixed in T-002. Documentation half moved to T-007.
 
