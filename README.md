@@ -160,6 +160,8 @@ and Codex actually read.
 godkit skills                      # list them: origin, safety findings, which hosts see them
 godkit skills --link               # link into .claude/skills/ and .agents/skills/
 godkit skills --unlink
+godkit evolve                      # what the logs say about each one
+godkit evolve --write              # project that to .agent/SKILLS.md
 ```
 
 Write one with the `godkit-evolve` skill, or by hand. Two things keep a generated skill from
@@ -172,6 +174,32 @@ Generated skills (`origin: captured` or `derived`) will not link at all under th
 `audit_only` mode — they sit in the repo as reviewable, inert markdown until you set
 `GODKIT_EVOLVE_MODE=autonomous` or pass `--force`. `--force` overrides the mode; it never
 overrides a safety block.
+
+### Evidence
+
+`godkit evolve` re-reads `.agent/log/*.md` and says what the evidence implies about each skill.
+There is no separate store: a log entry lists the skills it used in its `skills:` frontmatter, and
+that plus `status:` and the `## Verified` and `## Bugs` sections is the whole signal. Edit a skill
+and bump `revised:`, and its evidence window resets — you are judging the text that exists now,
+not what its ancestor did.
+
+| | |
+|---|---|
+| **trusted** | 3 successes across 3 *distinct* sessions, no failures |
+| **provisional** | the default, and where a trusted skill lands after one attributable failure |
+| **quarantined** | 2 failures, a blocking safety finding, or `enabled: false` — will not link, even with `--force` |
+
+**What "trusted" actually means, precisely: *used repeatedly, and the sessions that used it
+finished verified*.** godkit does not run your agent, so it cannot observe a skill being used —
+the `skills:` field is a self-report by the same agent that just used it, and self-reports skew
+positive. This is a usage/outcome correlation, not a quality measure, and a trusted skill can
+still be wrong. `godkit evolve` prints how many log entries it could not attribute at all, on
+every run, for exactly this reason.
+
+Demotion is deliberately asymmetric — three sessions to promote, one failure to demote — because
+a wrong instruction auto-loaded into an agent's context costs more than a slow promotion. And a
+session that ends `blocked` with three skills listed blames none of them: attribution that guesses
+would demote good skills.
 
 ## Design
 

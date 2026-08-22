@@ -177,6 +177,155 @@ test('doctor reports project skills and whether they are linked', () => {
   assert.match(run(d, ['doctor']), /project skills 1, all linked/)
 })
 
+// --- the evidence loop -----------------------------------------------------------------------
+
+// A log entry as the clock-out protocol writes one. `when` becomes the filename prefix, which is
+// what the evidence window compares against.
+function writeLog(d, when, opts) {
+  const o = opts || {}
+  const session = o.session || when.replace(/\D/g, '').slice(-8)
+  const body = [
+    '---',
+    'agent: claude',
+    'session: ' + session,
+    'scope: src/*',
+    'status: ' + (o.status || 'done'),
+    'skills: ' + (o.skills || []).join(', '),
+    '---',
+    '',
+    '## Task',
+    o.task || 'Reset the fixture database before the integration suite.',
+    '',
+    '## Verified',
+    o.verified === false ? '' : '- `npm test` -> 12 pass',
+    '',
+    '## Bugs',
+    (o.bugs || []).map((b) => '- ' + b).join('\n'),
+    '',
+  ].join('\n')
+  fs.writeFileSync(path.join(d, '.agent', 'log', when + '-claude-' + session + '.md'), body)
+}
+
+test('three verified sessions promote a skill to trusted', () => {
+  const d = project()
+  writeSkill(d, 'refresh-fixture-db')
+  for (const w of ['2026-02-01T1000Z', '2026-02-02T1000Z', '2026-02-03T1000Z']) {
+    writeLog(d, w, { skills: ['refresh-fixture-db'] })
+  }
+  assert.match(run(d, ['evolve']), /refresh-fixture-db\s+trusted\s+ok 3\s+bad 0\s+sessions 3/)
+})
+
+test('three successes in ONE session do not promote — distinct sessions are the point', () => {
+  // Two or three runs of one task by one agent on one day is not independent evidence.
+  const d = project()
+  writeSkill(d, 'refresh-fixture-db')
+  for (const w of ['2026-02-01T1000Z', '2026-02-01T1100Z', '2026-02-01T1200Z']) {
+    writeLog(d, w, { skills: ['refresh-fixture-db'], session: 'aaaaaaaa' })
+  }
+  const out = run(d, ['evolve'])
+  assert.match(out, /provisional/)
+  assert.match(out, /sessions 1/)
+})
+
+test('one blaming Bugs bullet demotes a trusted skill', () => {
+  const d = project()
+  writeSkill(d, 'refresh-fixture-db')
+  for (const w of ['2026-02-01T1000Z', '2026-02-02T1000Z', '2026-02-03T1000Z']) {
+    writeLog(d, w, { skills: ['refresh-fixture-db'] })
+  }
+  writeLog(d, '2026-02-04T1000Z', {
+    skills: ['refresh-fixture-db'],
+    bugs: ['found B-009 — refresh-fixture-db dropped the wrong volume'],
+  })
+  const out = run(d, ['evolve'])
+  assert.match(out, /provisional/)
+  assert.match(out, /bad 1/)
+})
+
+test('two failures quarantine, and quarantine blocks linking even under autonomous', () => {
+  // Quarantine that a --force can walk past is not quarantine.
+  const d = project()
+  writeSkill(d, 'refresh-fixture-db')
+  for (const w of ['2026-02-04T1000Z', '2026-02-05T1000Z']) {
+    writeLog(d, w, { skills: ['refresh-fixture-db'], bugs: ['B-009 refresh-fixture-db broke it'] })
+  }
+  assert.match(run(d, ['evolve']), /QUARANTINED/)
+
+  const out = run(d, ['skills', '--link', 'claude', '--force'], AUTO)
+  assert.match(out, /QUARANTINED|quarantined/)
+  assert.equal(fs.existsSync(path.join(d, '.claude', 'skills', 'refresh-fixture-db')), false)
+})
+
+test('bumping revised: resets the window — a fixed skill is judged on its current text', () => {
+  // Without this the demotion is permanent and the fix workflow is pointless.
+  const d = project()
+  writeSkill(d, 'refresh-fixture-db')
+  for (const w of ['2026-02-04T1000Z', '2026-02-05T1000Z']) {
+    writeLog(d, w, { skills: ['refresh-fixture-db'], bugs: ['B-009 refresh-fixture-db broke it'] })
+  }
+  assert.match(run(d, ['evolve']), /QUARANTINED/)
+
+  writeSkill(d, 'refresh-fixture-db', { revised: '2026-06-01T0000Z' })
+  const out = run(d, ['evolve'])
+  assert.match(out, /provisional/)
+  assert.match(out, /ok 0\s+bad 0/)
+})
+
+test('a blocked session with several skills listed blames none of them', () => {
+  // Attribution is lossy and the code must admit it rather than guess.
+  const d = project()
+  writeSkill(d, 'skill-one')
+  writeSkill(d, 'skill-two')
+  writeLog(d, '2026-02-04T1000Z', { skills: ['skill-one', 'skill-two'], status: 'blocked' })
+  const out = run(d, ['evolve'])
+  assert.doesNotMatch(out, /QUARANTINED/)
+  assert.match(out, /skill-one\s+provisional\s+ok 0\s+bad 0/)
+})
+
+test('a blocked session naming exactly one skill does blame it', () => {
+  const d = project()
+  writeSkill(d, 'skill-one')
+  writeLog(d, '2026-02-04T1000Z', { skills: ['skill-one'], status: 'blocked' })
+  assert.match(run(d, ['evolve']), /bad 1/)
+})
+
+test('evolve reports how many log entries it could not attribute', () => {
+  const d = project()
+  writeSkill(d, 'refresh-fixture-db')
+  writeLog(d, '2026-02-01T1000Z', { skills: ['refresh-fixture-db'] })
+  writeLog(d, '2026-02-02T1000Z', {})
+  writeLog(d, '2026-02-03T1000Z', {})
+  assert.match(run(d, ['evolve']), /2 of 3 log entries carried no `skills:` frontmatter/)
+})
+
+test('--write projects the report to .agent/SKILLS.md with the honesty line intact', () => {
+  const d = project()
+  writeSkill(d, 'refresh-fixture-db')
+  for (const w of ['2026-02-01T1000Z', '2026-02-02T1000Z', '2026-02-03T1000Z']) {
+    writeLog(d, w, { skills: ['refresh-fixture-db'] })
+  }
+  run(d, ['evolve', '--write'])
+  const doc = fs.readFileSync(path.join(d, '.agent', 'SKILLS.md'), 'utf8')
+  assert.match(doc, /Do not hand-edit/)
+  assert.match(doc, /not a causal quality measure/)
+  assert.match(doc, /`refresh-fixture-db` \| captured \| trusted \| 3 \| 0 \| 3/)
+})
+
+test('repeated similarly-shaped sessions surface as a capture candidate', () => {
+  const d = project()
+  for (const [w, s] of [['2026-03-01T1000Z', 'aaaaaaaa'], ['2026-03-02T1000Z', 'bbbbbbbb'], ['2026-03-03T1000Z', 'cccccccc']]) {
+    writeLog(d, w, { session: s, task: 'Rotate the staging deploy credentials and restart workers.' })
+  }
+  const out = run(d, ['evolve'])
+  assert.match(out, /capture candidates/)
+  assert.match(out, /3 sessions/)
+})
+
+test('evolve on a project with no skills says so instead of failing', () => {
+  const d = project()
+  assert.match(run(d, ['evolve']), /no project skills/)
+})
+
 test('the session brief tells an arriving agent the project has its own skills', () => {
   const d = project()
   writeSkill(d, 'refresh-fixture-db')
