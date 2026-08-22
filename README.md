@@ -69,8 +69,26 @@ Re-running is safe: it drops its own previous entries first, leaves other tools'
 | Hook | Does |
 |---|---|
 | `SessionStart` | injects the board, map freshness, and the newest log entries |
+| `SessionStart` | resolves the active `godkit-lazy` mode and injects its ruleset |
 | `Stop` | blocks the turn if files changed and no log was written |
 | `PostToolUse` (Bash) | after a commit or merge, says if the map went stale |
+| `SubagentStart` | injects the same `godkit-lazy` ruleset into spawned subagents |
+| `UserPromptSubmit` | tracks `/godkit-lazy` mode switches for the rest of the session |
+
+### godkit-lazy modes
+
+Where the hooks are installed, `godkit-lazy` runs every session automatically, at a level resolved
+in this order: the `GODKIT_LAZY_MODE` env var, then `defaultMode` in
+`~/.config/godkit/config.json` (`%APPDATA%\godkit\config.json` on Windows), then `full`.
+
+```
+/godkit-lazy [lite|full|ultra|off]           switch for this session (no argument reports the level)
+/godkit-lazy default [lite|full|ultra|off]   persist the default for new sessions
+```
+
+Injects into every subagent spawned via the Agent tool too — scope that with
+`GODKIT_LAZY_SUBAGENT_MATCHER` (a regex tested against the subagent's type) if some agent types
+should skip it.
 
 ## The project map
 

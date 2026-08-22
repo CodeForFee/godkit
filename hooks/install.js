@@ -17,8 +17,11 @@ const path = require('path')
 
 const HOOKS = [
   ['SessionStart', 'brief.js', null],
+  ['SessionStart', 'lazy-activate.js', 'startup|resume|clear|compact'],
   ['Stop', 'clockout.js', null],
   ['PostToolUse', 'map-watch.js', 'Bash'],
+  ['SubagentStart', 'lazy-subagent.js', null],
+  ['UserPromptSubmit', 'lazy-mode-tracker.js', null],
 ]
 
 // Recognize our own entries by the hook script paths, NOT by the package name: the directory
@@ -53,7 +56,17 @@ function main() {
   }
   settings.hooks = settings.hooks || {}
 
+  // Group by event first: an event with more than one of our scripts (SessionStart now runs
+  // both brief.js and lazy-activate.js) needs `kept` computed once, before any of our new groups
+  // for that event exist — computing it per-script would filter out the group the previous
+  // iteration just added, since isOurs() matches on the whole HOOKS list, not just one script.
+  const byEvent = new Map()
   for (const [event, script, matcher] of HOOKS) {
+    if (!byEvent.has(event)) byEvent.set(event, [])
+    byEvent.get(event).push([script, matcher])
+  }
+
+  for (const [event, entries] of byEvent) {
     const kept = (settings.hooks[event] || []).filter((group) => !isOurs(group))
 
     if (uninstall) {
@@ -62,10 +75,13 @@ function main() {
       continue
     }
 
-    const abs = path.join(__dirname, script).replace(/\\/g, '/')
-    const group = { hooks: [{ type: 'command', command: 'node "' + abs + '"', timeout: 10 }] }
-    if (matcher) group.matcher = matcher
-    settings.hooks[event] = kept.concat([group])
+    const newGroups = entries.map(([script, matcher]) => {
+      const abs = path.join(__dirname, script).replace(/\\/g, '/')
+      const group = { hooks: [{ type: 'command', command: 'node "' + abs + '"', timeout: 10 }] }
+      if (matcher) group.matcher = matcher
+      return group
+    })
+    settings.hooks[event] = kept.concat(newGroups)
   }
 
   if (fs.existsSync(target)) fs.copyFileSync(target, target + '.bak')

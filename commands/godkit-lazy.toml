@@ -1,2 +1,2 @@
-description = "Force the simplest solution that actually works: YAGNI, stdlib first, one line over fifty"
+description = "Force the simplest solution, or switch/report the active mode (lite/full/ultra/off)"
 prompt = "Use the godkit-lazy skill at intensity: $ARGUMENTS"

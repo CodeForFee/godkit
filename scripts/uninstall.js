@@ -28,7 +28,14 @@ const SETTINGS = [
 ]
 
 // Kept in step with hooks/install.js. These filenames are what identifies our registrations.
-const HOOK_SCRIPTS = ['brief.js', 'clockout.js', 'map-watch.js']
+const HOOK_SCRIPTS = [
+  'brief.js',
+  'clockout.js',
+  'map-watch.js',
+  'lazy-activate.js',
+  'lazy-subagent.js',
+  'lazy-mode-tracker.js',
+]
 
 function skillNames() {
   try {
@@ -98,8 +105,20 @@ function removeHooks() {
   }
 }
 
+// The mode flag is pure runtime state, not a user preference — safe to remove outright. The
+// config file that holds the persisted default mode is left alone, same as every other tool's
+// config survives its own uninstall.
+function removeLazyState() {
+  const dir = process.env.CLAUDE_CONFIG_DIR || path.join(os.homedir(), '.claude')
+  const flag = path.join(dir, '.godkit-lazy-active')
+  if (!fs.existsSync(flag)) return
+  if (!DRY) fs.rmSync(flag, { force: true })
+  console.log((DRY ? 'would remove ' : 'removed ') + 'the godkit-lazy mode flag')
+}
+
 removeSkills()
 removeHooks()
+removeLazyState()
 console.log('')
 console.log("Left in place: every project's .agent/ directory and rule files. Those are your")
 console.log('projects\' memory, not the package\'s — delete them by hand if you want them gone.')
