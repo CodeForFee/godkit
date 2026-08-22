@@ -66,6 +66,28 @@ function main() {
     /* freshness is a nicety; never let it cost the brief */
   }
 
+  // This project's own skills, if it has any. Report only — a hook must never block a session
+  // over a pattern scan, so a blocking finding is surfaced here and enforced at the link gate.
+  try {
+    const evolve = require('../lib/evolve')
+    const skills = evolve.listSkills(root)
+    if (skills.length) {
+      const lines = skills.map((s) => {
+        const linked = evolve.linkedTools(root, s)
+        const bad = evolve.blocked(evolve.scanSkill(s))
+        return '- ' + s.name + ' (' + s.origin + ') — ' +
+          (linked.length ? 'available in ' + linked.join(', ') : 'not linked') +
+          (s.enabled ? '' : ', disabled') + (bad ? ' — SAFETY SCAN BLOCKED, do not link' : '')
+      })
+      parts.push(
+        '### Project skills (.agent/skills/)\n' + lines.join('\n') +
+          '\nThese belong to this project. List any you use in your log\'s `skills:` frontmatter.',
+      )
+    }
+  } catch {
+    /* project skills are a nicety; never let them cost the brief */
+  }
+
   for (const entry of logEntries(agentDir).slice(0, 2)) {
     parts.push('### log/' + path.basename(entry) + '\n' + (read(entry) || ''))
   }

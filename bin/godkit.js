@@ -258,6 +258,67 @@ function cmdSave(args) {
   log('  .agent/graph.json, .agent/MAP.md, .agent/meta.json')
 }
 
+// Project-local skills: the ones this project keeps for itself in .agent/skills/, as opposed to
+// the ones this package ships. Reports them, and links them into the paths hosts actually read.
+function cmdSkills(args) {
+  const root = projectRoot(process.cwd())
+  const evolve = require('../lib/evolve')
+  const tools = args.filter((a) => !a.startsWith('-'))
+  const force = args.includes('--force')
+  const mode = evolve.getEvolveMode()
+
+  const skills = evolve.listSkills(root)
+  if (!skills.length) {
+    log('no project skills in .agent/skills/')
+    log('')
+    log('A project skill is a procedure this repo keeps for itself — a fixture reset, a release')
+    log('check. Write one with the godkit-evolve skill, or by hand as')
+    log('.agent/skills/<name>/SKILL.md.')
+    return
+  }
+
+  if (args.includes('--link') || args.includes('--unlink')) {
+    const unlink = args.includes('--unlink')
+    const results = unlink
+      ? evolve.unlinkProjectSkills(root, { tools })
+      : evolve.linkProjectSkills(root, { tools, force, mode })
+
+    if (!results.length) {
+      log(unlink ? 'nothing linked to remove' : 'nothing to link')
+      return
+    }
+    for (const r of results) {
+      const where = r.tool ? ' -> ' + r.tool : ''
+      log('  ' + (r.ok ? r.how : r.how.toUpperCase()) + '  ' + r.skill + where + (r.reason ? ' — ' + r.reason : ''))
+    }
+    if (!unlink && results.some((r) => r.how === 'copied')) {
+      log('')
+      log('copied, not linked — re-run `godkit skills --link` after editing those skills')
+    }
+    return
+  }
+
+  log('project skills (.agent/skills/) — mode ' + mode)
+  log('')
+  for (const skill of skills) {
+    const findings = evolve.scanSkill(skill)
+    const linked = evolve.linkedTools(root, skill)
+    const flags = []
+    if (!skill.enabled) flags.push('disabled')
+    if (evolve.blocked(findings)) flags.push('BLOCKED')
+    log(
+      '  ' + skill.name.padEnd(28) + skill.origin.padEnd(10) +
+        (linked.length ? linked.join(' ') : '—') + (flags.length ? '  [' + flags.join(' ') + ']' : ''),
+    )
+    for (const f of findings) {
+      if (f.level !== 'block') continue
+      log('      ' + f.level + ' ' + f.rule + ' SKILL.md:' + f.line + ' — ' + f.text)
+    }
+  }
+  log('')
+  log('`godkit skills --link` to make them visible to claude and codex.')
+}
+
 function cmdDoctor() {
   const root = projectRoot(process.cwd())
   const p = paths(root)
@@ -286,6 +347,16 @@ function cmdDoctor() {
       log('    log entries  ' + n)
     } catch {
       log('    log entries  0')
+    }
+
+    const evolve = require('../lib/evolve')
+    const projectSkills = evolve.listSkills(root)
+    if (projectSkills.length) {
+      const unlinked = projectSkills.filter((s) => !evolve.linkedTools(root, s).length).length
+      const bad = projectSkills.filter((s) => evolve.blocked(evolve.scanSkill(s))).length
+      log('    project skills ' + projectSkills.length +
+          (unlinked ? ', ' + unlinked + ' not linked (`godkit skills --link`)' : ', all linked') +
+          (bad ? ', ' + bad + ' BLOCKED by the safety scan' : ''))
     }
   }
 
@@ -326,6 +397,7 @@ function cmdUninstall(args) {
   log('')
   log('Left in place: this project\'s .agent/ directory and rule files. Delete them by hand if')
   log('you want them gone — they are your project\'s memory, not the package\'s.')
+  log('Project skills linked into .claude/ or .agents/: `godkit skills --unlink`.')
 }
 
 const HELP = `godkit — one shared harness for every AI agent
@@ -334,6 +406,9 @@ const HELP = `godkit — one shared harness for every AI agent
   godkit install [tool...]  install the skills for claude, codex, antigravity (default: all)
   godkit scan [path]        walk the project and group it into batches for the map
   godkit save [file]        save a merged graph as the map (graph.json, MAP.md, meta.json)
+  godkit skills [--link|--unlink] [tool...] [--force]
+                            this project's own skills in .agent/skills/: list them, or link
+                            them into the paths claude and codex read
   godkit doctor             what is set up here, and whether the map is stale
   godkit uninstall [tool]   remove the installed skills (leaves your .agent/ alone)
 
@@ -351,6 +426,8 @@ function main() {
       return cmdScan(args)
     case 'save':
       return cmdSave(args)
+    case 'skills':
+      return cmdSkills(args)
     case 'doctor':
       return cmdDoctor()
     case 'uninstall':

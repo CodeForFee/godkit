@@ -32,6 +32,9 @@ All of it lives in the repo and is committed. In the repo because Cursor cannot 
 ├── THREAD.md             append-only conversation between agents
 ├── MAP.md                what this codebase is (generated — see godkit-map)
 ├── graph.json            the machine-readable map
+├── SKILLS.md             this project's own skills (generated — see godkit-evolve)
+├── skills/
+│   └── refresh-fixture-db/SKILL.md
 ├── tasks/
 │   └── T-003-token-refresh.md
 └── log/
@@ -101,6 +104,7 @@ started: 2026-08-19T13:40Z
 ended: 2026-08-19T14:03Z
 scope: src/auth/*
 status: done          # done | partial | blocked
+skills: refresh-fixture-db    # .agent/skills/ skills used. Empty is fine and common.
 ---
 
 ## Task
@@ -152,7 +156,7 @@ Before your first edit, every session:
 
 Before your turn ends — every session that touched a file:
 
-1. **Write the log entry.** Concrete paths with line numbers, real commands with their real output. "Refactored auth" helps nobody.
+1. **Write the log entry.** Concrete paths with line numbers, real commands with their real output. "Refactored auth" helps nobody. List any `.agent/skills/` skill you used in `skills:` — that self-report is the only evidence those skills ever get.
 2. **Update the task file** — fill the phase section you worked, set `phase:`, write Handoff.
 3. **Update the board** — release your claim, close or add bugs, add any decision, prepend one line to *Last 3 handoffs* and trim to three.
 4. **Post to THREAD** if another agent is waiting on something you just changed.
@@ -166,6 +170,7 @@ Four tiers. Putting a fact in the wrong one is how knowledge gets lost.
 | Tier | Lives in | Holds | Who reads it |
 |---|---|---|---|
 | **Map** | `.agent/MAP.md`, `graph.json` | what the codebase *is* | every agent, on arrival |
+| **Skills** | `.agent/skills/`, `SKILLS.md` | procedures this project repeats — see **godkit-evolve** | every agent, on arrival |
 | **Board** | `.agent/BOARD.md` | current claims, bugs, binding decisions | every agent, first thing |
 | **Log** | `.agent/log/*.md` | what happened this session | every agent, forever |
 | **Private** | the tool's own store | user preferences, tool quirks, cross-project habits | that one tool only |
