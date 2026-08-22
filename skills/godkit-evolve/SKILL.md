@@ -124,13 +124,34 @@ skill is a committed markdown file nobody's host can load — reviewable, and ha
 
 ## What "trusted" means, exactly
 
-Once `godkit evolve` exists, skills carry a trust level. Read it precisely:
+```
+godkit evolve            # what the logs say about each skill
+godkit evolve --write    # project it to .agent/SKILLS.md
+```
+
+| | |
+|---|---|
+| **trusted** | 3 successes across 3 *distinct* sessions, no failures |
+| **provisional** | the default, and where a trusted skill lands after one attributable failure |
+| **quarantined** | 2 failures, a blocking safety finding, or `enabled: false` — will not link, even with `--force` |
+
+A **success** is a log entry that lists the skill, has `status: done`, and has at least one
+`## Verified` bullet. A **failure** is a `## Bugs` bullet naming the skill, or a `status: blocked`
+entry that lists exactly one skill. A blocked entry listing three skills blames **none** of them.
+
+Read the level precisely:
 
 > **used repeatedly, and the sessions that used it finished verified.**
 
 It is a usage/outcome correlation, self-reported in log frontmatter by the same agent that used
 the skill. It is **not** a quality measure, and self-reports skew positive. A `trusted` skill can
 still be wrong. Read the skill.
+
+Demotion is asymmetric on purpose — three sessions up, one failure down — because a wrong
+instruction auto-loaded into an agent's context costs more than a slow promotion does.
+
+**Fixing a quarantined skill resets its window.** Edit the text, bump `revised:` to now, and the
+old failures no longer count: you are being judged on the text that exists, not its ancestor.
 
 ## Boundaries
 

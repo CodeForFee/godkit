@@ -72,16 +72,20 @@ function main() {
     const evolve = require('../lib/evolve')
     const skills = evolve.listSkills(root)
     if (skills.length) {
+      const signals = evolve.readLogSignals(root)
       const lines = skills.map((s) => {
         const linked = evolve.linkedTools(root, s)
-        const bad = evolve.blocked(evolve.scanSkill(s))
-        return '- ' + s.name + ' (' + s.origin + ') — ' +
+        const findings = evolve.scanSkill(s)
+        const trust = evolve.trustOf(s, evolve.tally(s, signals), findings)
+        return '- ' + s.name + ' (' + s.origin + ', ' + trust + ') — ' +
           (linked.length ? 'available in ' + linked.join(', ') : 'not linked') +
-          (s.enabled ? '' : ', disabled') + (bad ? ' — SAFETY SCAN BLOCKED, do not link' : '')
+          (s.enabled ? '' : ', disabled') +
+          (evolve.blocked(findings) ? ' — SAFETY SCAN BLOCKED, do not link' : '')
       })
       parts.push(
         '### Project skills (.agent/skills/)\n' + lines.join('\n') +
-          '\nThese belong to this project. List any you use in your log\'s `skills:` frontmatter.',
+          '\nThese belong to this project. List any you use in your log\'s `skills:` frontmatter.' +
+          '\nTrust is a usage/outcome correlation from those self-reports, not a quality score.',
       )
     }
   } catch {
