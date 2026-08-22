@@ -110,14 +110,9 @@ test('the marketplace manifest carries no version, which its schema rejects', ()
 
 test('the hook config points at hook files that exist', () => {
   const hooks = json('hooks/godkit-hooks.json').hooks
-  const events = Object.keys(hooks)
-  assert.deepEqual(events.sort(), [
-    'PostToolUse',
-    'SessionStart',
-    'Stop',
-    'SubagentStart',
-    'UserPromptSubmit',
-  ])
+  // Derived, not frozen: a hardcoded list here just goes stale when a hook is added.
+  const expected = [...new Set(require('../lib/install').HOOKS.map(([event]) => event))]
+  assert.deepEqual(Object.keys(hooks).sort(), expected.sort())
 
   for (const groups of Object.values(hooks)) {
     for (const group of groups) {

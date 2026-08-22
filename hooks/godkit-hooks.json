@@ -24,27 +24,14 @@
         ]
       }
     ],
-    "Stop": [
+    "UserPromptSubmit": [
       {
         "hooks": [
           {
             "type": "command",
-            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/clockout.js\"",
-            "timeout": 10,
-            "statusMessage": "Checking handoff log"
-          }
-        ]
-      }
-    ],
-    "PostToolUse": [
-      {
-        "matcher": "Bash",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/map-watch.js\"",
-            "timeout": 10,
-            "statusMessage": "Checking map freshness"
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/lazy-mode-tracker.js\"",
+            "timeout": 5,
+            "statusMessage": "Tracking godkit-lazy mode"
           }
         ]
       }
@@ -61,14 +48,74 @@
         ]
       }
     ],
-    "UserPromptSubmit": [
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/work-track.js\" pre",
+            "timeout": 10,
+            "statusMessage": "Tracking session work"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/work-track.js\" post",
+            "timeout": 10,
+            "statusMessage": "Tracking session work"
+          }
+        ]
+      },
+      {
+        "matcher": "Edit|Write|MultiEdit|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/work-track.js\" edit",
+            "timeout": 10,
+            "statusMessage": "Tracking session work"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/map-watch.js\"",
+            "timeout": 10,
+            "statusMessage": "Checking map freshness"
+          }
+        ]
+      }
+    ],
+    "Stop": [
       {
         "hooks": [
           {
             "type": "command",
-            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/lazy-mode-tracker.js\"",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/clockout.js\"",
+            "timeout": 10,
+            "statusMessage": "Checking handoff log"
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/work-track.js\" end",
             "timeout": 5,
-            "statusMessage": "Tracking godkit-lazy mode"
+            "statusMessage": "Tracking session work"
           }
         ]
       }

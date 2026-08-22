@@ -1,19 +1,26 @@
 #!/usr/bin/env node
 'use strict'
-// Removes what the host's own uninstall cannot see: skills linked into per-tool directories and
-// hook registrations in settings files.
+// Removes what the host's own uninstall cannot see: skills installed into per-tool directories,
+// hook registrations in settings files, and this session-state directory.
 //
 // Run this BEFORE removing the package — this script ships inside it, so removing the package
 // first deletes the script.
 //
-//   node scripts/uninstall.js            remove skills and hook registrations
+//   node scripts/uninstall.js            remove skills, hook registrations and runtime state
 //   node scripts/uninstall.js --dry-run  say what would go, change nothing
+//
+// Nothing here deletes a path godkit did not create: what counts as ours is decided once, in
+// lib/install.js, by the same rules the installer writes by.
 
 const fs = require('fs')
 const os = require('os')
 const path = require('path')
 
+const { applyHooks, readSettings, removeOne, settingsTargets, writeSettings } = require('../lib/install')
+const { runtimeStateRoot } = require('../lib/session')
+
 const ROOT = path.resolve(__dirname, '..')
+const SKILLS = path.join(ROOT, 'skills')
 const DRY = process.argv.includes('--dry-run')
 
 const SKILL_DIRS = [
@@ -22,25 +29,10 @@ const SKILL_DIRS = [
   ['antigravity', ['.gemini', 'antigravity', 'skills'], 'folder'],
 ]
 
-const SETTINGS = [
-  path.join(os.homedir(), '.claude', 'settings.json'),
-  path.join(os.homedir(), '.codex', 'settings.json'),
-]
-
-// Kept in step with hooks/install.js. These filenames are what identifies our registrations.
-const HOOK_SCRIPTS = [
-  'brief.js',
-  'clockout.js',
-  'map-watch.js',
-  'lazy-activate.js',
-  'lazy-subagent.js',
-  'lazy-mode-tracker.js',
-]
-
 function skillNames() {
   try {
     return fs
-      .readdirSync(path.join(ROOT, 'skills'), { withFileTypes: true })
+      .readdirSync(SKILLS, { withFileTypes: true })
       .filter((d) => d.isDirectory())
       .map((d) => d.name)
   } catch {
@@ -52,73 +44,57 @@ function removeSkills() {
   const names = skillNames()
   for (const [tool, dir, style] of SKILL_DIRS) {
     const base = path.join(os.homedir(), ...dir)
-    const victims = style === 'folder' ? [path.join(base, 'godkit')] : names.map((n) => path.join(base, n))
-    let n = 0
-    for (const v of victims) {
-      if (!fs.existsSync(v)) continue
-      n++
-      if (!DRY) fs.rmSync(v, { recursive: true, force: true })
+    const victims =
+      style === 'folder'
+        ? [[path.join(base, 'godkit'), SKILLS]]
+        : names.map((n) => [path.join(base, n), path.join(SKILLS, n)])
+
+    let removed = 0
+    const kept = []
+    for (const [dest, src] of victims) {
+      const result = removeOne(dest, src, DRY)
+      if (result.how === 'absent') continue
+      if (result.ok) removed++
+      else kept.push(path.basename(dest))
     }
-    if (n) console.log((DRY ? 'would remove ' : 'removed ') + n + ' skill entries from ' + base + ' (' + tool + ')')
+    if (removed) console.log((DRY ? 'would remove ' : 'removed ') + removed + ' skill entries from ' + base + ' (' + tool + ')')
+    if (kept.length) console.log('  kept (not ours): ' + kept.join(', '))
   }
 }
 
 function removeHooks() {
-  for (const file of SETTINGS) {
+  for (const [, file] of settingsTargets()) {
     if (!fs.existsSync(file)) continue
 
-    let settings
-    const raw = fs.readFileSync(file, 'utf8')
-    const text = (raw.charCodeAt(0) === 0xfeff ? raw.slice(1) : raw).trim()
+    let record
     try {
-      settings = text ? JSON.parse(text) : {}
+      record = readSettings(file)
     } catch {
       // Leave a file we cannot read exactly as it is; a rewrite would destroy the user's config.
       console.warn('skipped ' + file + ': not valid JSON, left untouched')
       continue
     }
-    if (!settings.hooks) continue
 
-    // Only our own entries go. Another tool's hooks in the same file are none of our business.
-    // Match the hook script paths, not the package name: the directory godkit is installed into
-    // is arbitrary, so a name marker would match nothing and remove nothing.
-    const ours = (h) => {
-      if (typeof h.command !== 'string') return false
-      const cmd = h.command.replace(/\\/g, '/')
-      return HOOK_SCRIPTS.some((script) => cmd.includes('hooks/' + script))
-    }
-
-    let removed = 0
-    for (const [event, groups] of Object.entries(settings.hooks)) {
-      const kept = (groups || []).filter((group) => !(group.hooks || []).some(ours))
-      removed += (groups || []).length - kept.length
-      if (kept.length) settings.hooks[event] = kept
-      else delete settings.hooks[event]
-    }
-    if (!removed) continue
-
-    if (!DRY) {
-      fs.copyFileSync(file, file + '.bak')
-      fs.writeFileSync(file, JSON.stringify(settings, null, 2) + '\n')
-    }
-    console.log((DRY ? 'would remove ' : 'removed ') + removed + ' hook entries from ' + file)
+    const result = applyHooks(record.settings, { uninstall: true })
+    if (!result.removed) continue
+    writeSettings(file, result.settings, record, DRY)
+    console.log((DRY ? 'would remove ' : 'removed ') + result.removed + ' hook entries from ' + file)
   }
 }
 
-// The mode flag is pure runtime state, not a user preference — safe to remove outright. The
-// config file that holds the persisted default mode is left alone, same as every other tool's
-// config survives its own uninstall.
-function removeLazyState() {
-  const dir = process.env.CLAUDE_CONFIG_DIR || path.join(os.homedir(), '.claude')
-  const flag = path.join(dir, '.godkit-lazy-active')
-  if (!fs.existsSync(flag)) return
-  if (!DRY) fs.rmSync(flag, { force: true })
-  console.log((DRY ? 'would remove ' : 'removed ') + 'the godkit-lazy mode flag')
+// Per-session runtime state is ours outright — it is a scratch directory keyed by host session,
+// not user configuration. The config file holding the persisted lazy default mode is left alone,
+// the same way every other tool's config survives its own uninstall.
+function removeRuntimeState() {
+  const dir = runtimeStateRoot()
+  if (!fs.existsSync(dir)) return
+  if (!DRY) fs.rmSync(dir, { recursive: true, force: true })
+  console.log((DRY ? 'would remove ' : 'removed ') + 'the godkit session-state directory ' + dir)
 }
 
 removeSkills()
 removeHooks()
-removeLazyState()
+removeRuntimeState()
 console.log('')
 console.log("Left in place: every project's .agent/ directory and rule files. Those are your")
 console.log('projects\' memory, not the package\'s — delete them by hand if you want them gone.')

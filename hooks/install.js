@@ -4,93 +4,42 @@
 // where this file actually lives — nothing to hand-edit, and moving the package is a re-run
 // rather than a text hunt.
 //
-//   node install.js                → ~/.claude/settings.json
+//   node install.js                → ~/.claude/settings.json (or $CLAUDE_CONFIG_DIR)
 //   node install.js <path>         → that settings file instead
 //   node install.js --uninstall
+//   node install.js --dry-run      → say what would change, write nothing
 //
 // Re-running is safe: our own registrations are dropped and re-added, so a stale path from an
-// earlier location cannot survive. Other tools' hooks in the same file are left untouched.
+// earlier location cannot survive. Other tools' hooks in the same file — including one sharing a
+// group with ours — are left untouched.
 
-const fs = require('fs')
-const os = require('os')
-const path = require('path')
-
-const HOOKS = [
-  ['SessionStart', 'brief.js', null],
-  ['SessionStart', 'lazy-activate.js', 'startup|resume|clear|compact'],
-  ['Stop', 'clockout.js', null],
-  ['PostToolUse', 'map-watch.js', 'Bash'],
-  ['SubagentStart', 'lazy-subagent.js', null],
-  ['UserPromptSubmit', 'lazy-mode-tracker.js', null],
-]
-
-// Recognize our own entries by the hook script paths, NOT by the package name: the directory
-// godkit is installed into is arbitrary, so a name marker silently matches nothing and every
-// re-run appends a duplicate instead of replacing.
-function isOurs(group) {
-  return (group.hooks || []).some((h) => {
-    if (typeof h.command !== 'string') return false
-    const cmd = h.command.replace(/\\/g, '/')
-    return HOOKS.some(([, script]) => cmd.includes('hooks/' + script))
-  })
-}
+const { HOOKS, applyHooks, readSettings, settingsTargets, writeSettings } = require('../lib/install')
 
 function main() {
   const args = process.argv.slice(2)
   const uninstall = args.includes('--uninstall')
-  const target =
-    args.find((a) => !a.startsWith('--')) || path.join(os.homedir(), '.claude', 'settings.json')
+  const dryRun = args.includes('--dry-run')
+  const target = args.find((a) => !a.startsWith('--')) || settingsTargets()[0][1]
 
-  let settings = {}
-  if (fs.existsSync(target)) {
-    const raw = fs.readFileSync(target, 'utf8')
-    const text = (raw.charCodeAt(0) === 0xfeff ? raw.slice(1) : raw).trim()
-    try {
-      settings = text ? JSON.parse(text) : {}
-    } catch (err) {
-      // Never rewrite a file we could not read: that would destroy the user's settings.
-      console.error('Could not parse ' + target + ' (' + err.message + ').')
-      console.error('Fix the JSON by hand, then re-run. Nothing was changed.')
-      process.exit(1)
-    }
-  }
-  settings.hooks = settings.hooks || {}
-
-  // Group by event first: an event with more than one of our scripts (SessionStart now runs
-  // both brief.js and lazy-activate.js) needs `kept` computed once, before any of our new groups
-  // for that event exist — computing it per-script would filter out the group the previous
-  // iteration just added, since isOurs() matches on the whole HOOKS list, not just one script.
-  const byEvent = new Map()
-  for (const [event, script, matcher] of HOOKS) {
-    if (!byEvent.has(event)) byEvent.set(event, [])
-    byEvent.get(event).push([script, matcher])
+  let record
+  try {
+    record = readSettings(target)
+  } catch (error) {
+    console.error(error.message)
+    console.error('Fix the JSON by hand, then re-run.')
+    process.exit(1)
   }
 
-  for (const [event, entries] of byEvent) {
-    const kept = (settings.hooks[event] || []).filter((group) => !isOurs(group))
+  const result = applyHooks(record.settings, { uninstall, hooksDir: __dirname })
+  const wrote = writeSettings(target, result.settings, record, dryRun)
 
-    if (uninstall) {
-      if (kept.length) settings.hooks[event] = kept
-      else delete settings.hooks[event]
-      continue
-    }
-
-    const newGroups = entries.map(([script, matcher]) => {
-      const abs = path.join(__dirname, script).replace(/\\/g, '/')
-      const group = { hooks: [{ type: 'command', command: 'node "' + abs + '"', timeout: 10 }] }
-      if (matcher) group.matcher = matcher
-      return group
-    })
-    settings.hooks[event] = kept.concat(newGroups)
+  const verb = uninstall ? 'Removed' : 'Installed'
+  console.log((dryRun ? 'Would have ' + verb.toLowerCase() : verb) + ' godkit hooks in ' + target)
+  console.log('  ' + result.removed + ' existing godkit handlers replaced')
+  if (!uninstall) for (const [event, script, , argv] of HOOKS) {
+    console.log('  ' + event.padEnd(17) + [script, ...argv].join(' '))
   }
-
-  if (fs.existsSync(target)) fs.copyFileSync(target, target + '.bak')
-  fs.mkdirSync(path.dirname(target), { recursive: true })
-  fs.writeFileSync(target, JSON.stringify(settings, null, 2) + '\n')
-
-  console.log((uninstall ? 'Removed' : 'Installed') + ' godkit hooks in ' + target)
-  if (!uninstall) for (const [event, script] of HOOKS) console.log('  ' + event.padEnd(12) + script)
-  if (fs.existsSync(target + '.bak')) console.log('Backup: ' + target + '.bak')
+  if (wrote && record.raw !== null) console.log('Backup: ' + target + '.bak')
 }
 
 main()
