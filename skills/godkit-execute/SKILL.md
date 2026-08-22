@@ -59,11 +59,13 @@ Do the work. Bounds live *around* the call, not inside it: a timeout, a retry bu
 
 ### 5. Checkpoint — record it
 
-After a meaningful step: note what changed and what proved it, in the task file's `## Execute` section. Before a context-risky step (large file dumps, wide searches, long test output), write down the state you would hate to re-derive. At the end of the session this becomes your log entry — see **godkit-handoff**.
+After a meaningful step: note what changed and what proved it, in the task file's `## Execute` section. Before a context-risky step (large file dumps, wide searches, long test output), write down the state you would hate to re-derive. At the end of the session this becomes your log entry — see **godkit-handoff**. The recording mechanism itself is a commit — `.agent/` and the code together, right after each verified step — see **godkit-git**.
 
 ## Error recovery
 
 **Retry only on verified advancement.** Before retrying, name what is different: an input you changed, something you learned, an external condition that moved. Same inputs plus same state equals same failure — that is not a retry, it is a loop with extra tokens.
+
+Before retrying at all, isolate the cause: reproduce it with the smallest input that still fails, bisect down to the smallest failing case (the last-known-good commit, the specific file, the specific line), and confirm that is actually the cause — not just where the error surfaced — before touching any code. A fix aimed at the wrong cause is itself an unverified retry.
 
 - **Failed twice the same way** → stop retrying. Read the actual error, trace the actual code. The third attempt does not know more than the second.
 - **Failed differently each time** → you are guessing. Stop and diagnose — see **godkit-review**.

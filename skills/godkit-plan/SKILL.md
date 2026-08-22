@@ -28,6 +28,10 @@ A plan is not a document. A plan is a set of seams, each with an owner, an exit 
 
 Bad seams: "the backend part" and "the frontend part" when both edit the shared types file. That is one seam wearing a hat.
 
+Prefer a seam that owns one full path end-to-end — a **vertical** slice — over one that owns a
+shared layer that every other seam also touches. A vertical seam can be finished and verified
+alone; a horizontal one is the "bad seams" example above wearing a different hat.
+
 **3. Per seam, write three things.** No seam ships without all three:
 
 | | |

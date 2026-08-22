@@ -45,6 +45,11 @@ One log file per session, never edited by anyone else, is the whole trick: two t
 
 Sections: **Roster** (which providers exist here, what each can do, what each costs), **Now** (open claims), **Tasks** (the index), **Bugs**, **Decisions**, **Last 3 handoffs**. Keep it to one screen — the moment it needs scrolling, it stops being read.
 
+A Decisions entry earns its place only if it states the **reason**, not just the outcome — "X
+over Y" with no why cannot be revisited when the reason stops holding, only obeyed. Worth a
+pressure-test before it goes in — see **godkit-doubt** — since every future agent that reads it
+treats it as binding.
+
 ### `.agent/tasks/T-NNN-<slug>.md`
 
 One file per task, carrying all five phases as sections that fill in as work moves. Frontmatter is the machine-readable part:
@@ -168,6 +173,7 @@ Four tiers. Putting a fact in the wrong one is how knowledge gets lost.
 Rules:
 
 - **If another agent needs it, it goes in `.agent/`.** Private memory is invisible to every other tool. A decision recorded only in Claude's memory does not exist for Cursor.
+- **Bootstrap from the map, not from opening files.** `.agent/MAP.md` exists so arrival costs a read, not a re-derivation — grep it for what a piece of code is before reading the code itself. Re-deriving architecture turn by turn is the cost this whole protocol exists to avoid.
 - **Do not record what the repo already records.** Code structure, git history, what a function does, a fix you already logged — all already written down. Memory that duplicates the repo goes stale and then lies.
 - Private memory is for what the repo cannot say: how the *user* wants to work, which tool broke on what, standing preferences.
 - In doubt, put it under Decisions on the board. Every tool can read it.
@@ -178,6 +184,7 @@ Rules:
 - Two seams must touch one file → **serialize them**. The wall-clock you save is smaller than the merge bug you buy.
 - Each parallel worker gets its own claim, its own scope, its own log entry.
 - **The join is a gate**: after the parallel work merges, one agent runs the full check suite and logs the result. Nobody is done until the join passes.
+- For the actual git mechanics of running claims in parallel — worktrees, committing as the checkpoint, merging `.agent/` itself — see **godkit-git**.
 
 ## Output
 

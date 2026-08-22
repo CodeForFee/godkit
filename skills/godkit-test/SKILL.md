@@ -19,7 +19,7 @@ A change is finished when something other than you says so. This skill is about 
 
 Stop at the first rung that actually proves the claim:
 
-1. **A command that already exists** — the suite, `tsc --noEmit`, the linter, `git diff`. Free, exact, cannot hallucinate. Most claims die here.
+1. **A command that already exists** — the suite, `tsc --noEmit`, the linter, `git diff`. Free, exact, cannot hallucinate. Most claims die here. Find it before inventing one: `package.json` scripts, a `Makefile`, the CI workflow file. Prefer a checked-in wrapper (`./gradlew test`, `make test`) over an assumed default — the project already decided how it wants to be checked.
 2. **A one-line assertion** you can run right now — a `node -e`, a REPL call, a `curl`. Enough for a pure function or a shape.
 3. **A new test in the existing suite** — when the logic is non-trivial and will be changed again.
 4. **A manual observation, recorded** — when nothing automatable can reach it: a rendered state, a real device, a third-party call. Say exactly what you did and what you saw.

@@ -1,0 +1,2 @@
+description = "Git mechanics for parallel agents: worktrees, commit-as-checkpoint, .agent/ merges"
+prompt = "Use the godkit-git skill. $ARGUMENTS"

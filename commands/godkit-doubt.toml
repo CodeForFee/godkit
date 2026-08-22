@@ -1,0 +1,2 @@
+description = "Pressure-test a decision before it goes on the board"
+prompt = "Use the godkit-doubt skill. $ARGUMENTS"
