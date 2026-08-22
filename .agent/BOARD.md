@@ -17,7 +17,6 @@ Current truth only. Detailed history lives in Git and `.agent/log/`.
 |---|---|---|---|---|
 | root | `.agent/**` | T-001, T-008 | 2026-08-22T14:04Z | active |
 | Hooke | `lib/evolve.js`, `templates/log.md`, `tests/evolve.test.js` | T-002 | 2026-08-22T14:04Z | ready |
-| Kuhn | `lib/{graph,scan}.js`, graph/scan tests | T-003 | 2026-08-22T14:04Z | ready |
 | Singer | hook runtime/session files and focused tests | T-004 | 2026-08-22T14:04Z | ready |
 | Singer | install lifecycle files and focused tests | T-005 | 2026-08-22T14:04Z | blocked on T-004 |
 | root | CLI/freshness/managed-init files and tests | T-006 | 2026-08-22T14:04Z | blocked on T-002…T-005 |
@@ -31,7 +30,7 @@ One owner per file. Workers update only their task and unique log; root alone ed
 |---|---|---|---|---|
 | T-001 | preflight and map checkpoint | root | done | `.agent/tasks/T-001-preflight.md` |
 | T-002 | evolve snapshot and evidence safety | Hooke | plan | `.agent/tasks/T-002-evolve-safety.md` |
-| T-003 | graph transaction and scan safety | Kuhn | plan | `.agent/tasks/T-003-graph-scan.md` |
+| T-003 | graph transaction and scan safety | Kuhn | done | `.agent/tasks/T-003-graph-scan.md` |
 | T-004 | hook runtime and session isolation | Singer | plan | `.agent/tasks/T-004-hook-runtime.md` |
 | T-005 | install lifecycle ownership | Singer | plan | `.agent/tasks/T-005-install-lifecycle.md` |
 | T-006 | CLI, freshness, and managed init | root | plan | `.agent/tasks/T-006-cli-integration.md` |
@@ -63,6 +62,6 @@ One owner per file. Workers update only their task and unique log; root alone ed
 
 ## Last 3 handoffs
 
+- 2026-08-22T14:29Z Kuhn — T-003 joined at `e8bcf0e`: graph/scan targeted tests 25/25 on branch and root; claim released.
 - 2026-08-22T14:17Z root — T-001 done: baseline 97/97; full map 143 nodes/268 edges, current and integrity-clean; next T-002 ∥ T-003 ∥ T-004.
 - 2026-08-22T11:40Z claude — evidence loop completed; 97 tests green.
-- 2026-08-22T11:26Z claude — project-local skills phase 1 completed.
