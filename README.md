@@ -108,7 +108,8 @@ A file's structural signature is derived from the graph itself rather than a sec
 | `godkit-lazy` | what to build and what to skip |
 | `godkit-git` | worktrees, commit-as-checkpoint, merging `.agent/` |
 | `godkit-doubt` | pressure-testing a decision before it binds everyone |
-| `godkit-frontend` | design taste — dials and banned defaults for UI work |
+| `godkit-frontend` | design taste — dials, banned defaults, 11 style/workflow variants |
+| `godkit-output-enforcement` | catching stubbed or truncated generated output |
 | `godkit-help` | quick reference card |
 
 ## Design

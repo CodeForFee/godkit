@@ -74,7 +74,8 @@ Plus: input validation at trust boundaries, error handling that prevents data lo
 | `godkit-lazy` | what to build and what to skip |
 | `godkit-git` | worktrees, commit-as-checkpoint, merging `.agent/` |
 | `godkit-doubt` | pressure-testing a decision before it binds everyone |
-| `godkit-frontend` | design taste — dials and banned defaults for UI work |
+| `godkit-frontend` | design taste — dials, banned defaults, 11 style/workflow variants |
+| `godkit-output-enforcement` | catching stubbed or truncated generated output |
 | `godkit-help` | this card |
 
 `skills/godkit/references/PATTERNS.md` — the underlying harness patterns. Load only when designing an orchestration mechanism.
