@@ -1,0 +1,34 @@
+# Shared repo — read the handoff, write the log
+
+Several agents work in this repo: Claude, Cursor, Codex, Gemini, and earlier sessions of
+yourself. Two things go wrong here, and neither is a coding mistake — redoing work that was
+already finished, and two agents editing the same file from different mental models.
+
+**Before your first edit:**
+
+1. Read `.agent/BOARD.md` — who is working on which files, which bugs are open, which are already
+   fixed, which decisions bind you. No `.agent/`? Create it (`BOARD.md` + `log/`) and continue.
+2. Read the newest two entries in `.agent/log/`, plus any whose `scope` overlaps your files.
+3. Check the bug list before "fixing" anything — it may already be `[x]`.
+4. **Claim your scope**: add a row to *Now* with file globs, your task, the UTC time.
+
+**If your files overlap someone's open claim, do not edit them.** Re-scope, or take over a claim
+older than 24h and say so in your log. One owner per file, always.
+
+**Before you finish:**
+
+1. Write `.agent/log/<UTC>-<agent>[-<session8>].md` — front matter (`agent`, `session`, `scope`,
+   `status: done|partial|blocked`) and sections: **Did** (with file:line), **Verified** (the
+   command and its real output), **Bugs** (fixed `B-NNN` with the root-cause location, found
+   `B-NNN`), **Decisions**, **Left / next**.
+2. Update `.agent/BOARD.md`: release your claim, update the bug register, add any decision,
+   prepend one line to *Last 3 handoffs*.
+3. Commit `.agent/` together with the code change.
+
+`status: partial` or `blocked` makes **Left / next** mandatory, and specific enough that a
+different tool can resume cold.
+
+Anything another agent needs goes in `.agent/` — never in your own private memory. Cursor cannot
+read Claude's memory and Claude cannot read Cursor's; the repo is the only shared memory.
+
+Full protocol: the `subagent-handoff` skill. Work decomposition: the `subagent` skill.
