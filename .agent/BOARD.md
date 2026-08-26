@@ -79,13 +79,12 @@ One owner per file. Workers update only their task and unique log; root alone ed
 
 ## Open notes
 
-- Nothing is claimed. Work lands on `godkit/skill-evidence` and fast-forwards onto `main`.
-- Deliberately NOT done, and the next agent's call: not published to npm and not tagged. The
-  trusted-publisher registration above has to exist first. `godkit` was free on the registry
-  (404) as of 2026-08-26 — unclaimed means claimable by anyone.
-- The map is stamped at the commit before the release commit. Re-run `godkit save` after it lands
-  and commit the refresh separately, as the earlier sessions did.
-- GitHub repo has no topics and no homepage set. Six local and three remote `godkit/*` branches
-  are fully merged and can go once main is pushed.
+- Nothing is claimed. `main` is the only branch now, local and remote, and it is pushed. All the
+  merged `godkit/*` branches are deleted.
+- The map is current and stamped at the release commit. GitHub topics and homepage are set.
+- **The one thing left, and it is one-way:** not published to npm and not tagged. The
+  trusted-publisher registration has to exist on npmjs.com first — see the binding decision
+  above. `godkit` was free on the registry (404) as of 2026-08-26; unclaimed means claimable by
+  anyone, so this is not a decision to sit on indefinitely.
 - This machine has 3 of 10 hooks registered from an older install — `godkit hooks install` fixes
   that, and writing real home config is still nobody's mandate.
