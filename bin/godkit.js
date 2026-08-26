@@ -461,6 +461,43 @@ function cmdEvolve(args) {
   }
 }
 
+// Where the log stream says the code hurts. The deterministic half of godkit-refactor: this
+// ranks files, the skill reads them and decides what — if anything — to actually change.
+function cmdRefactor(args) {
+  const root = projectRoot(process.cwd())
+  const rep = require('../lib/hotspots').report(root)
+
+  if (!rep.ok) {
+    log('godkit refactor: ' + rep.reason)
+    return
+  }
+
+  if (!rep.files.length) {
+    log('no code files named across ' + rep.logs + ' log entries — nothing to rank yet')
+    return
+  }
+
+  const limitFlag = args.indexOf('--all') === -1 ? 15 : rep.files.length
+  log('hotspots — code files, over ' + rep.logs + ' log entries')
+  log('')
+  log('  ' + 'score'.padEnd(7) + 'file'.padEnd(34) + 'touched  blamed  sessions  fan-in')
+  for (const f of rep.files.slice(0, limitFlag)) {
+    log(
+      '  ' + String(f.score).padEnd(7) + f.file.padEnd(34) +
+        String(f.touched).padEnd(9) + String(f.blamed).padEnd(8) +
+        String(f.sessions).padEnd(10) + f.fanIn,
+    )
+  }
+  if (rep.files.length > limitFlag) {
+    log('')
+    log('  ' + (rep.files.length - limitFlag) + ' more — `--all` for the rest')
+  }
+
+  log('')
+  log('score = blamed x2 + touched. Evidence of churn and blame, not of bad code —')
+  log('read the files before you believe the ranking. See the godkit-refactor skill.')
+}
+
 function cmdDoctor() {
   const root = projectRoot(process.cwd())
   const p = paths(root)
@@ -561,6 +598,7 @@ const HELP = `godkit — one shared harness for every AI agent
                             them into the paths claude and codex read
   godkit evolve [--write]   re-read the logs: what each project skill's evidence says.
                             --write projects it to .agent/SKILLS.md
+  godkit refactor [--all]   re-read the logs: which code files are churned and blamed most
   godkit hooks [status|install|uninstall] [--dry-run]
                             the hook registrations in the claude and codex settings files
   godkit doctor             what is set up here, and whether the map is stale
@@ -584,6 +622,8 @@ function main() {
       return cmdSkills(args)
     case 'evolve':
       return cmdEvolve(args)
+    case 'refactor':
+      return cmdRefactor(args)
     case 'hooks':
       return cmdHooks(args)
     case 'doctor':

@@ -43,6 +43,7 @@
     "commands/",
     "scripts/uninstall.js",
     "AGENTS.md",
+    "CHANGELOG.md",
     "LICENSE"
   ],
   "engines": {

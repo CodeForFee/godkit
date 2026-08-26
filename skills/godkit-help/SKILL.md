@@ -71,6 +71,7 @@ Plus: input validation at trust boundaries, error handling that prevents data lo
 | `godkit-handoff` | the `.agent/` protocol and its file formats |
 | `godkit-plan` | cutting seams, assigning owners, writing task files |
 | `godkit-execute` | running work through the pipeline, error recovery |
+| `godkit-refactor` | evolving the source code — churn and blame from the logs |
 | `godkit-review` | reviewing the process, or diagnosing a failed run |
 | `godkit-test` | what counts as verified, writing the check |
 | `godkit-lazy` | what to build and what to skip |
@@ -93,6 +94,7 @@ godkit install [tool...]  install the skills (claude, codex, antigravity; defaul
 godkit skills [--link|--unlink] [tool...] [--force]
                           this project's own skills in .agent/skills/
 godkit evolve [--write]   what the logs say about each one; --write -> .agent/SKILLS.md
+godkit refactor [--all]   what the logs say about each code file: churn, blame, fan-in
 godkit doctor             what is set up here, and whether the map is stale
 godkit uninstall [tool]   remove installed skills (leaves your .agent/ alone)
 ```

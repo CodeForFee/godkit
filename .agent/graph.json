@@ -11,8 +11,8 @@
     ],
     "frameworks": [],
     "description": "Zero-runtime-dependency Node.js harness that coordinates Claude Code, Codex, Cursor, Copilot, and Gemini-compatible agents through committed .agent state. Host rule or SessionStart hook -> shared BOARD/map/log context -> CLI and skill workflows -> verified task handoff. Project maps and skill evidence are Markdown/JSON files backed by Git; there is no database or application authentication layer.",
-    "generatedAt": "2026-08-22T15:25:18.972Z",
-    "sha": "88e579f71cb80568f6438caeb31579374964cf1d"
+    "generatedAt": "2026-08-26T05:15:11.960Z",
+    "sha": "dfafab0695d8d47841b808b51e0166c76bd9e35c"
   },
   "nodes": [
     {
@@ -2078,172 +2078,6 @@
       "complexity": "simple"
     },
     {
-      "id": "file:bin/godkit.js",
-      "type": "file",
-      "name": "godkit.js",
-      "filePath": "bin/godkit.js",
-      "lineRange": [
-        1,
-        590
-      ],
-      "summary": "The CLI: init, install, hooks, scan, save, skills, evolve, doctor, uninstall. It owns no policy — ownership lives in lib/install.js, managed blocks in lib/managed.js, graph rules in lib/graph.js — so every command is a thin, testable shell over a library.",
-      "tags": [
-        "cli",
-        "entrypoint"
-      ],
-      "complexity": "complex"
-    },
-    {
-      "id": "function:bin/godkit.js:cmdInit",
-      "type": "function",
-      "name": "cmdInit",
-      "filePath": "bin/godkit.js",
-      "lineRange": [
-        1,
-        1
-      ],
-      "summary": "Scaffolds .agent/ and writes the rules into managed blocks in AGENTS.md, CLAUDE.md, the Cursor and Antigravity rule files, and .gitattributes. Preserves user text; refuses a file whose markers were hand-mangled.",
-      "tags": [
-        "init"
-      ],
-      "complexity": "moderate"
-    },
-    {
-      "id": "function:bin/godkit.js:cmdInstall",
-      "type": "function",
-      "name": "cmdInstall",
-      "filePath": "bin/godkit.js",
-      "lineRange": [
-        1,
-        1
-      ],
-      "summary": "Places the skills per tool through installOne, refusing any destination godkit does not own. --dry-run reports without writing.",
-      "tags": [
-        "install",
-        "ownership"
-      ],
-      "complexity": "moderate"
-    },
-    {
-      "id": "function:bin/godkit.js:cmdHooks",
-      "type": "function",
-      "name": "cmdHooks",
-      "filePath": "bin/godkit.js",
-      "lineRange": [
-        1,
-        1
-      ],
-      "summary": "status | install | uninstall for the Claude and Codex settings files, with --dry-run. Replaces \"go run this script by hand\".",
-      "tags": [
-        "hooks"
-      ],
-      "complexity": "moderate"
-    },
-    {
-      "id": "function:bin/godkit.js:cmdSave",
-      "type": "function",
-      "name": "cmdSave",
-      "filePath": "bin/godkit.js",
-      "lineRange": [
-        1,
-        1
-      ],
-      "summary": "Load-patch-save of the map: replaces re-analyzed files, keeps untouched ones, DROPS nodes whose file no longer exists, then writes graph, MAP.md and meta.json in that order so an interrupted save reads as stale.",
-      "tags": [
-        "map"
-      ],
-      "complexity": "moderate"
-    },
-    {
-      "id": "function:bin/godkit.js:cmdScan",
-      "type": "function",
-      "name": "cmdScan",
-      "filePath": "bin/godkit.js",
-      "lineRange": [
-        1,
-        1
-      ],
-      "summary": "Deterministic walk, categorize, resolve imports and batch — the token-free half of building the map.",
-      "tags": [
-        "map"
-      ],
-      "complexity": "moderate"
-    },
-    {
-      "id": "function:bin/godkit.js:cmdSkills",
-      "type": "function",
-      "name": "cmdSkills",
-      "filePath": "bin/godkit.js",
-      "lineRange": [
-        1,
-        1
-      ],
-      "summary": "Lists project skills with origin, findings and which hosts see them; --link/--unlink projects them.",
-      "tags": [
-        "skills"
-      ],
-      "complexity": "moderate"
-    },
-    {
-      "id": "function:bin/godkit.js:cmdEvolve",
-      "type": "function",
-      "name": "cmdEvolve",
-      "filePath": "bin/godkit.js",
-      "lineRange": [
-        1,
-        1
-      ],
-      "summary": "Re-reads the log stream and reports what the evidence implies about each project skill.",
-      "tags": [
-        "skills",
-        "evidence"
-      ],
-      "complexity": "moderate"
-    },
-    {
-      "id": "function:bin/godkit.js:cmdDoctor",
-      "type": "function",
-      "name": "cmdDoctor",
-      "filePath": "bin/godkit.js",
-      "lineRange": [
-        1,
-        1
-      ],
-      "summary": "What is set up here: .agent files, map freshness, project skills, installed skills per tool, and which hooks are registered.",
-      "tags": [
-        "diagnostics"
-      ],
-      "complexity": "moderate"
-    },
-    {
-      "id": "function:bin/godkit.js:cmdUninstall",
-      "type": "function",
-      "name": "cmdUninstall",
-      "filePath": "bin/godkit.js",
-      "lineRange": [
-        1,
-        1
-      ],
-      "summary": "Removes only the skill directories godkit owns, and says what it kept.",
-      "tags": [
-        "ownership"
-      ],
-      "complexity": "moderate"
-    },
-    {
-      "id": "function:bin/godkit.js:main",
-      "type": "function",
-      "name": "main",
-      "filePath": "bin/godkit.js",
-      "lineRange": [
-        1,
-        1
-      ],
-      "summary": "Command dispatch and help.",
-      "tags": [],
-      "complexity": "moderate"
-    },
-    {
       "id": "file:scripts/uninstall.js",
       "type": "file",
       "name": "uninstall.js",
@@ -2636,6 +2470,313 @@
         "release"
       ],
       "complexity": "simple"
+    },
+    {
+      "id": "file:lib/hotspots.js",
+      "type": "file",
+      "name": "hotspots.js",
+      "filePath": "lib/hotspots.js",
+      "lineRange": [
+        1,
+        121
+      ],
+      "summary": "Which code files the log stream says are hot: claimed in `scope:`, listed under `## Did`, or named as a root cause under `## Bugs`, cross-referenced against the map for fan-in. Reads no source code and scores no file the map does not know, so prose that merely looks like a path cannot rank. The deterministic half of godkit-refactor.",
+      "tags": [
+        "evidence",
+        "map",
+        "refactor"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:lib/hotspots.js:report",
+      "type": "function",
+      "name": "report",
+      "filePath": "lib/hotspots.js",
+      "lineRange": [
+        1,
+        1
+      ],
+      "summary": "Ranks code files by blamed x2 + touched over the whole log stream. Returns ok:false when there is no map — a silent empty table would read as a clean codebase.",
+      "tags": [
+        "evidence"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:lib/hotspots.js:filesIn",
+      "type": "function",
+      "name": "filesIn",
+      "filePath": "lib/hotspots.js",
+      "lineRange": [
+        1,
+        1
+      ],
+      "summary": "Real files named anywhere in a blob of log prose, glob claims expanded. Every candidate is checked against the map, which is what decides whether a token is a file.",
+      "tags": [
+        "parsing"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:lib/hotspots.js:fanIn",
+      "type": "function",
+      "name": "fanIn",
+      "filePath": "lib/hotspots.js",
+      "lineRange": [
+        1,
+        1
+      ],
+      "summary": "How many other files depend on each one, from the graph edges. Self-edges do not count.",
+      "tags": [
+        "map"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:tests/hotspots.test.js",
+      "type": "file",
+      "name": "hotspots.test.js",
+      "filePath": "tests/hotspots.test.js",
+      "lineRange": [
+        1,
+        139
+      ],
+      "summary": "The ranking contract: blame outranks a bare touch, a glob claim counts for every file it names and nothing outside its directory, path-shaped prose scores nothing, docs are ranked out, a missing map is reported rather than rendered as a clean codebase, and fan-in ignores self-edges.",
+      "tags": [
+        "tests",
+        "evidence"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:skills/godkit-refactor/SKILL.md",
+      "type": "file",
+      "name": "godkit-refactor",
+      "filePath": "skills/godkit-refactor/SKILL.md",
+      "lineRange": [
+        1,
+        125
+      ],
+      "summary": "The judgment half of refactoring: read the churn-and-blame ranking, read the code it names, and decide whether there is a real change to make. Deliberately separate from godkit-evolve — this one evolves source code, that one evolves procedures.",
+      "tags": [
+        "skills",
+        "refactor"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:commands/godkit-refactor.toml",
+      "type": "config",
+      "name": "godkit-refactor.toml",
+      "filePath": "commands/godkit-refactor.toml",
+      "lineRange": [
+        1,
+        2
+      ],
+      "summary": "Slash command for the godkit-refactor skill. One command per skill is a contract test.",
+      "tags": [
+        "commands"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:CHANGELOG.md",
+      "type": "file",
+      "name": "CHANGELOG.md",
+      "filePath": "CHANGELOG.md",
+      "lineRange": [
+        1,
+        46
+      ],
+      "summary": "Release history. 1.0.0 is the first public release.",
+      "tags": [
+        "docs",
+        "release"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:bin/godkit.js",
+      "type": "file",
+      "name": "godkit.js",
+      "filePath": "bin/godkit.js",
+      "lineRange": [
+        1,
+        649
+      ],
+      "summary": "The CLI: init, install, hooks, scan, save, skills, evolve, refactor, doctor, uninstall. It owns no policy — ownership lives in lib/install.js, managed blocks in lib/managed.js, graph rules in lib/graph.js, rankings in lib/hotspots.js — so every command is a thin, testable shell over a library.",
+      "tags": [
+        "cli",
+        "entrypoint"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "function:bin/godkit.js:cmdInit",
+      "type": "function",
+      "name": "cmdInit",
+      "filePath": "bin/godkit.js",
+      "lineRange": [
+        1,
+        1
+      ],
+      "summary": "Scaffolds .agent/ and writes the rules into managed blocks in AGENTS.md, CLAUDE.md, the Cursor and Antigravity rule files, and .gitattributes. Preserves user text; refuses a file whose markers were hand-mangled.",
+      "tags": [
+        "init"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:bin/godkit.js:cmdInstall",
+      "type": "function",
+      "name": "cmdInstall",
+      "filePath": "bin/godkit.js",
+      "lineRange": [
+        1,
+        1
+      ],
+      "summary": "Places the skills per tool through installOne, refusing any destination godkit does not own. --dry-run reports without writing.",
+      "tags": [
+        "install",
+        "ownership"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:bin/godkit.js:cmdHooks",
+      "type": "function",
+      "name": "cmdHooks",
+      "filePath": "bin/godkit.js",
+      "lineRange": [
+        1,
+        1
+      ],
+      "summary": "status | install | uninstall for the Claude and Codex settings files, with --dry-run. Replaces \"go run this script by hand\".",
+      "tags": [
+        "hooks"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:bin/godkit.js:cmdSave",
+      "type": "function",
+      "name": "cmdSave",
+      "filePath": "bin/godkit.js",
+      "lineRange": [
+        1,
+        1
+      ],
+      "summary": "Load-patch-save of the map: replaces re-analyzed files, keeps untouched ones, DROPS nodes whose file no longer exists, then writes graph, MAP.md and meta.json in that order so an interrupted save reads as stale.",
+      "tags": [
+        "map"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:bin/godkit.js:cmdScan",
+      "type": "function",
+      "name": "cmdScan",
+      "filePath": "bin/godkit.js",
+      "lineRange": [
+        1,
+        1
+      ],
+      "summary": "Deterministic walk, categorize, resolve imports and batch — the token-free half of building the map.",
+      "tags": [
+        "map"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:bin/godkit.js:cmdSkills",
+      "type": "function",
+      "name": "cmdSkills",
+      "filePath": "bin/godkit.js",
+      "lineRange": [
+        1,
+        1
+      ],
+      "summary": "Lists project skills with origin, findings and which hosts see them; --link/--unlink projects them.",
+      "tags": [
+        "skills"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:bin/godkit.js:cmdEvolve",
+      "type": "function",
+      "name": "cmdEvolve",
+      "filePath": "bin/godkit.js",
+      "lineRange": [
+        1,
+        1
+      ],
+      "summary": "Re-reads the log stream and reports what the evidence implies about each project skill.",
+      "tags": [
+        "skills",
+        "evidence"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:bin/godkit.js:cmdRefactor",
+      "type": "function",
+      "name": "cmdRefactor",
+      "filePath": "bin/godkit.js",
+      "lineRange": [
+        1,
+        1
+      ],
+      "summary": "Re-reads the same log stream and ranks code files by churn and blame instead of skills by evidence. Prints the caveat with the table: it ranks attention, not badness.",
+      "tags": [
+        "refactor",
+        "evidence"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:bin/godkit.js:cmdDoctor",
+      "type": "function",
+      "name": "cmdDoctor",
+      "filePath": "bin/godkit.js",
+      "lineRange": [
+        1,
+        1
+      ],
+      "summary": "What is set up here: .agent files, map freshness, project skills, installed skills per tool, and which hooks are registered.",
+      "tags": [
+        "diagnostics"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:bin/godkit.js:cmdUninstall",
+      "type": "function",
+      "name": "cmdUninstall",
+      "filePath": "bin/godkit.js",
+      "lineRange": [
+        1,
+        1
+      ],
+      "summary": "Removes only the skill directories godkit owns, and says what it kept.",
+      "tags": [
+        "ownership"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:bin/godkit.js:main",
+      "type": "function",
+      "name": "main",
+      "filePath": "bin/godkit.js",
+      "lineRange": [
+        1,
+        1
+      ],
+      "summary": "Command dispatch and help.",
+      "tags": [],
+      "complexity": "moderate"
     }
   ],
   "edges": [
@@ -2859,31 +3000,31 @@
       "source": "file:bin/godkit.js",
       "target": "file:lib/paths.js",
       "type": "imports",
-      "weight": 0.8
+      "weight": 0.9
     },
     {
       "source": "file:bin/godkit.js",
       "target": "file:lib/scan.js",
       "type": "imports",
-      "weight": 0.8
+      "weight": 0.9
     },
     {
       "source": "file:bin/godkit.js",
       "target": "file:lib/batch.js",
       "type": "imports",
-      "weight": 0.8
+      "weight": 0.7
     },
     {
       "source": "file:bin/godkit.js",
       "target": "file:lib/graph.js",
       "type": "imports",
-      "weight": 0.8
+      "weight": 0.9
     },
     {
       "source": "file:bin/godkit.js",
       "target": "file:lib/evolve.js",
       "type": "imports",
-      "weight": 0.8
+      "weight": 0.9
     },
     {
       "source": "file:bin/godkit.js",
@@ -4329,13 +4470,13 @@
       "source": "file:bin/godkit.js",
       "target": "file:lib/install.js",
       "type": "imports",
-      "weight": 0.8
+      "weight": 0.9
     },
     {
       "source": "file:bin/godkit.js",
       "target": "file:lib/managed.js",
       "type": "imports",
-      "weight": 0.8
+      "weight": 0.9
     },
     {
       "source": "file:lib/paths.js",
@@ -4522,93 +4663,294 @@
       "target": "file:skills/godkit-evolve/SKILL.md",
       "type": "configures",
       "weight": 0.6
+    },
+    {
+      "source": "file:bin/godkit.js",
+      "target": "file:lib/hotspots.js",
+      "type": "imports",
+      "weight": 0.8
+    },
+    {
+      "source": "file:lib/hotspots.js",
+      "target": "file:lib/evolve.js",
+      "type": "imports",
+      "weight": 0.9
+    },
+    {
+      "source": "file:lib/hotspots.js",
+      "target": "file:lib/graph.js",
+      "type": "imports",
+      "weight": 0.8
+    },
+    {
+      "source": "file:lib/hotspots.js",
+      "target": "file:lib/scan.js",
+      "type": "imports",
+      "weight": 0.7
+    },
+    {
+      "source": "file:lib/hotspots.js",
+      "target": "file:lib/paths.js",
+      "type": "imports",
+      "weight": 0.7
+    },
+    {
+      "source": "file:lib/hotspots.js",
+      "target": "file:tests/hotspots.test.js",
+      "type": "tested_by",
+      "weight": 0.9
+    },
+    {
+      "source": "function:bin/godkit.js:cmdRefactor",
+      "target": "function:lib/hotspots.js:report",
+      "type": "calls",
+      "weight": 0.9
+    },
+    {
+      "source": "function:lib/hotspots.js:report",
+      "target": "function:lib/hotspots.js:filesIn",
+      "type": "calls",
+      "weight": 0.9
+    },
+    {
+      "source": "function:lib/hotspots.js:report",
+      "target": "function:lib/hotspots.js:fanIn",
+      "type": "calls",
+      "weight": 0.8
+    },
+    {
+      "source": "file:commands/godkit-refactor.toml",
+      "target": "file:skills/godkit-refactor/SKILL.md",
+      "type": "triggers",
+      "weight": 0.9
+    },
+    {
+      "source": "file:skills/godkit-refactor/SKILL.md",
+      "target": "file:lib/hotspots.js",
+      "type": "depends_on",
+      "weight": 0.8
     }
   ],
   "layers": [
     {
       "name": "Shared protocol and state",
       "description": "AGENTS.md and the committed .agent/ contract every host reads: board, thread, tasks, logs, map. The one canonical copy of each fact.",
-      "nodeIds": []
+      "nodeIds": [
+        "file:AGENTS.md",
+        "file:CLAUDE.md",
+        "file:.agents/rules/godkit.md",
+        "file:.github/copilot-instructions.md",
+        "file:templates/BOARD.md",
+        "file:templates/MAP.md",
+        "file:templates/task.md",
+        "file:templates/THREAD.md",
+        "file:templates/rules/cursor-header.md",
+        "file:templates/gitattributes",
+        "file:templates/log.md",
+        "file:README.md",
+        "file:docs/agent-portability.md"
+      ]
     },
     {
       "name": "Session runtime",
       "description": "lib/session.js, lib/work.js and lib/paths.js — per-session state under an owned root, session-scoped work evidence, and every bounded, symlink-refusing read of shared state.",
-      "nodeIds": []
+      "nodeIds": [
+        "file:lib/lazy.js",
+        "file:lib/session.js",
+        "file:lib/work.js",
+        "file:lib/paths.js"
+      ]
     },
     {
       "name": "Hook enforcement",
       "description": "hooks/*.js. brief injects state at session start, work-track records what this session changed, clockout blocks the turn until its log exists, map-watch reports staleness. Generated registrations keep the plugin manifest and the settings installer in step.",
-      "nodeIds": []
+      "nodeIds": [
+        "file:hooks/work-track.js",
+        "file:hooks/clockout.js",
+        "file:hooks/brief.js",
+        "file:hooks/install.js",
+        "file:hooks/lazy-activate.js",
+        "file:hooks/lazy-subagent.js",
+        "file:hooks/lazy-mode-tracker.js",
+        "file:hooks/map-watch.js",
+        "file:hooks/godkit-hooks.json",
+        "config:hooks/godkit-hooks.json"
+      ]
     },
     {
       "name": "Install and ownership",
       "description": "lib/install.js with hooks/install.js and scripts/uninstall.js. One definition of what godkit created, so nothing it did not create is ever replaced or removed.",
-      "nodeIds": []
+      "nodeIds": [
+        "file:gemini-extension.json",
+        "file:.claude-plugin/marketplace.json",
+        "file:.claude-plugin/plugin.json",
+        "file:.codex-plugin/plugin.json",
+        "file:lib/install.js",
+        "file:scripts/uninstall.js"
+      ]
     },
     {
       "name": "CLI and map pipeline",
-      "description": "bin/godkit.js over lib/scan.js, lib/batch.js, lib/graph.js, lib/freshness.js and lib/managed.js: scan, analyze, save, and honest staleness.",
-      "nodeIds": []
+      "description": "bin/godkit.js over lib/scan.js, lib/batch.js, lib/graph.js, lib/freshness.js, lib/managed.js and lib/hotspots.js: scan, analyze, save, honest staleness, and the churn-and-blame ranking behind godkit refactor.",
+      "nodeIds": [
+        "file:lib/scan.js",
+        "file:lib/batch.js",
+        "file:lib/graph.js",
+        "file:lib/managed.js",
+        "file:lib/freshness.js",
+        "file:lib/hotspots.js",
+        "file:bin/godkit.js"
+      ]
     },
     {
       "name": "Skills and evidence",
-      "description": "skills/, agents/, commands/ and lib/evolve.js — the shipped procedures, plus project skills judged by owned snapshots and log-derived trust.",
-      "nodeIds": []
+      "description": "skills/, agents/, commands/ and lib/evolve.js — the shipped procedures, plus project skills judged by owned snapshots and log-derived trust. godkit-evolve evolves those procedures; godkit-refactor evolves the source code from the same log stream.",
+      "nodeIds": [
+        "file:agents/architect.md",
+        "file:agents/file-analyzer.md",
+        "file:commands/godkit-doubt.toml",
+        "file:commands/godkit-evolve.toml",
+        "file:commands/godkit-execute.toml",
+        "file:commands/godkit-frontend.toml",
+        "file:commands/godkit-git.toml",
+        "file:commands/godkit-handoff.toml",
+        "file:commands/godkit-help.toml",
+        "file:commands/godkit-lazy.toml",
+        "file:commands/godkit-map.toml",
+        "file:commands/godkit-output-enforcement.toml",
+        "file:commands/godkit-plan.toml",
+        "file:commands/godkit-review.toml",
+        "file:commands/godkit-test.toml",
+        "file:commands/godkit.toml",
+        "file:skills/godkit/SKILL.md",
+        "file:skills/godkit-doubt/SKILL.md",
+        "file:skills/godkit-execute/SKILL.md",
+        "file:skills/godkit-frontend/SKILL.md",
+        "file:skills/godkit-frontend/references/brandkit.md",
+        "file:skills/godkit-frontend/references/brutalist.md",
+        "file:skills/godkit-frontend/references/image-to-code.md",
+        "file:skills/godkit-frontend/references/imagegen-mobile.md",
+        "file:skills/godkit-frontend/references/imagegen-web.md",
+        "file:skills/godkit-frontend/references/minimal.md",
+        "file:skills/godkit-frontend/references/redesign.md",
+        "file:skills/godkit-frontend/references/soft.md",
+        "file:skills/godkit-frontend/references/stitch-DESIGN.md",
+        "file:skills/godkit-frontend/references/stitch.md",
+        "file:skills/godkit-frontend/references/strict.md",
+        "file:skills/godkit-frontend/references/v1.md",
+        "file:skills/godkit-git/SKILL.md",
+        "file:skills/godkit-handoff/SKILL.md",
+        "file:skills/godkit-help/SKILL.md",
+        "file:skills/godkit-lazy/SKILL.md",
+        "file:skills/godkit-map/SKILL.md",
+        "file:skills/godkit-output-enforcement/SKILL.md",
+        "file:skills/godkit-plan/SKILL.md",
+        "file:skills/godkit-review/SKILL.md",
+        "file:skills/godkit-test/SKILL.md",
+        "file:skills/godkit/references/PATTERNS.md",
+        "file:lib/evolve.js",
+        "file:skills/godkit-evolve/SKILL.md",
+        "file:skills/godkit-refactor/SKILL.md",
+        "file:commands/godkit-refactor.toml"
+      ]
     },
     {
       "name": "Verification and release guards",
       "description": "tests/, scripts/sync-*.js, scripts/check-versions.js and the workflows. Generated files, agreeing manifests, a tag-only publish, and a packed-install smoke.",
-      "nodeIds": []
+      "nodeIds": [
+        "file:tests/freshness.test.js",
+        "file:scripts/sync-rules.js",
+        "file:tests/save.test.js",
+        "file:scripts/sync-hooks.js",
+        "file:scripts/check-versions.js",
+        "file:package.json",
+        "file:tests/runtime.test.js",
+        "file:tests/cli.test.js",
+        "file:tests/hook-install.test.js",
+        "file:tests/hooks.test.js",
+        "file:tests/package.test.js",
+        "file:tests/evolve.test.js",
+        "file:tests/graph.test.js",
+        "file:tests/scan.test.js",
+        "file:.github/workflows/test.yml",
+        "file:.github/workflows/publish.yml",
+        "file:tests/hotspots.test.js",
+        "file:CHANGELOG.md"
+      ]
     }
   ],
   "tour": [
     {
       "order": 1,
-      "title": "",
-      "description": "",
-      "nodeIds": []
+      "title": "AGENTS.md — the protocol itself",
+      "description": "Two rules and the clock-in/clock-out checklist. Every other rule file in the repo is generated from this one, so this is the only copy worth reading.",
+      "nodeIds": [
+        "file:AGENTS.md"
+      ]
     },
     {
       "order": 2,
-      "title": "",
-      "description": "",
-      "nodeIds": []
+      "title": ".agent/ — the shared state those rules operate on",
+      "description": "BOARD.md is claims, bugs and binding decisions; THREAD.md is the conversation; tasks/ and log/ are append-only. Read the templates to see the shape init writes.",
+      "nodeIds": [
+        "file:templates/BOARD.md",
+        "file:templates/task.md",
+        "file:templates/log.md"
+      ]
     },
     {
       "order": 3,
-      "title": "",
-      "description": "",
-      "nodeIds": []
+      "title": "bin/godkit.js — every command, each a thin shell",
+      "description": "The dispatch table is the fastest index of what godkit does. No policy lives here; each command delegates to a library in lib/.",
+      "nodeIds": [
+        "file:bin/godkit.js",
+        "function:bin/godkit.js:main"
+      ]
     },
     {
       "order": 4,
-      "title": "",
-      "description": "",
-      "nodeIds": []
+      "title": "lib/paths.js — the read boundary",
+      "description": "Every read of shared state goes through here: bounded, containment-checked, symlink-refusing. Read it before any code that touches .agent/, because it explains what those callers are allowed to do.",
+      "nodeIds": [
+        "file:lib/paths.js"
+      ]
     },
     {
       "order": 5,
-      "title": "",
-      "description": "",
-      "nodeIds": []
+      "title": "hooks/brief.js and hooks/clockout.js — where the protocol is enforced",
+      "description": "brief injects the board and map at session start; clockout blocks the turn when a session that changed files wrote no log. On hosts without hooks the rule file is the only enforcement, which is why they say the same thing.",
+      "nodeIds": [
+        "file:hooks/brief.js",
+        "file:hooks/clockout.js",
+        "file:hooks/work-track.js"
+      ]
     },
     {
       "order": 6,
-      "title": "",
-      "description": "",
-      "nodeIds": []
+      "title": "lib/scan.js and lib/graph.js — the map, deterministic half",
+      "description": "Walk, categorize, resolve imports, batch; then normalize and save. saveGraph is load-patch-save and refuses to overwrite a graph it could not read, which is why one bad parse cannot reset the project memory.",
+      "nodeIds": [
+        "file:lib/scan.js",
+        "file:lib/graph.js",
+        "file:lib/freshness.js"
+      ]
     },
     {
       "order": 7,
-      "title": "",
-      "description": "",
-      "nodeIds": []
+      "title": "lib/evolve.js and lib/hotspots.js — two things derived from one log stream",
+      "description": "evolve ranks the procedures a project repeats; hotspots ranks the files it keeps breaking. Same evidence, different unit, and neither keeps a second store that could go stale.",
+      "nodeIds": [
+        "file:lib/evolve.js",
+        "file:lib/hotspots.js"
+      ]
     },
     {
       "order": 8,
-      "title": "",
-      "description": "",
-      "nodeIds": []
+      "title": "tests/package.test.js — the release contract",
+      "description": "What the package promises: the files allowlist, agreeing manifests, one command per skill, generated rules in sync, and a real pack-then-run-init. Read it to learn what is allowed to change.",
+      "nodeIds": [
+        "file:tests/package.test.js"
+      ]
     }
   ]
 }

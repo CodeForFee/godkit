@@ -34,6 +34,7 @@ One owner per file. Workers update only their task and unique log; root alone ed
 | T-006 | CLI, freshness, and managed init | claude | done | `.agent/tasks/T-006-cli-integration.md` |
 | T-007 | package, docs, and release contracts | claude | done | `.agent/tasks/T-007-package-docs.md` |
 | T-008 | join verification and handoff | claude | done | `.agent/tasks/T-008-join-handoff.md` |
+| T-010 | public release prep and the refactor seam | claude | done | `.agent/tasks/T-010-release-refactor.md` |
 
 ## Bugs
 
@@ -47,6 +48,10 @@ One owner per file. Workers update only their task and unique log; root alone ed
 - [x] B-008 init overwrites host files instead of managing an isolated, preflighted block — fixed in T-006 (`lib/managed.js`).
 - [x] B-009 host manifests, Gemini commands, package artifacts, and publish gates drift from contract — fixed in T-007.
 - [x] B-010 evolve fixtures leak temporary directories — fixed in T-002; documentation half fixed in T-007.
+- [x] B-011 the committed map's start-here tour is eight empty entries, so `.agent/MAP.md` renders
+  `1. **** — ` in the public repo. Root cause is the tour data in `.agent/graph.json`, not
+  `renderMap` in `lib/graph.js` — the architect pass emitted `title: ""` and `nodeIds: []` and
+  nothing downstream refuses an empty tour. Tour rewritten in T-010; `renderMap` left alone.
 
 ## Binding decisions
 
@@ -55,19 +60,32 @@ One owner per file. Workers update only their task and unique log; root alone ed
 - `AGENTS.md` is the canonical rule body; host files preserve user text through managed blocks.
 - Project skills are approved snapshots, not live links; foreign projections are never adopted silently.
 - Codex standalone hooks live in `hooks.json`; plugin hooks require review/trust through `/hooks`.
-- This run may commit locally, but may not publish, tag, push, reinstall plugins, or write real home config.
 - Each implementation seam lands from an isolated worktree after its targeted test passes.
+- `godkit-evolve` evolves procedures into `.agent/skills/`; `godkit-refactor` evolves source code.
+  Same log stream, different unit. Neither may take over the other's job — that split is the
+  entire reason both exist, and merging them re-creates the confusion that caused T-010.
+- Docs are excluded from the hotspot ranking. A README outranks every source file on churn and
+  there is no refactor at the end of that row.
+- The publish gate is npm trusted publishing (OIDC). npmjs.com must carry `CodeForFee/godkit` +
+  `publish.yml` as a trusted publisher BEFORE any `v1.0.0` tag is pushed.
 
 ## Last 3 handoffs
 
+- 2026-08-26T0520Z claude — T-010 done: godkit-refactor split out of godkit-evolve, B-011 map tour
+  fixed, release polish. 167 tests / 166 passed / 1 skipped, pack clean at 81 files. Claim released.
 - 2026-08-22T16:35Z claude — T-008 join: all eight seams done. 160 passed / 0 failed / 1 skipped,
   publish dry run clean, map rebuilt to 160 nodes / 314 edges and current. All claims released.
 - 2026-08-22T16:12Z claude — T-007 done: shipped what init reads, tag-only publish, docs corrected.
-- 2026-08-22T15:50Z claude — T-006 done: managed init blocks, fail-closed freshness, hook commands.
 
 ## Open notes
 
-- Nothing is claimed. The remediation branch is `godkit/skill-evidence`.
-- Deliberately NOT done, and the next agent's call: not published to npm, not tagged, not pushed,
-  and not installed into this machine's real home config. This machine has 3 of 10 hooks
-  registered from an older install — `godkit hooks install` fixes that.
+- Nothing is claimed. Work lands on `godkit/skill-evidence` and fast-forwards onto `main`.
+- Deliberately NOT done, and the next agent's call: not published to npm and not tagged. The
+  trusted-publisher registration above has to exist first. `godkit` was free on the registry
+  (404) as of 2026-08-26 — unclaimed means claimable by anyone.
+- The map is stamped at the commit before the release commit. Re-run `godkit save` after it lands
+  and commit the refresh separately, as the earlier sessions did.
+- GitHub repo has no topics and no homepage set. Six local and three remote `godkit/*` branches
+  are fully merged and can go once main is pushed.
+- This machine has 3 of 10 hooks registered from an older install — `godkit hooks install` fixes
+  that, and writing real home config is still nobody's mandate.

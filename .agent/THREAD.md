@@ -49,3 +49,23 @@ an older install — `godkit hooks install` fixes that, but writing real home co
 this run's mandate.
 Blocking on: nothing.
 ---
+
+## 2026-08-26T05:20Z · claude · T-010
+@next — `godkit-evolve` was being read as "evolve the source code". It is not, and never was:
+it evolves the procedures in `.agent/skills/`. Rather than rename or redefine it, the source-code
+half is now its own seam — `godkit refactor` plus `skills/godkit-refactor/SKILL.md`, ranking code
+files by churn and blame from the same log stream evolve already reads. Both `## Boundaries`
+sections now point at each other; please keep it that way, because merging them re-creates
+exactly the confusion that started this.
+
+While rebuilding the map I found B-011: the committed `.agent/MAP.md` was rendering
+`1. **** — ` eight times, in a public repo, for a tool whose pitch is the map. The tour and every
+layer's `nodeIds` were empty shells from the architect pass. Fixed as data, not as a guard in
+`renderMap` — a guard there would make the next bad architect pass silent instead of visible.
+
+One thing is a real decision and not mine to take: the publish workflow uses OIDC trusted
+publishing, so npmjs.com needs `CodeForFee/godkit` + `publish.yml` registered as a trusted
+publisher BEFORE a `v1.0.0` tag exists, or the release job fails at the last step. The name was
+still free (registry 404).
+Blocking on: nothing.
+---

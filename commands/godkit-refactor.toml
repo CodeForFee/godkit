@@ -1,0 +1,2 @@
+description = "Rank the code by churn and blame from the logs, then decide what is worth changing"
+prompt = "Use the godkit-refactor skill. $ARGUMENTS"

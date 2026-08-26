@@ -6,7 +6,8 @@ description: >
   failure. Use when the same shaped job shows up in three or more log entries, when
   `godkit skills` reports a skill demoted or blocked, when the user says "capture this",
   "make this a skill", "we keep doing this by hand", "fix that skill", or after finishing work
-  that a future session would want the recipe for. Do NOT use for the skills this package ships
+  that a future session would want the recipe for. This evolves PROCEDURES, not source code —
+  for evolving the code itself use godkit-refactor. Do NOT use for the skills this package ships
   — those are edited in the package, not here. Do NOT use to decide what work to do next
   (godkit-plan) or whether work is verified (godkit-test).
 license: MIT
@@ -160,7 +161,12 @@ old failures no longer count: you are being judged on the text that exists, not 
 
 ## Boundaries
 
-This skill writes and repairs skills in `.agent/skills/`. It does not edit the skills this
-package ships. It does not decide what work to do (**godkit-plan**), judge whether work is
-verified (**godkit-test**), or diagnose why a run went wrong (**godkit-review**) — though a
-`godkit-review` finding is often what tells you a skill needs fixing.
+This skill evolves **procedures**: it writes and repairs skills in `.agent/skills/`. It never
+changes source code — that is **godkit-refactor**, which reads the same log stream and ranks the
+files it names instead of the jobs it repeats. Same evidence, two different things to evolve;
+if you came here to improve the code, you want that one.
+
+It does not edit the skills this package ships. It does not decide what work to do
+(**godkit-plan**), judge whether work is verified (**godkit-test**), or diagnose why a run went
+wrong (**godkit-review**) — though a `godkit-review` finding is often what tells you a skill
+needs fixing.

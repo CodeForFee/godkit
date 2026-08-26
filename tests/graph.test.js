@@ -39,7 +39,7 @@ test('sanitizePath sanitizes Windows paths even when running on POSIX, and vice 
   assert.equal(g.sanitizePath('/home/u/proj/src/a.ts', '/home/u/proj'), 'src/a.ts')
   assert.equal(g.sanitizePath('/etc/shadow', '/home/u/proj'), 'shadow')
 
-  for (const leaky of ['E:/proj/src/a.ts', 'C:\\Users\\NEO\\x.ts', '/home/other/y.ts']) {
+  for (const leaky of ['E:/proj/src/a.ts', 'C:\\Users\\dev\\x.ts', '/home/other/y.ts']) {
     const out = g.sanitizePath(leaky, '/home/u/proj')
     assert.ok(!out.includes(':'), leaky + ' left a drive letter behind: ' + out)
     assert.ok(!out.startsWith('/'), leaky + ' stayed absolute: ' + out)

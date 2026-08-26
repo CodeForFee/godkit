@@ -28,7 +28,7 @@ npx godkit init
 | **[Install](#install)** · [Hooks](#hooks) · [Compatibility](#compatibility) | getting it running |
 | **[CLI](#cli)** · [Skills](#skills) | the reference |
 | **[Project skills](#project-skills)** · [Evidence](#evidence) | skills a project keeps for itself |
-| **[The project map](#the-project-map)** | the codebase graph |
+| **[The project map](#the-project-map)** · [Refactor](#refactor--evolving-the-code) | the codebase graph, and what it says to change |
 | **[Design](#design)** · [Development](#development) · [License](#license) | how it is built |
 
 ## Why
@@ -76,6 +76,15 @@ godkit doctor        # what is set up, and whether the map is stale
 
 `godkit install` places the skills once per machine; `godkit init` writes the rule files once per project. Every rule file is generated from a single `AGENTS.md`, so they cannot drift apart — CI byte-compares them.
 
+On Claude Code you can take the skills and hooks as a plugin instead, and skip `godkit install` entirely:
+
+```
+/plugin marketplace add CodeForFee/godkit
+/plugin install godkit@godkit
+```
+
+You still run `godkit init` per project — the plugin carries the skills and hooks, not your repo's `.agent/`.
+
 Both sides only ever touch what they created. `install` refuses a destination it does not own — a skill directory you wrote by hand is never replaced — and `uninstall` leaves it alone and says so. Add `--dry-run` to either to see what would happen first.
 
 In a project, `init` writes into a marked block:
@@ -98,6 +107,8 @@ Everything outside those markers is yours and is never touched, so an existing `
 | **Antigravity** | `~/.gemini/antigravity/skills/godkit` | `.agents/rules/godkit.md` | not supported |
 
 Where a tool has no hook support, the always-on rule file *is* the enforcement. That is why they all say the same thing. On Claude Code the protocol is **enforced**; everywhere else it is **instructed**, and the shared `.agent/` state is what makes that difference survivable.
+
+[`docs/agent-portability.md`](docs/agent-portability.md) has the per-tool detail: exact paths, what each host reads, and what it ignores.
 
 ### Hooks
 
@@ -136,13 +147,14 @@ Hooks never throw. Malformed input, missing git, absent `.agent/` — all exit 0
 | `godkit save [file]` | save a merged graph as the map (`graph.json`, `MAP.md`, `meta.json`) |
 | `godkit skills [--link\|--unlink] [tool...] [--force]` | this project's own skills in `.agent/skills/` |
 | `godkit evolve [--write]` | what the logs say about each project skill; `--write` → `.agent/SKILLS.md` |
+| `godkit refactor [--all]` | what the logs say about each code file: churn, blame, fan-in |
 | `godkit hooks [status\|install\|uninstall]` | the hook registrations, with `--dry-run` |
 | `godkit doctor` | what is set up here, whether the map is stale, and which hooks are registered |
 | `godkit uninstall [tool]` | remove the skills godkit installed (leaves your `.agent/` alone) |
 
 ## Skills
 
-Fourteen skills ship with godkit and are the same in every project.
+Fifteen skills ship with godkit and are the same in every project.
 
 **Arriving and coordinating**
 
@@ -159,6 +171,7 @@ Fourteen skills ship with godkit and are the same in every project.
 | Skill | Use for |
 |---|---|
 | `godkit-execute` | running work through the pipeline, error recovery |
+| `godkit-refactor` | evolving the source code, from what the logs say is churned and blamed |
 | `godkit-lazy` | what to build and what to skip |
 | `godkit-test` | what counts as verified, writing the check |
 | `godkit-output-enforcement` | catching stubbed or truncated generated output |
@@ -186,7 +199,7 @@ It injects into every subagent spawned via the Agent tool too — scope that wit
 
 ## Project skills
 
-The fourteen skills above are the same everywhere. A *project* also accumulates its own procedures — a fixture reset, a release check, a migration dance. Those live in `.agent/skills/<name>/SKILL.md`: committed, tool-neutral, and linked into the paths Claude Code and Codex actually read.
+The fifteen skills above are the same everywhere. A *project* also accumulates its own procedures — a fixture reset, a release check, a migration dance. Those live in `.agent/skills/<name>/SKILL.md`: committed, tool-neutral, and linked into the paths Claude Code and Codex actually read.
 
 ```bash
 godkit skills            # origin, safety findings, which hosts see them
@@ -238,7 +251,7 @@ godkit scan     # walk, categorize, resolve imports, batch
 godkit save     # normalize, write graph.json + MAP.md + meta.json
 ```
 
-The judgment half is the model: what each thing is *for*, how the layers actually divide, and where the landmines are.
+The judgment half is the model, through two agent prompts the package ships in `agents/`: `file-analyzer` reads one batch and emits the nodes and edges for it, then `architect` reads the merged graph and derives the layers, the start-here tour and the project description. Both read files and write one JSON each — neither edits your code.
 
 **Recall is grep, not load.** Node ids are `type:path[:name]`, so finding a concept and then its one-hop neighbourhood costs two greps and no context:
 
@@ -250,6 +263,28 @@ rg 'function:src/auth/token.ts:isExpired' .agent/graph.json    # every caller
 Refreshes are incremental. The map records the commit it was built at; the classifier decides how much to redo — `SKIP`, `PARTIAL`, `ARCHITECTURE` or `FULL` — so a two-file change never triggers a full rebuild.
 
 A file's structural signature is derived from the graph itself rather than a second store, which means the two can never disagree. The save path also refuses to overwrite a graph it could not read, so one bad parse cannot quietly reset your project's memory.
+
+## Refactor — evolving the code
+
+Every session already records which files it claimed, which it changed, and which one was actually to blame when something broke. After a dozen sessions that is a churn-and-blame record nobody had to author.
+
+```bash
+godkit refactor          # top 15 code files by churn and blame
+godkit refactor --all    # the whole ranking
+```
+
+```
+  score  file                              touched  blamed  sessions  fan-in
+  6      bin/godkit.js                     4        1       3         3
+  6      hooks/install.js                  4        1       4         1
+  4      lib/graph.js                      2        1       2         7
+```
+
+`touched` is sessions whose `scope:` or `## Did` named the file, `blamed` is `## Bugs` bullets that named it as a **root cause**, and `fan-in` comes from the map — who breaks if this file is wrong. Score is `blamed × 2 + touched`: a root cause is evidence about the code, while a touch is often evidence about what someone happened to be working on that week.
+
+**It ranks attention, not badness**, and the four columns say different things — high blame with low fan-in is a fragile file worth fixing, while high touch with zero blame is usually just the newest feature. Reading the code is not optional, and "nothing is wrong with the top file" is an expected result. The `godkit-refactor` skill is the judgment half; the same split as the map.
+
+Note the division of labour with `godkit evolve`: both read the same log stream, but **evolve evolves procedures** into `.agent/skills/`, and **refactor evolves the source code**.
 
 ## Design
 
