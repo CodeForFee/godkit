@@ -11,8 +11,8 @@
     ],
     "frameworks": [],
     "description": "Zero-runtime-dependency Node.js harness that coordinates Claude Code, Codex, Cursor, Copilot, and Gemini-compatible agents through committed .agent state. Host rule or SessionStart hook -> shared BOARD/map/log context -> CLI and skill workflows -> verified task handoff. Project maps and skill evidence are Markdown/JSON files backed by Git; there is no database or application authentication layer.",
-    "generatedAt": "2026-08-26T05:18:47.944Z",
-    "sha": "91e1e5f4beb5b3db19dbf0782f4f82583f43e272"
+    "generatedAt": "2026-08-26T05:22:19.036Z",
+    "sha": "028946fd69cf3b5587d91ca01089049765cf2b65"
   },
   "nodes": [
     {
