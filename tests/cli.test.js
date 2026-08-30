@@ -260,3 +260,46 @@ test('hooks install then uninstall round-trips in an isolated settings file', ()
   run('uninstall')
   assert.equal(JSON.stringify(JSON.parse(fs.readFileSync(file, 'utf8')).hooks || {}), '{}')
 })
+
+// The exit code is the whole point: a finding has to be able to stop a hook or a CI job, not just
+// print something nobody reads.
+test('verify exits non-zero on an unproven task and zero once it is proven', () => {
+  const dir = repo()
+  execFileSync(process.execPath, [CLI, 'init'], { cwd: dir, stdio: 'ignore' })
+  const task = path.join(dir, '.agent', 'tasks', 'T-001.md')
+
+  const head = ['---', 'id: T-001', 'owner: claude', 'scope: code.js', 'exit: npm test passes', 'phase: done', '---', '', '## Test', '']
+  fs.writeFileSync(task, head.join('\n'))
+
+  const run = () =>
+    execFileSync(process.execPath, [CLI, 'verify'], { cwd: dir, encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] })
+
+  let failed = null
+  try {
+    run()
+  } catch (err) {
+    failed = err
+  }
+  assert.ok(failed, 'verify must exit non-zero while a done task has no evidence')
+  assert.equal(failed.status, 1)
+  assert.match(failed.stdout, /T-001: no-verify/)
+
+  fs.writeFileSync(task, head.concat(['`npm test` -> 12 passing', '']).join('\n'))
+  assert.match(run(), /tasks: clean/)
+})
+
+test('doctor counts unproven tasks without counting log findings', () => {
+  const dir = repo()
+  execFileSync(process.execPath, [CLI, 'init'], { cwd: dir, stdio: 'ignore' })
+  fs.writeFileSync(
+    path.join(dir, '.agent', 'tasks', 'T-001.md'),
+    ['---', 'id: T-001', 'owner: claude', 'scope: code.js', 'exit:', 'phase: plan', '---', ''].join('\n'),
+  )
+  fs.writeFileSync(
+    path.join(dir, '.agent', 'log', '2026-08-31T1200Z-claude-aaaa1111.md'),
+    ['---', 'session: "aaaa1111"', 'status: "done"', '---', '', '## Verified', ''].join('\n'),
+  )
+
+  const out = execFileSync(process.execPath, [CLI, 'doctor'], { cwd: dir, encoding: 'utf8' })
+  assert.match(out, /tasks {8}1 \(1 unproven/)
+})

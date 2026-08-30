@@ -498,6 +498,30 @@ function cmdRefactor(args) {
   log('read the files before you believe the ranking. See the godkit-refactor skill.')
 }
 
+function cmdVerify(args) {
+  const root = projectRoot(process.cwd())
+  const p = paths(root)
+  if (!fs.existsSync(p.dir)) {
+    log('no .agent/ here — run `godkit init` first')
+    return
+  }
+
+  const findings = require('../lib/contract').checkAll(root)
+  const quiet = args.includes('--quiet')
+
+  if (!quiet) for (const f of findings) log(f.label + ': ' + f.tag + ' - ' + f.message)
+
+  if (!findings.length) {
+    log('tasks: clean.')
+    return
+  }
+  // Every rule here is a resume blocker: without an exit, evidence or handoff the next agent
+  // cannot safely start. Non-zero so a hook or CI can stop on it.
+  if (!quiet) log('')
+  log('tasks: ' + findings.length + ' finding' + (findings.length === 1 ? '' : 's') + ' - all blocking.')
+  process.exitCode = 1
+}
+
 function cmdDoctor() {
   const root = projectRoot(process.cwd())
   const p = paths(root)
@@ -526,6 +550,14 @@ function cmdDoctor() {
       log('    log entries  ' + n)
     } catch {
       log('    log entries  0')
+    }
+    try {
+      const { checkAll, taskEntries } = require('../lib/contract')
+      const total = taskEntries(p.dir).length
+      const bad = new Set(checkAll(root).filter((f) => f.kind === 'task').map((f) => f.label)).size
+      log('    tasks        ' + total + (bad ? ' (' + bad + ' unproven - run `godkit verify`)' : total ? ', all proven' : ''))
+    } catch (err) {
+      log('    tasks        could not check (' + err.message + ')')
     }
 
     const evolve = require('../lib/evolve')
@@ -601,6 +633,9 @@ const HELP = `godkit — one shared harness for every AI agent
   godkit refactor [--all]   re-read the logs: which code files are churned and blamed most
   godkit hooks [status|install|uninstall] [--dry-run]
                             the hook registrations in the claude and codex settings files
+  godkit verify [--quiet]   check .agent/tasks/ and .agent/log/ against the rules the
+                            templates state: an exit condition, evidence behind a done
+                            claim, a handoff behind anything else. Non-zero on findings.
   godkit doctor             what is set up here, and whether the map is stale
   godkit uninstall [tool]   remove the installed skills (leaves your .agent/ alone)
 
@@ -626,6 +661,8 @@ function main() {
       return cmdRefactor(args)
     case 'hooks':
       return cmdHooks(args)
+    case 'verify':
+      return cmdVerify(args)
     case 'doctor':
       return cmdDoctor()
     case 'uninstall':
