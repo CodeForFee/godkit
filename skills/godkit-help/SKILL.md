@@ -95,6 +95,9 @@ godkit skills [--link|--unlink] [tool...] [--force]
                           this project's own skills in .agent/skills/
 godkit evolve [--write]   what the logs say about each one; --write -> .agent/SKILLS.md
 godkit refactor [--all]   what the logs say about each code file: churn, blame, fan-in
+godkit verify [--quiet]   tasks and logs against the rules the templates state: an exit
+                          condition, evidence behind done, a handoff behind everything
+                          else. Non-zero on findings, so a hook or CI can stop on it.
 godkit doctor             what is set up here, and whether the map is stale
 godkit uninstall [tool]   remove installed skills (leaves your .agent/ alone)
 ```

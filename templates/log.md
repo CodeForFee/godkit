@@ -10,26 +10,28 @@ skills: ""            # .agent/skills/ skills you used, comma-separated. Empty i
 
 ## Task
 
-One line. What you were asked to do.
+<!-- One line. What you were asked to do. -->
 
 ## Did
 
-- <what changed> — path/to/file.ts:88
+<!-- What changed. path/to/file.ts:88. Real paths, not "refactored auth". -->
 
 ## Verified
 
-- `<command>` -> <real output>
+<!-- The command run and its real output: `npm test` -> 12 passing.
+     `godkit verify` requires this when status is `done`. "Should work" is not a result. -->
 
 ## Bugs
 
-- fixed B-00N — <symptom>. Root cause <where you actually cut>.
-- found B-00N — <symptom>. Open, added to board.
+<!-- fixed B-00N - the symptom. Root cause: where you actually cut.
+     found B-00N - the symptom. Open, added to the board. -->
 
 ## Decisions
 
-- <what was decided> — <why>.
+<!-- What was decided, and why. -->
 
 ## Left / next
 
-- <what you deliberately did not do>
-- did NOT touch <path> — <agent> holds that claim
+<!-- What you deliberately did not do, and whose claim you stayed off.
+     `godkit verify` requires this when status is `partial` or `blocked` - it is the
+     entire reason the next agent can start. -->

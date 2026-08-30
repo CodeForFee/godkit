@@ -7,26 +7,25 @@ const path = require('path')
 
 const { findAgentContext, logEntries, logName, readContained, sessionSlug } = require('../lib/paths')
 const { readHookInput, sessionId, warning } = require('../lib/session')
+const { checkLog, parseFrontmatter } = require('../lib/contract')
 const { clearWork, didSessionWork } = require('../lib/work')
 
 function frontmatterSession(agentDir, file) {
   const result = readContained(agentDir, file, 4096, false)
   if (!result) return null
-  const block = result.text.match(/^---\r?\n([\s\S]*?)\r?\n---/)
-  if (!block) return null
-  const line = block[1].match(/^session:\s*(.+?)\s*$/mi)
-  return line ? line[1].replace(/^['"]|['"]$/g, '').trim() : null
+  return parseFrontmatter(result.text).session || null
 }
 
-function hasSessionLog(agentDir, sid) {
+// The path, not a boolean: the log has to be read again to see whether it proves anything.
+function sessionLog(agentDir, sid) {
   const short = sessionSlug(sid)
   for (const file of logEntries(agentDir)) {
     const base = path.basename(file)
-    if (short && base.endsWith('-' + short + '.md')) return true
+    if (short && base.endsWith('-' + short + '.md')) return file
     const logged = frontmatterSession(agentDir, file)
-    if (logged === sid || (short && logged === short)) return true
+    if (logged === sid || (short && logged === short)) return file
   }
-  return false
+  return null
 }
 
 function main() {
@@ -40,8 +39,25 @@ function main() {
   const context = findAgentContext(cwd)
   if (!context.agentDir) return
 
-  if (hasSessionLog(context.agentDir, sid)) {
-    clearWork(payload)
+  const written = sessionLog(context.agentDir, sid)
+  if (written) {
+    // One check, not the whole contract: a log claiming `done` with nothing under ## Verified.
+    // Everything else `godkit verify` reports stays advisory — a Stop hook must not become a wall.
+    const unproven = checkLog(context.agentDir, written).find((f) => f.tag === 'no-verify')
+    if (!unproven) {
+      clearWork(payload)
+      return
+    }
+    process.stdout.write(
+      JSON.stringify({
+        decision: 'block',
+        reason:
+          'Your handoff log claims status: done but ## Verified is empty. Put the command you ' +
+          'actually ran and its real output in .agent/log/' + path.basename(written) + ', or set ' +
+          'status: partial and say what is left under Left / next. A passing return value is not ' +
+          'evidence — see godkit-test. `godkit verify` shows every task and log this covers.',
+      }) + '\n',
+    )
     return
   }
 

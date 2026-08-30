@@ -69,7 +69,8 @@ Before retrying at all, isolate the cause: reproduce it with the smallest input 
 
 - **Failed twice the same way** → stop retrying. Read the actual error, trace the actual code. The third attempt does not know more than the second.
 - **Failed differently each time** → you are guessing. Stop and diagnose — see **godkit-review**.
-- **Blocked on something outside your control** (missing credential, a claim you cannot take, a decision only the user can make) → stop, set the task `phase: blocked`, log the exact blocker, tell the user. Do not invent a workaround around a permission.
+- **Blocked on something outside your control** (missing credential, a claim you cannot take, a decision only the user can make) → stop, set the task `phase: blocked`, and set `blocked:` to the kind of blocked it is — `needs-decision`, `needs-evidence`, `external-wait`, or `needs-owner`. Log the exact blocker, tell the user. Do not invent a workaround around a permission. An untyped `blocked` is a `resume-blocked` finding, because it leaves the next agent with no idea whether they can act.
+- **The same typed blocker twice with nothing advanced** → that is not a retry, it is the loop the rule above names, and the breaker is escalation rather than a third attempt. Record it on the task, say so in your Handoff, and hand it to whoever the blocker points at: the user for `needs-decision`, the claim holder for `needs-owner`. `external-wait` never earns a retry at all — pick up other work.
 - **Partial success** → finish every part that is not blocked, then report exactly which parts are outstanding and why. Scaling the task down is the user's call, never yours.
 
 ## Cleanup

@@ -35,6 +35,7 @@ One owner per file. Workers update only their task and unique log; root alone ed
 | T-007 | package, docs, and release contracts | claude | done | `.agent/tasks/T-007-package-docs.md` |
 | T-008 | join verification and handoff | claude | done | `.agent/tasks/T-008-join-handoff.md` |
 | T-010 | public release prep and the refactor seam | claude | done | `.agent/tasks/T-010-release-refactor.md` |
+| T-011 | give the status vocabulary teeth — `godkit verify` | claude | done | `.agent/tasks/T-011-task-contract.md` |
 
 ## Bugs
 
@@ -68,14 +69,23 @@ One owner per file. Workers update only their task and unique log; root alone ed
   there is no refactor at the end of that row.
 - The publish gate is npm trusted publishing (OIDC). npmjs.com must carry `CodeForFee/godkit` +
   `publish.yml` as a trusted publisher BEFORE any `v1.0.0` tag is pushed.
+- `godkit verify` is **structural only** — present, non-empty, not the template placeholder. It
+  never judges whether evidence is good; that stays with `godkit-review`. A fuzzy check would
+  misfire forever and train agents to write around it, which is worse than no check.
+- The Stop hook enforces exactly one contract rule (`no-verify` on a `done` log). The other five
+  stay advisory. A Stop hook that blocks on everything becomes a wall, and the anti-loop guard is
+  the only thing standing between that and a stuck turn.
 
 ## Last 3 handoffs
 
+- 2026-08-31 claude — T-011 done: `godkit verify` reads `.agent/tasks/` and `.agent/log/` back
+  against the rules the templates already stated; clockout now blocks a `done` log with an empty
+  `## Verified`; tasks gained a typed `blocked:`. 188 tests / 186 passed / 2 skipped, and verify
+  is clean on this repo's own 9 tasks and 17 logs. Claim released.
 - 2026-08-26T0520Z claude — T-010 done: godkit-refactor split out of godkit-evolve, B-011 map tour
   fixed, release polish. 167 tests / 166 passed / 1 skipped, pack clean at 81 files. Claim released.
 - 2026-08-22T16:35Z claude — T-008 join: all eight seams done. 160 passed / 0 failed / 1 skipped,
   publish dry run clean, map rebuilt to 160 nodes / 314 edges and current. All claims released.
-- 2026-08-22T16:12Z claude — T-007 done: shipped what init reads, tag-only publish, docs corrected.
 
 ## Open notes
 
