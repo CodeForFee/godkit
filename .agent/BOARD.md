@@ -54,6 +54,12 @@ One owner per file. Workers update only their task and unique log; root alone ed
   `1. **** — ` in the public repo. Root cause is the tour data in `.agent/graph.json`, not
   `renderMap` in `lib/graph.js` — the architect pass emitted `title: ""` and `nodeIds: []` and
   nothing downstream refuses an empty tour. Tour rewritten in T-010; `renderMap` left alone.
+- [x] B-012 Windows CI red since before 2026-08-26 (8 tests) — root cause was two canonicalizers:
+  plain `fs.realpathSync` leaves an 8.3 short name alone while `.native` and git both expand it,
+  so roots and fixtures were two spellings of one directory that compared as different. Fixed in
+  T-012 at `lib/paths.js` (one exported `real()`), not in the individual failing tests. Only
+  reachable when a path component has an 8.3 alias, which is why the runner failed and local
+  never did.
 
 ## Binding decisions
 
@@ -73,6 +79,9 @@ One owner per file. Workers update only their task and unique log; root alone ed
 - `godkit verify` is **structural only** — present, non-empty, not the template placeholder. It
   never judges whether evidence is good; that stays with `godkit-review`. A fuzzy check would
   misfire forever and train agents to write around it, which is worse than no check.
+- **One canonicalizer.** `real()` in `lib/paths.js` is the only path resolver; everything else
+  imports it. Plain `fs.realpathSync` does not expand 8.3 short names and mixing the two produced
+  B-012. A test in `tests/package.test.js` fails if any other file calls it.
 - The Stop hook enforces exactly one contract rule (`no-verify` on a `done` log). The other five
   stay advisory. A Stop hook that blocks on everything becomes a wall, and the anti-loop guard is
   the only thing standing between that and a stuck turn.
