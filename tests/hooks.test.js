@@ -35,7 +35,7 @@ function recordWork(dir, sid, file) {
 function repo() {
   const d = fs.mkdtempSync(path.join(os.tmpdir(), 'godkit-hook-'))
   // realpath: macOS hands back /var, which git then reports as /private/var.
-  const real = fs.realpathSync(d)
+  const real = fs.realpathSync.native(d)
   execFileSync('git', ['init', '-q'], { cwd: real })
   return real
 }

@@ -19,7 +19,7 @@ process.on('exit', () => {
 })
 
 function project() {
-  const dir = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'godkit-contract-')))
+  const dir = fs.realpathSync.native(fs.mkdtempSync(path.join(os.tmpdir(), 'godkit-contract-')))
   trash.push(dir)
   const agent = path.join(dir, '.agent')
   fs.mkdirSync(path.join(agent, 'tasks'), { recursive: true })
@@ -247,7 +247,7 @@ test('checkAll covers both directories and survives an empty project', () => {
 })
 
 test('a project with no .agent/ at all does not throw', () => {
-  const dir = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'godkit-contract-bare-')))
+  const dir = fs.realpathSync.native(fs.mkdtempSync(path.join(os.tmpdir(), 'godkit-contract-bare-')))
   trash.push(dir)
   assert.doesNotThrow(() => contract.checkAll(dir))
 })
