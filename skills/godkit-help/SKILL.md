@@ -77,6 +77,7 @@ Plus: input validation at trust boundaries, error handling that prevents data lo
 | `godkit-lazy` | what to build and what to skip |
 | `godkit-git` | worktrees, commit-as-checkpoint, merging `.agent/` |
 | `godkit-doubt` | pressure-testing a decision before it binds everyone |
+| `godkit-triage` | GitHub issues and PRs: fresh-base diffs, the posting gate, batches |
 | `godkit-frontend` | design taste — dials, banned defaults, 11 style/workflow variants |
 | `godkit-output-enforcement` | catching stubbed or truncated generated output |
 | `godkit-evolve` | capturing, deriving and fixing this project's own skills |

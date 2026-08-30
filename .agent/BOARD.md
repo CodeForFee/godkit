@@ -36,7 +36,7 @@ One owner per file. Workers update only their task and unique log; root alone ed
 | T-008 | join verification and handoff | claude | done | `.agent/tasks/T-008-join-handoff.md` |
 | T-010 | public release prep and the refactor seam | claude | done | `.agent/tasks/T-010-release-refactor.md` |
 | T-011 | give the status vocabulary teeth — `godkit verify` | claude | done | `.agent/tasks/T-011-task-contract.md` |
-| T-012 | one canonicalizer — fix the red Windows CI | claude | done | `.agent/tasks/T-012-windows-path-canonicalization.md` |
+| T-013 | `godkit-triage` — the GitHub comment plane | claude | done | `.agent/tasks/T-013-triage-skill.md` |
 
 ## Bugs
 
@@ -88,9 +88,9 @@ One owner per file. Workers update only their task and unique log; root alone ed
 
 ## Last 3 handoffs
 
-- 2026-08-30 claude — T-012 done: root-caused the long-red Windows CI to two canonicalizers and
-  cut it at `lib/paths.js`. Reproduced locally first with an 8.3 `TMP`, which gives the identical
-  9 failures. 190 tests / 188 passed / 2 skipped under both normal and 8.3 TMP. Claim released.
+- 2026-08-30 claude — T-013 done: added `godkit-triage`, the GitHub comment plane (fresh-base
+  diffs, the confidence x severity posting gate, batch clustering). Prose + `gh`, no code, no
+  dependency. 188 tests / 186 passed / 2 skipped, skills and commands both 16. Claim released.
 - 2026-08-31 claude — T-011 done: `godkit verify` reads `.agent/tasks/` and `.agent/log/` back
   against the rules the templates already stated; clockout now blocks a `done` log with an empty
   `## Verified`; tasks gained a typed `blocked:`. 188 tests / 186 passed / 2 skipped, and verify

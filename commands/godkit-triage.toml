@@ -1,0 +1,2 @@
+description = "Triage GitHub issues and PRs: resolve scope with gh, review against a fresh base, post only what passes the gate"
+prompt = "Use the godkit-triage skill. $ARGUMENTS"
