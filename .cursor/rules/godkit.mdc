@@ -42,7 +42,9 @@ Every session that touched a file, before your turn ends:
 3. **Bug ids `B-NNN` are monotonic and never reused.** A fixed bug stays listed with `[x]`, its **root-cause location** (not the symptom) and its log pointer — that is how the next agent tells "already fixed" from "never looked at".
 4. Commit `.agent/` in the same commit as the code. Separated, they drift.
 
-`status: partial` or `blocked` makes "Left / next" mandatory, and specific enough for a different tool to resume cold. An unlogged session is invisible work — the next agent will assume it never happened, and be right to.
+`status: partial` or `blocked` makes "Left / next" mandatory, and specific enough for a different tool to resume cold. A `blocked` task also names **which kind** of blocked in `blocked:` — `needs-decision`, `needs-evidence`, `external-wait`, or `needs-owner` — so the next agent knows whether they can act. An unlogged session is invisible work — the next agent will assume it never happened, and be right to.
+
+`godkit verify` checks all of this and exits non-zero: an empty `exit:`, a `done` claim with no evidence under `## Test` or `## Verified`, an unfinished task with an empty handoff. A log claiming `done` with nothing verified will not clock out.
 
 ## How to split work
 

@@ -70,7 +70,9 @@ In the task file's `## Test` section, and in your log's `## Verified`:
 
 Real commands, real output. **Never write a verification you did not run.** A fabricated check is worse than no check, because it stops anyone else from running the real one.
 
-If you could not verify something, say so plainly and set the task `phase: blocked` with the reason. "Unverified" is a valid, useful state. "Verified" that was not is a trap.
+If you could not verify something, say so plainly and set the task `phase: blocked` with a typed `blocked:` reason — see **godkit-handoff**. "Unverified" is a valid, useful state. "Verified" that was not is a trap.
+
+`godkit verify` reads these two sections back. A task at `phase: done` with an empty `## Test`, or a log at `status: done` with an empty `## Verified`, is a `no-verify` finding, and the Stop hook will not let that log clock out. The check is structural — it sees whether you wrote anything, never whether the command you wrote proves the claim. That part is still yours, and the ladder above is how you get it right.
 
 ## Rules
 

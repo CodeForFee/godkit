@@ -29,6 +29,7 @@ npx godkit init
 | **[CLI](#cli)** · [Skills](#skills) | the reference |
 | **[Project skills](#project-skills)** · [Evidence](#evidence) | skills a project keeps for itself |
 | **[The project map](#the-project-map)** · [Refactor](#refactor--evolving-the-code) | the codebase graph, and what it says to change |
+| **[Verify](#verify--is-done-actually-done)** | whether a finished claim has anything behind it |
 | **[Design](#design)** · [Development](#development) · [License](#license) | how it is built |
 
 ## Why
@@ -149,6 +150,7 @@ Hooks never throw. Malformed input, missing git, absent `.agent/` — all exit 0
 | `godkit evolve [--write]` | what the logs say about each project skill; `--write` → `.agent/SKILLS.md` |
 | `godkit refactor [--all]` | what the logs say about each code file: churn, blame, fan-in |
 | `godkit hooks [status\|install\|uninstall]` | the hook registrations, with `--dry-run` |
+| `godkit verify [--quiet]` | tasks and logs against the rules the templates state; non-zero on findings |
 | `godkit doctor` | what is set up here, whether the map is stale, and which hooks are registered |
 | `godkit uninstall [tool]` | remove the skills godkit installed (leaves your `.agent/` alone) |
 
@@ -285,6 +287,29 @@ godkit refactor --all    # the whole ranking
 **It ranks attention, not badness**, and the four columns say different things — high blame with low fan-in is a fragile file worth fixing, while high touch with zero blame is usually just the newest feature. Reading the code is not optional, and "nothing is wrong with the top file" is an expected result. The `godkit-refactor` skill is the judgment half; the same split as the map.
 
 Note the division of labour with `godkit evolve`: both read the same log stream, but **evolve evolves procedures** into `.agent/skills/`, and **refactor evolves the source code**.
+
+## Verify — is "done" actually done
+
+The task and log templates state the rules: a task needs a checkable `exit:`, a `done` claim needs the command and its real output, and anything short of done needs a handoff, because that section is the entire reason the next agent can start. Nothing read those files back, so an agent could mark a task done, write a log, clock out clean, and have proven nothing. The next agent then inherits a claim instead of a result.
+
+```bash
+godkit verify            # every task and log, against those rules
+godkit verify --quiet    # the summary line only
+```
+
+```
+T-007: no-verify - phase: done, ## Test empty. Run it and paste the real output.
+T-011: resume-blocked - phase: blocked with no typed reason. Set blocked: needs-decision | ...
+log/2026-08-31T1402Z-claude-9f2a.md: resume-blocked - status: partial, ## Left / next empty.
+
+tasks: 3 findings - all blocking.
+```
+
+Findings use `godkit-review`'s own tags — `no-exit`, `no-verify`, `resume-blocked` — so a verify finding and a review finding read the same. It exits non-zero, so CI and hooks can stop on it, and `godkit doctor` shows the count. The Stop hook enforces exactly one of these rules: a log claiming `status: done` with an empty `## Verified` does not clock out.
+
+A `blocked` task also has to say **which kind** of blocked — `needs-decision`, `needs-evidence`, `external-wait`, or `needs-owner` — because "blocked" alone tells the next agent that work stopped but not whether they can do anything about it.
+
+The check is deliberately **structural**: present, non-empty, not the template's own placeholder comment. It cannot tell whether your evidence is any good, and it does not try — a fuzzy check would misfire forever and teach agents to write around it. Judging the evidence is `godkit-review`'s job.
 
 ## Design
 

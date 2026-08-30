@@ -64,6 +64,7 @@ title: fix token refresh loop
 owner: claude
 scope: src/auth/*        # file globs — this is what makes overlap detectable
 phase: execute           # plan | execute | review | test | done | blocked
+blocked:                 # only when phase is blocked — see below
 exit: `npm test auth` green and no refresh loop over a 2h session
 created: 2026-08-19T1340Z
 ---
@@ -131,6 +132,37 @@ One line. What you were asked to do.
 ```
 
 Sections may be empty. **"Left / next" may not be empty when status is `partial` or `blocked`** — that section is the entire reason the next agent can start.
+
+## What `godkit verify` checks
+
+These were rules nobody enforced, so a task could sit at `done` with nothing behind it and the
+next agent would inherit a claim instead of a result. `godkit verify` reads `.agent/tasks/` and
+`.agent/log/` and reports, using **godkit-review**'s own tags:
+
+| Tag | Fires on |
+|---|---|
+| `no-exit` | a task with an empty `scope:` or `exit:`, or one past `plan` still owned by `unassigned` |
+| `no-verify` | `phase: done` with an empty `## Test`, or `status: done` with an empty `## Verified` |
+| `resume-blocked` | a task past `plan` and short of `done` with an empty `## Handoff`; a log at `partial` or `blocked` with an empty `## Left / next`; a `blocked` task with no typed reason |
+
+It is **structural** — present, non-empty, not the template's own placeholder comment. It cannot
+tell whether your evidence is any good; that is what **godkit-review** is for. It exits non-zero,
+so it works in CI, and the Stop hook enforces exactly one of these: a log claiming `status: done`
+with an empty `## Verified` blocks the clock-out.
+
+### `blocked:` — say which kind of blocked
+
+`blocked` alone tells the next agent that work stopped, not whether they can do anything about
+it. When `phase: blocked`, name the reason:
+
+| Value | The next agent should |
+|---|---|
+| `needs-decision` | ask the user — do not guess and do not proceed |
+| `needs-evidence` | go verify the specific fact, then continue |
+| `external-wait` | not retry; pick up other work and check back |
+| `needs-owner` | check the board and hand it to whoever holds that scope |
+
+Anything else, or nothing, is a `resume-blocked` finding.
 
 ## Clock in
 
