@@ -20,7 +20,7 @@ function run(cwd, args) {
 }
 
 function project() {
-  const d = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'godkit-save-')))
+  const d = fs.realpathSync.native(fs.mkdtempSync(path.join(os.tmpdir(), 'godkit-save-')))
   execFileSync('git', ['init', '-q'], { cwd: d })
   fs.mkdirSync(path.join(d, 'src'), { recursive: true })
   fs.writeFileSync(path.join(d, 'src', 'a.ts'), 'export const a = 1\n')

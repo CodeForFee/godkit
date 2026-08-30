@@ -144,6 +144,39 @@ test('the always-on rules keep the two non-negotiable instructions', () => {
   assert.match(body, /Write your log before you finish/)
 })
 
+// One canonicalizer, or none of the path guards mean anything. Plain fs.realpathSync leaves an
+// 8.3 short name alone while git and realpathSync.native both expand it, so a codebase using both
+// produces two spellings of one directory that compare as different — isInside and samePath then
+// answer false about a file that is plainly inside the project. That cost eight red Windows CI
+// tests. lib/paths.js owns the single implementation, including the fallback; everyone else
+// imports real() from it.
+test('only lib/paths.js resolves a real path, so the two spellings cannot diverge', () => {
+  const owner = path.join('lib', 'paths.js')
+  // Assembled, not written out: a literal here would make this file its own first offender.
+  const needle = 'fs.realpathSync' + '('
+  const offenders = []
+  const walk = (dir) => {
+    for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+      if (e.name === 'node_modules' || e.name === '.git') continue
+      const abs = path.join(dir, e.name)
+      if (e.isDirectory()) {
+        walk(abs)
+        continue
+      }
+      if (!e.name.endsWith('.js')) continue
+      const rel = path.relative(ROOT, abs)
+      if (rel === owner) continue
+      if (fs.readFileSync(abs, 'utf8').includes(needle)) offenders.push(rel)
+    }
+  }
+  walk(ROOT)
+  assert.deepEqual(
+    offenders,
+    [],
+    'use real() from lib/paths.js — plain fs.realpathSync does not expand 8.3 short names',
+  )
+})
+
 test('nothing in the shipped package references the tools it was built alongside', () => {
   const banned = /ponytail|deepseek|understand-anything|cordis|agent-skills|addyosmani|taste-skill|leonxlnx|openspace|open-space|hkuds/i
   const walk = (dir) => {
