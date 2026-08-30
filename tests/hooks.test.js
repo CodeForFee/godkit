@@ -184,3 +184,71 @@ test('map-watch speaks up after a commit when no map has been built', () => {
   assert.match(parsed.hookSpecificOutput.additionalContext, /godkit-map/)
   fs.rmSync(d, { recursive: true, force: true })
 })
+
+// A log file existing is not the same as the work being proven. This is the one contract rule the
+// Stop hook enforces; everything else godkit verify reports stays advisory.
+test('clockout blocks a log that claims done with nothing under Verified', () => {
+  const d = repo()
+  const log = path.join(d, '.agent', 'log')
+  fs.mkdirSync(log, { recursive: true })
+  fs.writeFileSync(path.join(d, 'code.js'), 'changed\n')
+  recordWork(d, 'unpr0001', 'code.js')
+  fs.writeFileSync(
+    path.join(log, '2026-08-31T1200Z-claude-unpr0001.md'),
+    ['---', 'session: "unpr0001"', 'status: "done"', '---', '', '## Verified', '', '<!-- x -->', ''].join('\n'),
+  )
+
+  const decision = JSON.parse(runHook('clockout.js', { cwd: d, session_id: 'unpr0001' }))
+  assert.equal(decision.decision, 'block')
+  assert.match(decision.reason, /## Verified is empty/)
+  fs.rmSync(d, { recursive: true, force: true })
+})
+
+test('clockout accepts the same log once it carries a command and its output', () => {
+  const d = repo()
+  const log = path.join(d, '.agent', 'log')
+  fs.mkdirSync(log, { recursive: true })
+  fs.writeFileSync(path.join(d, 'code.js'), 'changed\n')
+  recordWork(d, 'prov0001', 'code.js')
+  fs.writeFileSync(
+    path.join(log, '2026-08-31T1200Z-claude-prov0001.md'),
+    ['---', 'session: "prov0001"', 'status: "done"', '---', '', '## Verified', '- `npm test` -> 12 passing', ''].join('\n'),
+  )
+
+  assert.equal(runHook('clockout.js', { cwd: d, session_id: 'prov0001' }).trim(), '')
+  fs.rmSync(d, { recursive: true, force: true })
+})
+
+test('an unproven log still cannot block twice in one turn', () => {
+  const d = repo()
+  const log = path.join(d, '.agent', 'log')
+  fs.mkdirSync(log, { recursive: true })
+  fs.writeFileSync(path.join(d, 'code.js'), 'changed\n')
+  recordWork(d, 'loop0002', 'code.js')
+  fs.writeFileSync(
+    path.join(log, '2026-08-31T1200Z-claude-loop0002.md'),
+    ['---', 'session: "loop0002"', 'status: "done"', '---', '', '## Verified', ''].join('\n'),
+  )
+
+  const out = runHook('clockout.js', { cwd: d, session_id: 'loop0002', stop_hook_active: true })
+  assert.equal(out.trim(), '', 'stop_hook_active must short-circuit the evidence check too')
+  fs.rmSync(d, { recursive: true, force: true })
+})
+
+test('a partial log with no handoff is reported by verify but does not block the Stop hook', () => {
+  const d = repo()
+  const log = path.join(d, '.agent', 'log')
+  fs.mkdirSync(log, { recursive: true })
+  fs.writeFileSync(path.join(d, 'code.js'), 'changed\n')
+  recordWork(d, 'part0001', 'code.js')
+  const file = path.join(log, '2026-08-31T1200Z-claude-part0001.md')
+  fs.writeFileSync(
+    file,
+    ['---', 'session: "part0001"', 'status: "partial"', '---', '', '## Left / next', '', '<!-- -->', ''].join('\n'),
+  )
+
+  assert.equal(runHook('clockout.js', { cwd: d, session_id: 'part0001' }).trim(), '')
+  const findings = require('../lib/contract').checkLog(path.join(d, '.agent'), file)
+  assert.deepEqual(findings.map((f) => f.tag), ['resume-blocked'])
+  fs.rmSync(d, { recursive: true, force: true })
+})
