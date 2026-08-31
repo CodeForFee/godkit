@@ -51,7 +51,7 @@
   },
   "scripts": {
     "test": "node --test",
-    "check": "node scripts/sync-rules.js --check && node scripts/sync-hooks.js --check && node scripts/check-versions.js",
+    "check": "node scripts/sync-rules.js --check && node scripts/sync-hooks.js --check && node scripts/sync-templates.js --check && node scripts/check-versions.js",
     "pretest": "npm run check"
   },
   "publishConfig": {

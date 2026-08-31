@@ -1,12 +1,12 @@
 ---
-id: {{ID}}
-title: {{TITLE}}
+id:                   # T-NNN, monotonic, never reused
+title:
 owner: unassigned
-scope:
-exit:
-phase: plan
-blocked:              # needs-decision | needs-evidence | external-wait | needs-owner
-created: {{UTC}}
+scope:                # file globs — this is what makes overlap detectable
+exit:                 # the command that proves this done, not a description of done
+phase: plan           # plan | execute | review | test | done | blocked
+blocked:              # only when phase is blocked: needs-decision | needs-evidence | external-wait | needs-owner
+created:              # UTC, e.g. 2026-08-19T1340Z
 ---
 
 ## Plan

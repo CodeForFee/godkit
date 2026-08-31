@@ -1,9 +1,9 @@
 ---
-agent: "{{AGENT}}"
-session: "{{SESSION}}"
-started: "{{STARTED}}"
-ended: "{{UTC}}"
-scope: "{{SCOPE}}"
+agent: ""             # the tool and model that ran, e.g. claude-opus-5
+session: ""           # the host's session id; the filename carries its first 8 characters
+started: ""
+ended: ""             # UTC, e.g. 2026-08-19T1403Z
+scope: ""             # file globs you actually touched
 status: "done"        # done | partial | blocked
 skills: ""            # .agent/skills/ skills you used, comma-separated. Empty is fine.
 ---

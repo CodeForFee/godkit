@@ -137,6 +137,30 @@ test('the generated rule copies are in sync with AGENTS.md', () => {
   assert.ok(cursor.endsWith(body), 'cursor rules must carry the AGENTS.md body verbatim')
 })
 
+// godkit-handoff has to show the task and log formats inline — an agent installed from npm never
+// sees templates/, it lives under node_modules. That second copy drifted from the first (`exit`
+// changed position in one and not the other) and nothing caught it. The templates are the source
+// now; this asserts the skill agrees even when the suite runs without pretest.
+test('the task and log blocks in godkit-handoff are the templates verbatim', () => {
+  const skill = read(path.join('skills', 'godkit-handoff', 'SKILL.md'))
+  for (const [name, template] of [['task', 'task.md'], ['log', 'log.md']]) {
+    const front = read(path.join('templates', template)).match(/^---\r?\n[\s\S]*?\r?\n---/)
+    assert.ok(front, template + ' has no frontmatter')
+
+    const open = '<!-- godkit:' + name + '-frontmatter -->'
+    const close = '<!-- /godkit:' + name + '-frontmatter -->'
+    const start = skill.indexOf(open)
+    const end = skill.indexOf(close)
+    assert.ok(start !== -1 && end > start, name + ' markers missing from godkit-handoff')
+
+    const block = skill.slice(start + open.length, end)
+    assert.ok(
+      block.includes(front[0].replace(/\r\n/g, '\n')),
+      name + ' block drifted — run `node scripts/sync-templates.js`',
+    )
+  }
+})
+
 test('the always-on rules keep the two non-negotiable instructions', () => {
   // These two sentences are the entire protocol; everything else is elaboration.
   const body = read('AGENTS.md')

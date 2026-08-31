@@ -93,8 +93,44 @@ test('init writes the rules and the .agent scaffold', () => {
   for (const rel of ['AGENTS.md', 'CLAUDE.md', '.cursor/rules/godkit.mdc', '.agents/rules/godkit.md']) {
     assert.match(read(dir, rel), /Read `\.agent\/` before you edit/, rel + ' carries the rules')
   }
-  assert.ok(fs.existsSync(path.join(dir, '.agent', 'BOARD.md')))
-  assert.match(read(dir, '.gitattributes'), /\.agent\/graph\.json -merge/, 'generated map files are not merged textually')
+  for (const rel of ['BOARD.md', 'THREAD.md', 'MAP.md', '.agentignore']) {
+    assert.ok(fs.existsSync(path.join(dir, '.agent', rel)), '.agent/' + rel + ' did not land')
+  }
+  assert.ok(fs.existsSync(path.join(dir, '.agent', 'tasks')), 'tasks/ did not land')
+  assert.ok(fs.existsSync(path.join(dir, '.agent', 'log')), 'log/ did not land')
+
+  const name = path.basename(dir)
+  assert.match(read(dir, '.agent/BOARD.md'), new RegExp('Board — ' + name), 'project name not substituted')
+  assert.match(read(dir, '.agent/THREAD.md'), new RegExp('Thread — ' + name), 'project name not substituted')
+
+  // Every generated file .agent/ owns must be marked, or git writes conflict markers into a file
+  // whose only correct resolution is to re-run the command that produced it.
+  const attrs = read(dir, '.gitattributes')
+  for (const generated of ['graph.json', 'meta.json', 'MAP.md', 'SKILLS.md']) {
+    assert.ok(attrs.includes('.agent/' + generated), generated + ' is generated but not marked -merge')
+  }
+})
+
+// The general guard, not one assertion per variable: tpl() substitutes only PROJECT and UTC, so a
+// template that grows a third placeholder ships it raw into every project that runs init, and
+// nothing else in the suite would notice.
+test('init leaves no unsubstituted placeholder anywhere under .agent/', () => {
+  const dir = repo()
+  cli(dir, 'init')
+
+  const left = []
+  const walk = (d) => {
+    for (const e of fs.readdirSync(d, { withFileTypes: true })) {
+      const abs = path.join(d, e.name)
+      if (e.isDirectory()) {
+        walk(abs)
+        continue
+      }
+      if (fs.readFileSync(abs, 'utf8').includes('{{')) left.push(path.relative(dir, abs))
+    }
+  }
+  walk(path.join(dir, '.agent'))
+  assert.deepEqual(left, [], 'a template placeholder was written out literally')
 })
 
 test('init keeps what the user already wrote in a host file', () => {
