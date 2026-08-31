@@ -55,17 +55,36 @@ treats it as binding.
 
 ### `.agent/tasks/T-NNN-<slug>.md`
 
-One file per task, carrying all five phases as sections that fill in as work moves. Frontmatter is the machine-readable part:
+One file per task, carrying all five phases as sections that fill in as work moves. Frontmatter is the machine-readable part — `godkit verify` parses exactly these fields:
+
+<!-- godkit:task-frontmatter -->
+
+```markdown
+---
+id:                   # T-NNN, monotonic, never reused
+title:
+owner: unassigned
+scope:                # file globs — this is what makes overlap detectable
+exit:                 # the command that proves this done, not a description of done
+phase: plan           # plan | execute | review | test | done | blocked
+blocked:              # only when phase is blocked: needs-decision | needs-evidence | external-wait | needs-owner
+created:              # UTC, e.g. 2026-08-19T1340Z
+---
+```
+
+<!-- /godkit:task-frontmatter -->
+
+Filled in, that reads:
 
 ```markdown
 ---
 id: T-003
 title: fix token refresh loop
 owner: claude
-scope: src/auth/*        # file globs — this is what makes overlap detectable
-phase: execute           # plan | execute | review | test | done | blocked
-blocked:                 # only when phase is blocked — see below
+scope: src/auth/*
 exit: `npm test auth` green and no refresh loop over a 2h session
+phase: execute
+blocked:
 created: 2026-08-19T1340Z
 ---
 
@@ -97,15 +116,33 @@ Use it when another agent must know something to act: you released a claim they 
 
 Filename sorts chronologically: `2026-08-19T1403Z-claude-82df4726.md` — timestamp, tool, then the first 8 characters of the session id if the tool has one.
 
+<!-- godkit:log-frontmatter -->
+
 ```markdown
 ---
-agent: claude-opus-5
-session: 82df4726
-started: 2026-08-19T13:40Z
-ended: 2026-08-19T14:03Z
-scope: src/auth/*
-status: done          # done | partial | blocked
-skills: refresh-fixture-db    # .agent/skills/ skills used. Empty is fine and common.
+agent: ""             # the tool and model that ran, e.g. claude-opus-5
+session: ""           # the host's session id; the filename carries its first 8 characters
+started: ""
+ended: ""             # UTC, e.g. 2026-08-19T1403Z
+scope: ""             # file globs you actually touched
+status: "done"        # done | partial | blocked
+skills: ""            # .agent/skills/ skills you used, comma-separated. Empty is fine.
+---
+```
+
+<!-- /godkit:log-frontmatter -->
+
+A real one, filled in:
+
+```markdown
+---
+agent: "claude-opus-5"
+session: "82df4726"
+started: "2026-08-19T1340Z"
+ended: "2026-08-19T1403Z"
+scope: "src/auth/*"
+status: "done"
+skills: "refresh-fixture-db"
 ---
 
 ## Task

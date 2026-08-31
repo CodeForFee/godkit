@@ -6,8 +6,14 @@
 #   git checkout --ours .agent/graph.json .agent/meta.json .agent/MAP.md
 #   godkit scan && ... && godkit save     # only the delta gets re-analyzed
 #
+# SKILLS.md is the same case, from `godkit evolve --write`: conflict markers there are cosmetic
+# rather than fatal, but the only correct resolution is still to re-run the command that wrote it.
+#
 # The hand-written half (BOARD.md, THREAD.md, log/, tasks/, skills/) is deliberately NOT listed:
 # those hold work a person or agent actually wrote, and a real textual merge is what you want.
+# Note skills/ is the project's own SKILL.md sources — hand-written — while SKILLS.md above is
+# the generated report about them. Different files, opposite treatment.
 .agent/graph.json -merge
 .agent/meta.json  -merge
 .agent/MAP.md     -merge
+.agent/SKILLS.md  -merge
