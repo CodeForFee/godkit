@@ -156,7 +156,7 @@ Hooks never throw. Malformed input, missing git, absent `.agent/` — all exit 0
 
 ## Skills
 
-Fifteen skills ship with godkit and are the same in every project.
+Sixteen skills ship with godkit and are the same in every project.
 
 **Arriving and coordinating**
 
@@ -184,6 +184,7 @@ Fifteen skills ship with godkit and are the same in every project.
 | Skill | Use for |
 |---|---|
 | `godkit-review` | reviewing the process, or diagnosing a failed run |
+| `godkit-triage` | GitHub issues and PRs: fresh-base diffs, the posting gate, batches |
 | `godkit-doubt` | pressure-testing a decision before it binds everyone |
 | `godkit-evolve` | capturing, deriving and fixing this project's own skills |
 | `godkit-help` | quick reference card |
@@ -201,7 +202,7 @@ It injects into every subagent spawned via the Agent tool too — scope that wit
 
 ## Project skills
 
-The fifteen skills above are the same everywhere. A *project* also accumulates its own procedures — a fixture reset, a release check, a migration dance. Those live in `.agent/skills/<name>/SKILL.md`: committed, tool-neutral, and linked into the paths Claude Code and Codex actually read.
+The sixteen skills above are the same everywhere. A *project* also accumulates its own procedures — a fixture reset, a release check, a migration dance. Those live in `.agent/skills/<name>/SKILL.md`: committed, tool-neutral, and linked into the paths Claude Code and Codex actually read.
 
 ```bash
 godkit skills            # origin, safety findings, which hosts see them

@@ -20,7 +20,7 @@ const install = require('../lib/install')
 
 function tmpdir(prefix) {
   const d = fs.mkdtempSync(path.join(os.tmpdir(), prefix))
-  return fs.realpathSync(d)
+  return fs.realpathSync.native(d)
 }
 
 function settingsFile(contents) {

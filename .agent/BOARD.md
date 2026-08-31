@@ -54,6 +54,12 @@ One owner per file. Workers update only their task and unique log; root alone ed
   `1. **** — ` in the public repo. Root cause is the tour data in `.agent/graph.json`, not
   `renderMap` in `lib/graph.js` — the architect pass emitted `title: ""` and `nodeIds: []` and
   nothing downstream refuses an empty tour. Tour rewritten in T-010; `renderMap` left alone.
+- [x] B-012 Windows CI red since before 2026-08-26 (8 tests) — root cause was two canonicalizers:
+  plain `fs.realpathSync` leaves an 8.3 short name alone while `.native` and git both expand it,
+  so roots and fixtures were two spellings of one directory that compared as different. Fixed in
+  T-012 at `lib/paths.js` (one exported `real()`), not in the individual failing tests. Only
+  reachable when a path component has an 8.3 alias, which is why the runner failed and local
+  never did.
 
 - [ ] B-013 `godkit init` must never be run inside the godkit repo itself: it appends AGENTS.md's
   own body back into AGENTS.md, CLAUDE.md and the cursor rules, because here AGENTS.md is the
@@ -89,6 +95,9 @@ One owner per file. Workers update only their task and unique log; root alone ed
 
 ## Last 3 handoffs
 
+- 2026-08-30 claude — T-013 done: added `godkit-triage`, the GitHub comment plane (fresh-base
+  diffs, the confidence x severity posting gate, batch clustering). Prose + `gh`, no code, no
+  dependency. 188 tests / 186 passed / 2 skipped, skills and commands both 16. Claim released.
 - 2026-08-31 claude — T-011 done: `godkit verify` reads `.agent/tasks/` and `.agent/log/` back
   against the rules the templates already stated; clockout now blocks a `done` log with an empty
   `## Verified`; tasks gained a typed `blocked:`. 188 tests / 186 passed / 2 skipped, and verify

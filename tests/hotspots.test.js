@@ -20,7 +20,7 @@ afterEach(() => {
 
 // A project carrying only what hotspots reads: a graph naming the files, and log entries.
 function project(files, logs) {
-  const d = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'godkit-hot-')))
+  const d = fs.realpathSync.native(fs.mkdtempSync(path.join(os.tmpdir(), 'godkit-hot-')))
   PROJECTS.add(d)
   const agent = path.join(d, '.agent')
   fs.mkdirSync(path.join(agent, 'log'), { recursive: true })

@@ -28,7 +28,7 @@ process.on('exit', () => {
 })
 
 function repo() {
-  const dir = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'godkit-rt-')))
+  const dir = fs.realpathSync.native(fs.mkdtempSync(path.join(os.tmpdir(), 'godkit-rt-')))
   trash.push(dir)
   execFileSync('git', ['init', '-q'], { cwd: dir })
   execFileSync('git', ['config', 'user.email', 'test@example.com'], { cwd: dir })
@@ -55,7 +55,7 @@ test('a linked worktree reads the main worktree .agent/, not its own checkout', 
 })
 
 test('outside a repo the context is the directory itself and has no .agent', () => {
-  const dir = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'godkit-bare-')))
+  const dir = fs.realpathSync.native(fs.mkdtempSync(path.join(os.tmpdir(), 'godkit-bare-')))
   trash.push(dir)
   const context = paths.findAgentContext(dir)
   assert.equal(context.agentDir, null)
@@ -226,4 +226,49 @@ test('lazy refuses a mode it does not know, and off is not an activation', () =>
   assert.throws(() => lazy.setMode({ session_id: 'lazy-c' }, 'turbo'), /invalid lazy mode/)
   assert.throws(() => lazy.setMode({ session_id: 'lazy-c' }, 'off'), /invalid lazy mode/)
   assert.equal(lazy.readMode({ session_id: 'lazy-c' }), null)
+})
+
+// The roots come back canonical from real(); a path the host hands us does not have to be. On
+// Windows CI that gap was an 8.3 short name (C:\Users\RUNNER~1\...), which resolves to the same
+// directory and compares as a different one, so eight tests failed and every edit went
+// unrecorded. A junction reproduces the same shape on any platform and needs no elevation.
+test('an edit reaching the repo through a link is still this session\'s work', (t) => {
+  const base = fs.realpathSync.native(fs.mkdtempSync(path.join(os.tmpdir(), 'godkit-alias-')))
+  trash.push(base)
+  const dir = path.join(base, 'repo')
+  fs.mkdirSync(dir)
+  execFileSync('git', ['init', '-q'], { cwd: dir })
+  fs.mkdirSync(path.join(dir, '.agent', 'log'), { recursive: true })
+  fs.writeFileSync(path.join(dir, 'code.js'), 'const a = 1\n')
+
+  const alias = path.join(base, 'alias')
+  try {
+    fs.symlinkSync(dir, alias, 'junction')
+  } catch {
+    return t.skip('links not permitted in this environment')
+  }
+
+  const context = paths.findAgentContext(dir)
+  const viaAlias = path.join(alias, 'code.js')
+  // The raw comparison is the bug: same file, different string, so the guard says "not ours".
+  assert.equal(paths.isInside(context.stateRoot, viaAlias), false, 'fixture must be non-canonical')
+
+  assert.equal(
+    work.recordDirectEdit(
+      { session_id: 'alias-edit', cwd: dir, tool_name: 'Edit', tool_input: { file_path: viaAlias } },
+      context,
+    ),
+    true,
+    'an edit through a link is still an edit — canonicalize before comparing',
+  )
+  assert.equal(work.didSessionWork({ session_id: 'alias-edit' }), true)
+
+  // .agent/ stays excluded no matter which path shape names it.
+  assert.equal(
+    work.recordDirectEdit(
+      { session_id: 'alias-agent', cwd: dir, tool_name: 'Edit', tool_input: { file_path: path.join(alias, '.agent', 'BOARD.md') } },
+      context,
+    ),
+    false,
+  )
 })

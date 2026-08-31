@@ -21,7 +21,7 @@ process.on('exit', () => {
 })
 
 function repo(commit) {
-  const dir = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'godkit-cli-')))
+  const dir = fs.realpathSync.native(fs.mkdtempSync(path.join(os.tmpdir(), 'godkit-cli-')))
   trash.push(dir)
   const git = (...args) => execFileSync('git', args, { cwd: dir, stdio: 'ignore' })
   git('init', '-q')
@@ -257,7 +257,7 @@ test('a map built at a commit this repo no longer has is stale, never fresh', ()
 })
 
 test('no git at all is unknown, not fresh', () => {
-  const dir = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'godkit-nogit-')))
+  const dir = fs.realpathSync.native(fs.mkdtempSync(path.join(os.tmpdir(), 'godkit-nogit-')))
   trash.push(dir)
   const meta = path.join(dir, 'meta.json')
   fs.writeFileSync(meta, JSON.stringify({ sha: 'a'.repeat(40) }))
@@ -271,7 +271,7 @@ test('no git at all is unknown, not fresh', () => {
 
 test('the hooks subcommand reports without changing anything', () => {
   const dir = repo()
-  const home = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'godkit-home-')))
+  const home = fs.realpathSync.native(fs.mkdtempSync(path.join(os.tmpdir(), 'godkit-home-')))
   trash.push(home)
   const out = execFileSync(process.execPath, [CLI, 'hooks', 'status'], {
     cwd: dir,
@@ -283,7 +283,7 @@ test('the hooks subcommand reports without changing anything', () => {
 
 test('hooks install then uninstall round-trips in an isolated settings file', () => {
   const dir = repo()
-  const home = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'godkit-home-')))
+  const home = fs.realpathSync.native(fs.mkdtempSync(path.join(os.tmpdir(), 'godkit-home-')))
   trash.push(home)
   const env = { ...process.env, CLAUDE_CONFIG_DIR: home, CODEX_HOME: path.join(home, 'codex') }
   const run = (...args) =>
