@@ -16,4 +16,7 @@ so nothing here is ever published to the registry.
 
 ## Deploying
 
-Vercel, with **Root Directory set to `site`**. Everything else is in `vercel.json`.
+Vercel, with **Root Directory set to `site`** — without that it builds the repo root, finds the
+CLI package, and serves nothing. Framework preset is deliberately **Other**, not SvelteKit: this
+uses `adapter-static` and emits plain files into `build/`, while the SvelteKit preset goes looking
+for `.vercel/output` and 404s. Everything else is already in `vercel.json`.
