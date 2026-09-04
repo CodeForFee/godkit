@@ -7,8 +7,8 @@
     ],
     "frameworks": [],
     "description": "One shared harness for every AI agent. Godkit puts a committed .agent/ directory in a repo - board, thread, map, sprints, tasks, logs - and teaches Claude Code, Cursor, Codex and Antigravity to read it before editing and write to it before finishing, so work is not redone and two agents never edit one file. A zero-dependency Node CLI plus sixteen skills, published as @codeforfee/godkit. The CLI owns only what a machine can decide; everywhere judgment starts, it stops and hands off to a skill.",
-    "generatedAt": "2026-09-04T20:56:52.961Z",
-    "sha": "0cb9ddf57d712a79816772833f34a5d1d170439d"
+    "generatedAt": "2026-09-04T20:57:46.880Z",
+    "sha": "623d37964eb146997b1d628a073391cd1b143b7c"
   },
   "nodes": [
     {
@@ -2836,22 +2836,6 @@
       "complexity": "moderate"
     },
     {
-      "id": "file:site/src/routes/+page.svelte",
-      "type": "file",
-      "name": "+page.svelte",
-      "filePath": "site/src/routes/+page.svelte",
-      "lineRange": [
-        1,
-        1
-      ],
-      "summary": "The whole landing page: hero, the private-memory-vs-shared-state scene, the six-step session protocol, the .agent/ tree, sprint waves, model identity, hosts and the CLI. One file on purpose - it is one document, and splitting it would buy nothing.",
-      "tags": [
-        "site",
-        "ui"
-      ],
-      "complexity": "moderate"
-    },
-    {
       "id": "file:site/src/lib/motion.js",
       "type": "file",
       "name": "motion.js",
@@ -2945,6 +2929,22 @@
       "tags": [
         "site",
         "deploy"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:site/src/routes/+page.svelte",
+      "type": "file",
+      "name": "+page.svelte",
+      "filePath": "site/src/routes/+page.svelte",
+      "lineRange": [
+        1,
+        1
+      ],
+      "summary": "The whole landing page: hero, the private-memory-vs-shared-state scene, the six-step session protocol, the .agent/ tree, sprint waves, model identity, hosts and the CLI. One file on purpose - it is one document.",
+      "tags": [
+        "site",
+        "ui"
       ],
       "complexity": "moderate"
     }
