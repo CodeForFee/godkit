@@ -7,8 +7,8 @@
     ],
     "frameworks": [],
     "description": "One shared harness for every AI agent. Godkit puts a committed .agent/ directory in a repo - board, thread, map, sprints, tasks, logs - and teaches Claude Code, Cursor, Codex and Antigravity to read it before editing and write to it before finishing, so work is not redone and two agents never edit one file. A zero-dependency Node CLI plus sixteen skills, published as @codeforfee/godkit. The CLI owns only what a machine can decide; everywhere judgment starts, it stops and hands off to a skill.",
-    "generatedAt": "2026-09-04T20:57:46.880Z",
-    "sha": "623d37964eb146997b1d628a073391cd1b143b7c"
+    "generatedAt": "2026-09-04T20:58:34.717Z",
+    "sha": "44eb15a7a69b17682fc33db64646ea8e0ae9344c"
   },
   "nodes": [
     {
@@ -2917,22 +2917,6 @@
       "complexity": "moderate"
     },
     {
-      "id": "file:site/vercel.json",
-      "type": "file",
-      "name": "vercel.json",
-      "filePath": "site/vercel.json",
-      "lineRange": [
-        1,
-        1
-      ],
-      "summary": "Build command, output directory and security headers for Vercel. Root Directory must be set to `site`.",
-      "tags": [
-        "site",
-        "deploy"
-      ],
-      "complexity": "moderate"
-    },
-    {
       "id": "file:site/src/routes/+page.svelte",
       "type": "file",
       "name": "+page.svelte",
@@ -2945,6 +2929,22 @@
       "tags": [
         "site",
         "ui"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:site/vercel.json",
+      "type": "file",
+      "name": "vercel.json",
+      "filePath": "site/vercel.json",
+      "lineRange": [
+        1,
+        1
+      ],
+      "summary": "Vercel is told this is a STATIC project (framework: null), not the SvelteKit preset: adapter-static emits plain files into build/, while the preset looks for .vercel/output and would deploy green then serve 404. Root Directory must be set to `site` in the dashboard - that part cannot live in this file.",
+      "tags": [
+        "site",
+        "deploy"
       ],
       "complexity": "moderate"
     }
