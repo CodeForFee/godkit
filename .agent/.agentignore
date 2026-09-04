@@ -15,3 +15,8 @@ pnpm-lock.yaml
 yarn.lock
 .git/
 .agent/
+
+# The landing page. Its own project, its own dependencies; mapping it would bury the CLI.
+site/node_modules/
+site/build/
+site/.svelte-kit/
