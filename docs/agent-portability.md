@@ -19,7 +19,7 @@ Godkit targets four tools. They agree on almost nothing, so the package keeps **
 Anything not listed reads a plain root `AGENTS.md`, which `godkit init` writes — so an unlisted tool still gets the protocol, just without skills or hooks.
 
 **The `commands/` directory only reaches a host through a plugin or extension install**, where the
-host discovers it inside the package directory. `npm install -g godkit` places the skills, not the
+host discovers it inside the package directory. `npm install -g @codeforfee/godkit` places the skills, not the
 commands — the invocation row above describes the plugin install. Nothing places `.toml` command
 files into a host's own commands directory, deliberately: that path is the user's, and one file
 per skill dropped into it is a lot of someone else's clutter.

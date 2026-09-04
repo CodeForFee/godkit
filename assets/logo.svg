@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" role="img" aria-label="Godkit">
+  <!-- Four agents, one shared centre. The centre is .agent/ — the only memory they all open. -->
+  <g fill="none" stroke="#334155" stroke-width="5" stroke-linecap="round">
+    <path d="M64 34v14M64 80v14M34 64h14M80 64h14"/>
+  </g>
+  <g fill="none" stroke="#334155" stroke-width="5">
+    <rect x="49" y="9" width="30" height="25" rx="6"/>
+    <rect x="49" y="94" width="30" height="25" rx="6"/>
+    <rect x="9" y="49" width="25" height="30" rx="6"/>
+    <rect x="94" y="49" width="25" height="30" rx="6"/>
+  </g>
+  <rect x="46" y="46" width="36" height="36" rx="9" fill="#d97706"/>
+  <g stroke="#ffffff" stroke-width="4" stroke-linecap="round">
+    <path d="M55 58h18M55 64h18M55 70h11"/>
+  </g>
+</svg>

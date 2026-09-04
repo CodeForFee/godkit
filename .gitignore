@@ -5,3 +5,4 @@ node_modules/
 .agent/tmp/
 .agent/.trash-*
 .worktrees/
+.agent

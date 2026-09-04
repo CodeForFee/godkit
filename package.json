@@ -1,5 +1,5 @@
 {
-  "name": "godkit",
+  "name": "@codeforfee/godkit",
   "version": "1.0.0",
   "description": "One shared harness for every AI agent. Any agent entering your repo reads the same board, map and thread — so nothing is redone and nobody edits the same file twice.",
   "keywords": [

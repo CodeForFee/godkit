@@ -8,7 +8,7 @@ First public release.
 
 ### Install
 
-- `npx godkit init` is the whole install. It scaffolds `.agent/` and the per-tool rule files into the project and, the first time only, places the skills and registers the hooks on this machine. A machine already set up is left alone, so running `init` in your next repo touches nothing outside it. `--no-install` does the project half only.
+- `npx @codeforfee/godkit init` is the whole install. It scaffolds `.agent/` and the per-tool rule files into the project and, the first time only, places the skills and registers the hooks on this machine. A machine already set up is left alone, so running `init` in your next repo touches nothing outside it. `--no-install` does the project half only.
 - `godkit init --new` for a project with no code yet: no map is built, because there is nothing to map. You get `.agent/BRIEF.md` — what this is, who for, the stack, and the non-goals — and the first sprint is cut from that.
 - `godkit --version`.
 
