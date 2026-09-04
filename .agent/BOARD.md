@@ -144,9 +144,13 @@ One owner per file. Workers update only their task and unique log; root alone ed
 - Nothing is claimed. `main` is the only branch now, local and remote, and it is pushed. All the
   merged `godkit/*` branches are deleted.
 - The map is current and stamped at the release commit. GitHub topics and homepage are set.
-- **The one thing left, and it is one-way:** not published to npm and not tagged. The
-  trusted-publisher registration has to exist on npmjs.com first — see the binding decision
-  above. `godkit` was free on the registry (404) as of 2026-08-26; unclaimed means claimable by
-  anyone, so this is not a decision to sit on indefinitely.
+- **Published.** `@codeforfee/godkit@1.0.0` is live, tagged `v1.0.0` at e420478, verified by
+  installing it from the registry into a clean directory and scaffolding a project with it.
+  The bare name `godkit` is permanently unpublishable: npm refuses it as too similar to the
+  existing `god-kit`. That is why the package is scoped and the plugin manifests are not.
+  The first publish was manual, from a logged-in machine, because **trusted publishing cannot
+  bootstrap a package that does not exist yet** — npm has nothing to attach the publisher to.
+  Register `CodeForFee/godkit` + `publish.yml` as the trusted publisher now that it exists, and
+  every version from 1.0.1 on goes out through the tag workflow with provenance.
 - This machine has 3 of 10 hooks registered from an older install — `godkit hooks install` fixes
   that, and writing real home config is still nobody's mandate.
