@@ -1,7 +1,7 @@
 ---
 id: T-006
 title: CLI, freshness, and managed init
-owner: claude
+owner: unrecorded     # predates the model-id rule; not back-filled
 scope: bin/godkit.js, lib/freshness.js, lib/managed.js, tests/cli.test.js
 exit: Partial save, managed init, ownership, doctor, and hook subcommands work end-to-end
 phase: done

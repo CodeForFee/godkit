@@ -1,7 +1,7 @@
 ---
 id: T-013
 title: godkit-triage — the GitHub comment plane
-owner: claude
+owner: unrecorded     # predates the model-id rule; not back-filled
 scope: skills/godkit-triage/SKILL.md, commands/godkit-triage.toml, skills/godkit-help/SKILL.md, README.md
 exit: `npm test` green, including the one-command-per-skill contract at tests/package.test.js:87
 phase: done

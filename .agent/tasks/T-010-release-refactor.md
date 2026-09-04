@@ -1,7 +1,7 @@
 ---
 id: T-010
 title: public release prep and the refactor seam
-owner: claude
+owner: unrecorded     # predates the model-id rule; not back-filled
 scope: lib/hotspots.js, bin/godkit.js, lib/evolve.js, skills/godkit-refactor/*, skills/godkit-evolve/SKILL.md, skills/godkit-help/SKILL.md, commands/godkit-refactor.toml, tests/hotspots.test.js, tests/graph.test.js, README.md, CHANGELOG.md, .gitignore
 exit: npm test green, `godkit refactor` prints a ranked table, `godkit doctor` reports 15 skills and a current map, main fast-forwarded and pushed
 phase: done

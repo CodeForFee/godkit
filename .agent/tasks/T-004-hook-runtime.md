@@ -1,7 +1,7 @@
 ---
 id: T-004
 title: Hook runtime and session isolation
-owner: Singer
+owner: unrecorded     # predates the model-id rule; not back-filled
 scope: lib/paths.js, lib/lazy.js, lib/session.js, lib/work.js, runtime hooks except installer/config, focused hook tests
 exit: Safe agent context, bounded brief, isolated lazy/work state, exact clockout regressions pass
 phase: done

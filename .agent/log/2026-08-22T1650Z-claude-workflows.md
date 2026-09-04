@@ -1,5 +1,5 @@
 ---
-agent: claude
+agent: "unrecorded"   # predates the model-id rule; not back-filled
 session: workflows-audit
 started: 2026-08-22T16:45:00Z
 ended: 2026-08-22T16:55:00Z

@@ -12,7 +12,9 @@ const { execFileSync } = require('node:child_process')
 const CLI = path.resolve(__dirname, '..', 'bin', 'godkit.js')
 
 function run(cwd, args) {
-  return execFileSync(process.execPath, [CLI, ...args], {
+  // --no-install: this suite tests the project scaffold, never the machine one. See tests/cli.test.js.
+  const argv = args[0] === 'init' ? args.concat('--no-install') : args
+  return execFileSync(process.execPath, [CLI, ...argv], {
     cwd,
     encoding: 'utf8',
     stdio: ['ignore', 'pipe', 'pipe'],

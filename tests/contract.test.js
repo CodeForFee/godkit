@@ -49,7 +49,7 @@ test('a task that proves itself reports nothing', () => {
     [
       '---',
       'id: T-001',
-      'owner: claude',
+      'owner: claude-opus-5',
       'scope: lib/contract.js',
       'exit: npm test passes',
       'phase: done',
@@ -71,7 +71,7 @@ test('a done task with only the template comment under Test is not proven', () =
     [
       '---',
       'id: T-002',
-      'owner: claude',
+      'owner: claude-opus-5',
       'scope: src/api',
       'exit: the endpoint returns 200',
       'phase: done',
@@ -91,7 +91,7 @@ test('a missing Test heading fails the same way an empty one does', () => {
   const file = task(
     agent,
     'T-003.md',
-    ['---', 'id: T-003', 'owner: claude', 'scope: src', 'exit: tests pass', 'phase: done', '---', ''].join('\n'),
+    ['---', 'id: T-003', 'owner: claude-opus-5', 'scope: src', 'exit: tests pass', 'phase: done', '---', ''].join('\n'),
   )
   assert.deepEqual(tags(contract.checkTask(agent, file)), ['no-verify'])
 })
@@ -101,7 +101,7 @@ test('an empty exit condition means nothing can prove the task done', () => {
   const file = task(
     agent,
     'T-004.md',
-    ['---', 'id: T-004', 'owner: claude', 'scope: src', 'exit:', 'phase: plan', '---', ''].join('\n'),
+    ['---', 'id: T-004', 'owner: claude-opus-5', 'scope: src', 'exit:', 'phase: plan', '---', ''].join('\n'),
   )
   assert.deepEqual(tags(contract.checkTask(agent, file)), ['no-exit'])
 })
@@ -126,7 +126,7 @@ test('an unfinished task with an empty Handoff leaves the next agent nothing', (
     [
       '---',
       'id: T-007',
-      'owner: codex',
+      'owner: codex-5.6-terra',
       'scope: src',
       'exit: tests pass',
       'phase: review',
@@ -143,7 +143,7 @@ test('an unfinished task with an empty Handoff leaves the next agent nothing', (
 
 test('a blocked task must say which kind of blocked it is', () => {
   const { agent } = project()
-  const head = ['---', 'id: T-008', 'owner: codex', 'scope: src', 'exit: tests pass', 'phase: blocked']
+  const head = ['---', 'id: T-008', 'owner: codex-5.6-terra', 'scope: src', 'exit: tests pass', 'phase: blocked']
   const tail = ['---', '', '## Handoff', '- waiting on the staging key', '']
 
   const untyped = task(agent, 'T-008.md', head.concat(tail).join('\n'))
@@ -178,7 +178,7 @@ test('a log claiming done with an empty Verified proves nothing', () => {
   const file = entry(
     agent,
     '2026-08-31T1200Z-claude-aaaa1111.md',
-    ['---', 'agent: "claude"', 'session: "aaaa1111"', 'status: "done"', '---', '', '## Verified', '', '<!-- x -->', ''].join('\n'),
+    ['---', 'agent: "claude-opus-5"', 'session: "aaaa1111"', 'status: "done"', '---', '', '## Verified', '', '<!-- x -->', ''].join('\n'),
   )
   assert.deepEqual(tags(contract.checkLog(agent, file)), ['no-verify'])
 })
@@ -188,7 +188,7 @@ test('a log carrying a real command and its output is accepted', () => {
   const file = entry(
     agent,
     '2026-08-31T1201Z-claude-bbbb2222.md',
-    ['---', 'agent: "claude"', 'session: "bbbb2222"', 'status: "done"', '---', '', '## Verified', '- `npm test` -> 12 passing', ''].join('\n'),
+    ['---', 'agent: "claude-opus-5"', 'session: "bbbb2222"', 'status: "done"', '---', '', '## Verified', '- `npm test` -> 12 passing', ''].join('\n'),
   )
   assert.deepEqual(contract.checkLog(agent, file), [])
 })
@@ -199,14 +199,14 @@ test('a partial or blocked log must say what is left', () => {
     const bad = entry(
       agent,
       '2026-08-31T1202Z-claude-' + status + '.md',
-      ['---', 'session: "s"', 'status: "' + status + '"', '---', '', '## Verified', '- `npm test` -> ok', '', '## Left / next', '', '<!-- -->', ''].join('\n'),
+      ['---', 'agent: "claude-opus-5"', 'session: "s"', 'status: "' + status + '"', '---', '', '## Verified', '- `npm test` -> ok', '', '## Left / next', '', '<!-- -->', ''].join('\n'),
     )
     assert.deepEqual(tags(contract.checkLog(agent, bad)), ['resume-blocked'], status)
 
     const good = entry(
       agent,
       '2026-08-31T1203Z-claude-' + status + '-ok.md',
-      ['---', 'session: "s"', 'status: "' + status + '"', '---', '', '## Left / next', '- the migration is still unwritten', ''].join('\n'),
+      ['---', 'agent: "claude-opus-5"', 'session: "s"', 'status: "' + status + '"', '---', '', '## Left / next', '- the migration is still unwritten', ''].join('\n'),
     )
     assert.deepEqual(contract.checkLog(agent, good), [], status + ' with a real handoff')
   }
@@ -217,7 +217,35 @@ test('the shipped log template does not pass its own checks as done', () => {
   const template = fs.readFileSync(path.join(__dirname, '..', 'templates', 'log.md'), 'utf8')
   assert.equal(contract.parseFrontmatter(template).status, 'done')
   const file = entry(agent, '2026-08-31T1204Z-claude-cccc3333.md', template)
-  assert.deepEqual(tags(contract.checkLog(agent, file)), ['no-verify'])
+  // Two findings, both deliberate: the template ships `status: done` with an empty ## Verified AND
+  // an empty `agent:`. Saying who you are is as much a part of clocking out as the evidence is.
+  assert.deepEqual(tags(contract.checkLog(agent, file)), ['no-identity', 'no-verify'])
+})
+
+test('a tool name where a model id belongs is refused, in tasks and in logs', () => {
+  // One tool runs many models. A log signed "claude" cannot tell the next agent whether the
+  // unproven claim in it came from a frontier model or a cheap one, which is the whole question.
+  const { agent } = project()
+
+  const bare = task(agent, 'T-030.md',
+    ['---', 'id: T-030', 'owner: claude', 'scope: src', 'exit: npm test', 'phase: execute', '---',
+     '', '## Handoff', '- pick up at src/a.ts', ''].join('\n'))
+  assert.deepEqual(tags(contract.checkTask(agent, bare)), ['no-identity'])
+
+  const versioned = task(agent, 'T-031.md',
+    ['---', 'id: T-031', 'owner: codex-5.6-terra', 'scope: src', 'exit: npm test', 'phase: execute',
+     '---', '', '## Handoff', '- pick up at src/a.ts', ''].join('\n'))
+  assert.deepEqual(contract.checkTask(agent, versioned), [])
+
+  // phase: plan is exempt — a seam nobody has claimed yet has no model to name.
+  const unclaimed = task(agent, 'T-032.md',
+    ['---', 'id: T-032', 'owner: unassigned', 'scope: src', 'exit: npm test', 'phase: plan', '---', ''].join('\n'))
+  assert.deepEqual(contract.checkTask(agent, unclaimed), [])
+
+  const log = entry(agent, '2026-08-31T1206Z-claude-eeee5555.md',
+    ['---', 'agent: "cursor"', 'session: "e"', 'status: "partial"', '---', '',
+     '## Left / next', '- the migration is still unwritten', ''].join('\n'))
+  assert.deepEqual(tags(contract.checkLog(agent, log)), ['no-identity'])
 })
 
 test('a symlinked task is refused rather than followed', (t) => {
@@ -239,7 +267,7 @@ test('checkAll covers both directories and survives an empty project', () => {
   assert.deepEqual(contract.checkAll(dir), [])
 
   task(agent, 'T-020.md', ['---', 'id: T-020', 'owner: c', 'scope: s', 'exit:', 'phase: plan', '---', ''].join('\n'))
-  entry(agent, '2026-08-31T1205Z-claude-dddd4444.md', ['---', 'session: "d"', 'status: "done"', '---', '', '## Verified', ''].join('\n'))
+  entry(agent, '2026-08-31T1205Z-claude-dddd4444.md', ['---', 'agent: "claude-opus-5"', 'session: "d"', 'status: "done"', '---', '', '## Verified', ''].join('\n'))
 
   const findings = contract.checkAll(dir)
   assert.deepEqual(findings.map((f) => f.kind).sort(), ['log', 'task'])

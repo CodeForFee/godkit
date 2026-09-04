@@ -1,13 +1,12 @@
 ---
 name: godkit-refactor
 description: >
-  Evolve the project's source code from what the shared .agent/ state already knows: which files
-  are churned session after session, which ones keep turning up as the root cause of a bug, and
-  who depends on them. Ranks the hotspots, then reads the code to decide whether there is a real
-  change to make. Use when the user says "refactor this", "clean up the code", "what should we
-  improve", "where is the tech debt", "why do we keep breaking this file", "evolve the code", or
-  after a run where the same file was fixed for the third time. Do NOT use to write or repair
-  skills in .agent/skills/ — that is godkit-evolve, which evolves procedures, not code.
+  Evolve the source from what .agent/ already knows: which files churn session after session, which
+  keep turning up as a bug's root cause, and who depends on them. Ranks hotspots, then reads the
+  code to decide whether there is a real change to make. Use on "refactor this", "clean up the
+  code", "where is the tech debt", "why do we keep breaking this file", "evolve the code", or after
+  the same file is fixed a third time. Do NOT use to write or repair skills in .agent/skills/ —
+  that is godkit-evolve, which evolves procedures, not code.
 argument-hint: "[path or file]"
 license: MIT
 ---

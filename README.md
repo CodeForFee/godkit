@@ -66,13 +66,31 @@ Append-only everywhere is deliberate: **one log file per session** means two too
 
 ## Install
 
+One command, in the repo you want it in:
+
+```bash
+npx godkit init
+```
+
+That scaffolds `.agent/` and the per-tool rule files into the project, and — the first time only — places the skills and registers the hooks on this machine. A machine that is already set up is left alone, so re-running `init` in your next repo touches nothing outside it.
+
+New project, nothing written yet:
+
+```bash
+npx godkit init --new
+```
+
+No map is built, because there is no code to map. You get `.agent/BRIEF.md` instead — what this is, who for, the stack, and the non-goals — and the first sprint is cut from that.
+
+If you would rather do the machine half yourself, or you are scripting it:
+
 ```bash
 npm install -g godkit
 
-godkit install       # place the skills once per machine
-godkit hooks install # register the hooks (claude, codex)
-godkit init          # scaffold .agent/ + rule files into the current repo
-godkit doctor        # what is set up, and whether the map is stale
+godkit install            # place the skills once per machine
+godkit hooks install      # register the hooks (claude, codex)
+godkit init --no-install  # project only, nothing outside it
+godkit doctor             # what is set up, and whether the map is stale
 ```
 
 `godkit install` places the skills once per machine; `godkit init` writes the rule files once per project. Every rule file is generated from a single `AGENTS.md`, so they cannot drift apart — CI byte-compares them.
@@ -139,6 +157,14 @@ Re-running is safe: it drops its own previous entries first and writes a `.bak`.
 Hooks never throw. Malformed input, missing git, absent `.agent/` — all exit 0. A broken hook must not break the session it was meant to help.
 
 ## CLI
+
+```bash
+godkit --version                # the installed version
+godkit init [--new] [--no-install]
+godkit sprint new "ship auth"   # open a sprint: a goal plus waves of file-disjoint tasks
+godkit sprint                   # what is in the current one, and whether it can close
+godkit sprint close             # refuses while any task is unfinished or unproven
+```
 
 | Command | Does |
 |---|---|

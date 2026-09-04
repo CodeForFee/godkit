@@ -2,21 +2,26 @@
 
 One screen. Current truth. Rewritten often. Read this before you edit anything.
 
+**Sprint:** none — `godkit sprint new "<goal>"` opens one
+
 ## Roster
 
-| provider | can | cost | use for |
-|---|---|---|---|
-| claude-code | repo-wide, shell, plan | high | root cause, multi-file refactor, cutting seams |
-| cursor | open files, shell | low | single-file edits, tests, stubs |
-| codex | repo, shell | low | mechanical passes, scripted repeats |
-| antigravity | repo, browser | low | UI work, verification against a running app |
-| commands | rg, test suite, tsc | free | every "does X / did it pass" question |
+Name the **model**, not the tool. One tool runs many models, and cost and capability belong to the
+model. These rows are examples — replace them with the models this project actually uses.
 
-Route by capability first, then cheapest. Delete rows for tools this project does not use.
+| model | tool | can | cost | use for |
+|---|---|---|---|---|
+| claude-opus-5 | claude-code | repo-wide, shell, plan | high | root cause, multi-file refactor, cutting seams |
+| claude-sonnet-5 | claude-code, cursor | repo-wide, shell | mid | scoped edits, tests, review passes |
+| codex-5.6-terra | codex | repo, shell | mid | mechanical passes, scripted repeats |
+| gemini-3.8-flash | antigravity | repo, browser | low | UI work, verification against a running app |
+| commands | — | rg, test suite, tsc | free | every "does X / did it pass" question |
+
+Route by capability first, then cheapest. Delete rows for models this project does not use.
 
 ## Now (claims)
 
-| agent | scope (file globs) | task | since (UTC) | status |
+| model | scope (file globs) | task | since (UTC) | status |
 |---|---|---|---|---|
 
 One owner per file. If your scope overlaps an open row, do not edit — see AGENTS.md.

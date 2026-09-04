@@ -1,14 +1,12 @@
 ---
 name: godkit-plan
 description: >
-  Decompose a task into seams that several agents or tools can work without colliding: read the
-  shared state first, cut on file boundaries, give every seam a scope, an exit condition and a
-  verification, assign an owner from the roster, then write each one out as a task file under
-  .agent/tasks/ and claim what you are taking. Use when a task is too big for one turn, when
-  work must be split across Claude, Cursor, Codex or Antigravity, when the user says "plan
-  this", "split this up", "break this down", "who should do what", "can we parallelize this",
-  or before any multi-file change where two agents might touch the same file. Do NOT use for
-  work that fits in one turn — planning it costs more than doing it.
+  Cut a task into seams several agents can work without colliding: read shared state first, split
+  on FILE boundaries, give each seam a scope, exit condition and verification, assign an owner from
+  the roster, write them to .agent/tasks/ and claim yours. Use when a task is too big for one turn,
+  when work spans Claude, Cursor, Codex or Antigravity, on "plan this", "split this up", "break
+  this down", "who should do what", "can we parallelize this", or before any multi-file change two
+  agents might collide on. Do NOT use for work that fits in one turn.
 license: MIT
 ---
 

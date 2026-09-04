@@ -1,7 +1,7 @@
 ---
 id: T-005
 title: Install lifecycle ownership
-owner: claude
+owner: unrecorded     # predates the model-id rule; not back-filled
 scope: lib/install.js, hooks/install.js, scripts/uninstall.js, scripts/sync-hooks.js, hooks/godkit-hooks.json, installer tests
 exit: Foreign skills/hooks survive; mixed groups preserved; Claude/Codex writes atomic and correct
 phase: done

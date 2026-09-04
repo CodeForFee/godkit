@@ -1,7 +1,8 @@
 ---
 id:                   # T-NNN, monotonic, never reused
 title:
-owner: unassigned
+owner: unassigned     # a model id once claimed — claude-opus-5, codex-5.6-terra, gemini-3.6-pro.
+                      # The tool name is not an owner: one tool runs many models.
 scope:                # file globs — this is what makes overlap detectable
 exit:                 # the command that proves this done, not a description of done
 phase: plan           # plan | execute | review | test | done | blocked

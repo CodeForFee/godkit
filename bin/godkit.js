@@ -26,6 +26,10 @@ function log(msg) {
   process.stdout.write(msg + '\n')
 }
 
+function version() {
+  return require('../package.json').version
+}
+
 function tpl(name, vars) {
   let s = fs.readFileSync(path.join(TEMPLATES, name), 'utf8')
   for (const [k, v] of Object.entries(vars || {})) s = s.split('{{' + k + '}}').join(v)
@@ -84,8 +88,43 @@ function skillPairs(spec, names) {
   return { base, pairs: names.map((n) => [path.join(SKILLS, n), path.join(base, n)]) }
 }
 
+// Whether this machine already has the skills placed and the hooks registered for every tool that
+// takes them. False on a first run, true forever after — which is what keeps `init` from touching
+// home config it has nothing to add to.
+function machineReady() {
+  const names = skillNames()
+  if (!names.length) return true // nothing to install; not our problem to report here
+
+  for (const spec of Object.values(TOOLS)) {
+    if (spec.style === 'rules-only') continue
+    const base = path.join(os.homedir(), ...spec.dir)
+    const probe = spec.style === 'folder' ? path.join(base, 'godkit') : path.join(base, names[0])
+    if (!fs.existsSync(probe)) return false
+  }
+
+  const lib = require('../lib/install')
+  for (const [, file] of lib.settingsTargets()) {
+    let record
+    try {
+      record = lib.readSettings(file)
+    } catch {
+      return true // unreadable settings are cmdHooks' problem to report, not init's to overwrite
+    }
+    let found = 0
+    for (const groups of Object.values((record.settings.hooks) || {})) {
+      for (const group of groups || []) {
+        for (const handler of (group && group.hooks) || []) if (lib.isOurHandler(handler)) found++
+      }
+    }
+    if (found < lib.HOOKS.length) return false
+  }
+  return true
+}
+
 function cmdInit(args) {
-  const root = args[0] ? path.resolve(args[0]) : projectRoot(process.cwd())
+  const given = args.find((a) => !a.startsWith('-'))
+  const root = given ? path.resolve(given) : projectRoot(process.cwd())
+  const greenfield = args.includes('--new')
   const p = paths(root)
   const name = path.basename(root)
   const vars = { PROJECT: name, UTC: utcStamp() }
@@ -98,6 +137,10 @@ function cmdInit(args) {
   if (writeIfAbsent(p.thread, tpl('THREAD.md', vars))) wrote.push('.agent/THREAD.md')
   if (writeIfAbsent(p.map, tpl('MAP.md', vars))) wrote.push('.agent/MAP.md')
   if (writeIfAbsent(p.ignore, tpl('.agentignore', vars))) wrote.push('.agent/.agentignore')
+  // Greenfield has nothing to map, so the brief takes the map's place as the thing that says what
+  // this project is. Non-goals is the load-bearing line: on an empty repo it is the only thing
+  // stopping an agent from inventing scope.
+  if (greenfield && writeIfAbsent(p.brief, tpl('BRIEF.md', vars))) wrote.push('.agent/BRIEF.md')
 
   // The always-on rules, at the path each host already reads. These files belong to the user as
   // much as to us, so our text goes in a marked block and everything outside it is left alone.
@@ -126,9 +169,30 @@ function cmdInit(args) {
   if (wrote.length) for (const w of wrote) log('  + ' + w)
   else log('  already set up — nothing to write')
   for (const r of refused) log('  ! ' + r)
+
+  // The machine half, in the same command: three commands to get started is three chances to run
+  // one and believe you ran all of them. `installOne` still refuses any destination it does not
+  // own, so this only ever adds what is missing.
+  //
+  // Only when something IS missing, though. `init` is run per project and re-run freely, and
+  // rewriting ~/.claude/settings.json on every one of those is churn at best — and on Windows, an
+  // EPERM as soon as two of them land together. A machine gets set up once.
+  if (!args.includes('--no-install') && !machineReady()) {
+    log('')
+    cmdInstall([])
+    log('')
+    cmdHooks(['install'])
+  }
+
   log('')
-  log('Next: run the godkit-map skill to build the project map, then claim your scope on')
-  log('.agent/BOARD.md before you edit.')
+  if (greenfield) {
+    log('Next: fill in .agent/BRIEF.md — what this is, for whom, the stack, and the non-goals.')
+    log('Then `godkit sprint new "<goal>"` and cut the first wave from it. No map yet: there is')
+    log('no code to map.')
+  } else {
+    log('Next: run the godkit-map skill to build the project map, then claim your scope on')
+    log('.agent/BOARD.md before you edit.')
+  }
 }
 
 function cmdInstall(args) {
@@ -498,6 +562,74 @@ function cmdRefactor(args) {
   log('read the files before you believe the ranking. See the godkit-refactor skill.')
 }
 
+// A sprint is a goal plus waves of file-disjoint tasks. The CLI only does what a machine can do:
+// create the file, resolve the task ids the wave table names, and refuse to close while any of
+// them is unfinished. Cutting the waves is judgment — that lives in the godkit skill.
+function cmdSprint(args) {
+  const root = projectRoot(process.cwd())
+  const p = paths(root)
+  const sprint = require('../lib/sprint')
+  const action = args.find((a) => !a.startsWith('-'))
+
+  if (action === 'new') {
+    const goal = args.slice(args.indexOf('new') + 1).filter((a) => !a.startsWith('-')).join(' ').trim()
+    if (!goal) {
+      log('godkit sprint new "<goal>" — a sprint without a goal is a list, not a sprint')
+      process.exitCode = 1
+      return
+    }
+    fs.mkdirSync(p.sprints, { recursive: true })
+    const id = sprint.nextId(p.dir)
+    const file = path.join(p.sprints, id + '.md')
+    writeIfAbsent(file, tpl('sprint.md', { ID: id, GOAL: goal, UTC: utcStamp() }))
+    log(id + ' opened — .agent/sprints/' + id + '.md')
+    log('  ' + goal)
+    log('')
+    log('Next: cut the goal into waves of file-disjoint tasks, write each as .agent/tasks/T-NNN-*.md,')
+    log('and name their ids in the wave table. Two tasks that share a file go in different waves.')
+    return
+  }
+
+  const open = sprint.current(p.dir)
+  if (!open) {
+    log('no sprints in .agent/sprints/ — `godkit sprint new "<goal>"` opens one')
+    return
+  }
+
+  if (action === 'close') {
+    const blockers = sprint.blockers(p.dir, open)
+    if (blockers.length) {
+      log(open.id + ': cannot close — ' + blockers.length + ' blocker' + (blockers.length === 1 ? '' : 's'))
+      for (const b of blockers) log('  ' + b)
+      process.exitCode = 1
+      return
+    }
+    require('../lib/graph').atomicWriteFile(open.file, sprint.close(p.dir, open))
+    log(open.id + ' closed — every task done, every one with evidence.')
+    return
+  }
+
+  log(open.id + '  ' + open.status + '  ' + open.goal)
+  log('')
+  const rows = sprint.tasks(p.dir, open)
+  if (!rows.length) {
+    log('  no tasks named in the wave table yet')
+    return
+  }
+  log('  ' + 'task'.padEnd(9) + 'owner'.padEnd(20) + 'phase'.padEnd(10) + 'state')
+  for (const t of rows) {
+    if (t.missing) {
+      log('  ' + t.id.padEnd(9) + '—'.padEnd(20) + '—'.padEnd(10) + 'NO TASK FILE')
+      continue
+    }
+    const state = t.findings.length ? t.findings.map((f) => f.tag).join(' ') : t.phase === 'done' ? 'proven' : 'ok'
+    log('  ' + t.id.padEnd(9) + t.owner.padEnd(20) + t.phase.padEnd(10) + state)
+  }
+  const blockers = sprint.blockers(p.dir, open)
+  log('')
+  log(blockers.length ? blockers.length + ' blocker(s) — `godkit sprint close` lists them' : 'closeable — `godkit sprint close`')
+}
+
 function cmdVerify(args) {
   const root = projectRoot(process.cwd())
   const p = paths(root)
@@ -525,6 +657,7 @@ function cmdVerify(args) {
 function cmdDoctor() {
   const root = projectRoot(process.cwd())
   const p = paths(root)
+  log('godkit ' + version())
   log('project: ' + root)
   log('')
 
@@ -536,12 +669,18 @@ function cmdDoctor() {
       ['THREAD.md', p.thread],
       ['MAP.md', p.map],
       ['graph.json', p.graph],
-    ]) {
+    ].concat(fs.existsSync(p.brief) ? [['BRIEF.md', p.brief]] : [])) {
       log('    ' + label.padEnd(14) + (fs.existsSync(file) ? 'ok' : 'missing'))
     }
     try {
-      const { staleness, summary } = require('../lib/freshness')
-      log('    map          ' + summary(staleness(root, p.meta)))
+      // A greenfield project has no code yet, so "MISSING" is a false alarm — the brief is
+      // standing in for the map until there is something to map.
+      if (fs.existsSync(p.brief) && !fs.existsSync(p.graph)) {
+        log('    map          greenfield — no code to map yet (.agent/BRIEF.md is the brief)')
+      } else {
+        const { staleness, summary } = require('../lib/freshness')
+        log('    map          ' + summary(staleness(root, p.meta)))
+      }
     } catch (err) {
       log('    map          could not check (' + err.message + ')')
     }
@@ -621,10 +760,18 @@ function cmdUninstall(args) {
 
 const HELP = `godkit — one shared harness for every AI agent
 
-  godkit init [path]        scaffold .agent/ and the per-tool rule files into a project
+  godkit init [path] [--new] [--no-install]
+                            scaffold .agent/ and the per-tool rule files into a project, and
+                            install the skills and hooks on this machine. --new is greenfield:
+                            no map, a .agent/BRIEF.md instead. --no-install skips the machine
+                            half.
   godkit install [tool...]  install the skills for claude, codex, antigravity (default: all)
   godkit scan [path]        walk the project and group it into batches for the map
   godkit save [file]        save a merged graph as the map (graph.json, MAP.md, meta.json)
+  godkit sprint [new "<goal>"|close]
+                            a sprint is a goal plus waves of file-disjoint tasks. No argument
+                            reports the current one; close refuses while any task in it is
+                            unfinished or finished with nothing under ## Test.
   godkit skills [--link|--unlink] [tool...] [--force]
                             this project's own skills in .agent/skills/: list them, or link
                             them into the paths claude and codex read
@@ -638,8 +785,10 @@ const HELP = `godkit — one shared harness for every AI agent
                             claim, a handoff behind anything else. Non-zero on findings.
   godkit doctor             what is set up here, and whether the map is stale
   godkit uninstall [tool]   remove the installed skills (leaves your .agent/ alone)
+  godkit --version          the installed version
 
-After init, run the godkit-map skill to build the project map.
+After init, run the godkit-map skill to build the project map. On a new project, init --new
+writes a brief instead, and there is nothing to map yet.
 `
 
 function main() {
@@ -653,6 +802,8 @@ function main() {
       return cmdScan(args)
     case 'save':
       return cmdSave(args)
+    case 'sprint':
+      return cmdSprint(args)
     case 'skills':
       return cmdSkills(args)
     case 'evolve':
@@ -667,6 +818,10 @@ function main() {
       return cmdDoctor()
     case 'uninstall':
       return cmdUninstall(args)
+    case 'version':
+    case '--version':
+    case '-v':
+      return log(version())
     case undefined:
     case 'help':
     case '--help':

@@ -17,8 +17,12 @@ const LIMITS = {
 }
 
 const REMINDER =
-  'Claim your scope on the board before you edit. If your files overlap an open claim, do not ' +
-  'edit them. Write your exact-session log entry before this session ends.'
+'Claim your scope on the board before you edit. If your files overlap an open claim, do not ' +
+'edit them. Sign the claim and your log with the MODEL you are running as (claude-opus-5, ' +
+'claude-sonnet-5, claude-opus-4.8, claude-opus-4.7, claude-opus-4.6, claude-sonnet-4.6, ' +
+'claude-fable-5, codex-5.6-sol, codex-5.6-terra, codex-5.6-luna, codex-5.5, gemini-3.8-flash, ' +
+'gemini-3.7-flash, gemini-3.6-pro, gemini-3.1) — not the tool name. Write your exact-session log ' +
+'entry before this session ends.'
 
 function clippedRead(agentDir, file, limit, tail) {
   const { fitBytes, readContained } = require('../lib/paths')

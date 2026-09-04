@@ -1,7 +1,7 @@
 ---
 id: T-011
 title: give the status vocabulary teeth — godkit verify
-owner: claude
+owner: unrecorded     # predates the model-id rule; not back-filled
 scope: lib/contract.js, bin/godkit.js, hooks/clockout.js, templates/*.md, skills/godkit-{handoff,execute,test,help}/SKILL.md, AGENTS.md, README.md, tests/{contract,cli,hooks}.test.js
 exit: `npm test` green, and `godkit verify` reports clean on this repo's own 9 tasks and 17 logs
 phase: done

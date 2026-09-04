@@ -244,7 +244,9 @@ test('the packed tarball can actually run godkit init', () => {
       fs.copyFileSync(path.join(ROOT, rel), dest)
     }
 
-    const out = execFileSync(process.execPath, [path.join(installed, 'bin', 'godkit.js'), 'init'], {
+    // --no-install: this asserts the PACKED files are complete enough to scaffold a project, not
+    // that running the suite should place skills into the real home directory.
+    const out = execFileSync(process.execPath, [path.join(installed, 'bin', 'godkit.js'), 'init', '--no-install'], {
       cwd: project,
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'pipe'],

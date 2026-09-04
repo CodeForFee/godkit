@@ -244,7 +244,7 @@ test('a partial log with no handoff is reported by verify but does not block the
   const file = path.join(log, '2026-08-31T1200Z-claude-part0001.md')
   fs.writeFileSync(
     file,
-    ['---', 'session: "part0001"', 'status: "partial"', '---', '', '## Left / next', '', '<!-- -->', ''].join('\n'),
+    ['---', 'agent: "claude-opus-5"', 'session: "part0001"', 'status: "partial"', '---', '', '## Left / next', '', '<!-- -->', ''].join('\n'),
   )
 
   assert.equal(runHook('clockout.js', { cwd: d, session_id: 'part0001' }).trim(), '')

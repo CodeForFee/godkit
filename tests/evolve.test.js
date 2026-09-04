@@ -32,7 +32,7 @@ function project() {
   const d = fs.realpathSync.native(fs.mkdtempSync(path.join(os.tmpdir(), 'godkit-evolve-')))
   PROJECTS.add(d)
   execFileSync('git', ['init', '-q'], { cwd: d })
-  run(d, ['init'])
+  run(d, ['init', '--no-install'])
   return d
 }
 

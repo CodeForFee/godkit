@@ -1,11 +1,11 @@
 ---
 name: godkit-help
 description: >
-  Quick reference card for godkit — the shared .agent/ layout, the two non-negotiable rules, the
-  ladders, the skill set, the CLI commands and the install paths for Claude Code, Cursor, Codex
-  and Antigravity. Use when the user says "godkit help", "/godkit-help", "what godkit commands
-  are there", "how does this work", "what skills are available", "where does .agent go", or asks
-  how to install or set up godkit. One-shot display, not a mode.
+  Quick reference card for godkit: the .agent/ layout, the two non-negotiable rules, the ladders,
+  the skill set, the CLI commands, and the install paths for Claude Code, Cursor, Codex and
+  Antigravity. Use on "godkit help", "/godkit-help", "what godkit commands are there", "how does
+  this work", "what skills are available", "where does .agent go", or how to install or set it up.
+  One-shot display, not a mode.
 license: MIT
 ---
 

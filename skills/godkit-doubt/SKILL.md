@@ -1,12 +1,11 @@
 ---
 name: godkit-doubt
 description: >
-  Pressure-test a non-trivial decision before it goes on the board — once it is in
-  .agent/BOARD.md under Decisions, every future agent treats it as binding. Use before writing
-  a new Decisions entry, when a choice is hard to reverse, when the user says "are you sure",
-  "argue the other side", "is this actually right", or before locking in an architectural
-  choice more than one agent will build on. Do NOT use for postmortems on a decision already
-  acted on — that is godkit-review's Diagnose mode.
+  Pressure-test a non-trivial decision before it goes on the board — once it is under Decisions in
+  .agent/BOARD.md, every future agent treats it as binding. Use before writing a Decisions entry,
+  when a choice is hard to reverse, before locking an architectural choice others will build on, or
+  on "are you sure", "argue the other side", "is this actually right". Do NOT use for postmortems
+  on a decision already acted on — that is godkit-review's Diagnose mode.
 license: MIT
 ---
 

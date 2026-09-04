@@ -1,7 +1,7 @@
 ---
 id: T-012
 title: one canonicalizer — fix the red Windows CI
-owner: claude
+owner: unrecorded     # predates the model-id rule; not back-filled
 scope: lib/paths.js, lib/work.js, lib/install.js, lib/evolve.js, tests/*.test.js
 exit: the full suite green with TMP pointed at an 8.3 short path, which reproduces the runner
 phase: done

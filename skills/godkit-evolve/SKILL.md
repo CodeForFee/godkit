@@ -1,15 +1,12 @@
 ---
 name: godkit-evolve
 description: >
-  Write and maintain this project's own skills in .agent/skills/ — capture a procedure the logs
-  show being repeated, derive a narrower variant of an existing skill, or fix one that led to a
-  failure. Use when the same shaped job shows up in three or more log entries, when
-  `godkit skills` reports a skill demoted or blocked, when the user says "capture this",
-  "make this a skill", "we keep doing this by hand", "fix that skill", or after finishing work
-  that a future session would want the recipe for. This evolves PROCEDURES, not source code —
-  for evolving the code itself use godkit-refactor. Do NOT use for the skills this package ships
-  — those are edited in the package, not here. Do NOT use to decide what work to do next
-  (godkit-plan) or whether work is verified (godkit-test).
+  Write and maintain this project's own skills in .agent/skills/: capture a procedure the logs show
+  repeating, narrow an existing one, or fix one that led to a failure. Use when the same shaped job
+  appears in three or more log entries, when `godkit skills` reports one demoted or blocked, or on
+  "capture this", "make this a skill", "we keep doing this by hand". Evolves PROCEDURES — for
+  source code use godkit-refactor. Do NOT use for the skills this package ships, for deciding what
+  to do next (godkit-plan), or for whether work is verified (godkit-test).
 license: MIT
 ---
 

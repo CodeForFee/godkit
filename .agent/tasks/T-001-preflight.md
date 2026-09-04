@@ -1,7 +1,7 @@
 ---
 id: T-001
 title: Preflight and map checkpoint
-owner: root
+owner: unrecorded     # predates the model-id rule; not back-filled
 scope: .agent/**
 exit: Full map saved with --replace; doctor current; shared tasks and claims committed
 phase: done

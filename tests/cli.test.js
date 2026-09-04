@@ -42,8 +42,11 @@ function commitAll(dir) {
   execFileSync('git', ['commit', '-qm', 'scaffold'], { cwd: dir, stdio: 'ignore' })
 }
 
+// --no-install on every init: these tests measure the PROJECT half. Letting them run the
+// machine half would place skills into the real ~/.claude of whoever ran the suite, and have every
+// parallel test file race to rewrite one settings.json.
 const cli = (dir, ...args) =>
-  execFileSync(process.execPath, [CLI, ...args], { cwd: dir, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] })
+  execFileSync(process.execPath, [CLI, ...(args[0] === 'init' ? args.concat('--no-install') : args)], { cwd: dir, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] })
 
 const read = (dir, rel) => fs.readFileSync(path.join(dir, rel), 'utf8')
 
@@ -269,6 +272,51 @@ test('no git at all is unknown, not fresh', () => {
 
 // --- install ownership through the CLI --------------------------------------------------------
 
+test('--version answers, and agrees with the manifest', () => {
+  // The first thing anyone types when they suspect a CLI is stale. It used to fall through to the
+  // unknown-command branch and exit 1.
+  const dir = repo()
+  assert.equal(cli(dir, '--version').trim(), require('../package.json').version)
+  assert.equal(cli(dir, '-v').trim(), require('../package.json').version)
+})
+
+test('init --new writes a brief instead of pointing at a map that cannot exist', () => {
+  const dir = repo()
+  const out = cli(dir, 'init', '--new')
+  assert.match(out, /\.agent\/BRIEF\.md/)
+  const brief = read(dir, '.agent/BRIEF.md')
+  assert.match(brief, /## Non-goals/)  // the one section that stops invented scope on an empty repo
+  assert.doesNotMatch(out, /godkit-map/)
+
+  // And doctor must not call an empty repo's missing map a fault.
+  commitAll(dir)
+  assert.match(cli(dir, 'doctor'), /map\s+greenfield/)
+})
+
+test('a plain init still points at the map, and writes no brief', () => {
+  const dir = repo()
+  const out = cli(dir, 'init')
+  assert.match(out, /godkit-map/)
+  assert.equal(fs.existsSync(path.join(dir, '.agent', 'BRIEF.md')), false)
+})
+
+test('sprint refuses to close a goal whose task has no evidence', () => {
+  const dir = repo()
+  cli(dir, 'init')
+  assert.match(cli(dir, 'sprint', 'new', 'ship auth'), /S-001 opened/)
+
+  // Named in the wave table, but nobody wrote the task: reported, never silently skipped.
+  fs.appendFileSync(path.join(dir, '.agent', 'sprints', 'S-001.md'), '| 1 | T-001 |' + '\n')
+  assert.throws(() => cli(dir, 'sprint', 'close'), /Command failed/)
+
+  fs.writeFileSync(path.join(dir, '.agent', 'tasks', 'T-001-x.md'),
+    ['---', 'id: T-001', 'owner: claude-opus-5', 'scope: code.js', 'exit: npm test', 'phase: done',
+     '---', '', '## Test', '- `npm test` -> 12 pass', ''].join('\n'))
+  assert.match(cli(dir, 'sprint'), /T-001\s+claude-opus-5\s+done\s+proven/)
+  assert.match(cli(dir, 'sprint', 'close'), /S-001 closed/)
+  assert.match(read(dir, '.agent/sprints/S-001.md'), /^status: closed$/m)
+})
+
 test('the hooks subcommand reports without changing anything', () => {
   const dir = repo()
   const home = fs.realpathSync.native(fs.mkdtempSync(path.join(os.tmpdir(), 'godkit-home-')))
@@ -301,10 +349,10 @@ test('hooks install then uninstall round-trips in an isolated settings file', ()
 // print something nobody reads.
 test('verify exits non-zero on an unproven task and zero once it is proven', () => {
   const dir = repo()
-  execFileSync(process.execPath, [CLI, 'init'], { cwd: dir, stdio: 'ignore' })
+  execFileSync(process.execPath, [CLI, 'init', '--no-install'], { cwd: dir, stdio: 'ignore' })
   const task = path.join(dir, '.agent', 'tasks', 'T-001.md')
 
-  const head = ['---', 'id: T-001', 'owner: claude', 'scope: code.js', 'exit: npm test passes', 'phase: done', '---', '', '## Test', '']
+  const head = ['---', 'id: T-001', 'owner: claude-opus-5', 'scope: code.js', 'exit: npm test passes', 'phase: done', '---', '', '## Test', '']
   fs.writeFileSync(task, head.join('\n'))
 
   const run = () =>
@@ -326,10 +374,10 @@ test('verify exits non-zero on an unproven task and zero once it is proven', () 
 
 test('doctor counts unproven tasks without counting log findings', () => {
   const dir = repo()
-  execFileSync(process.execPath, [CLI, 'init'], { cwd: dir, stdio: 'ignore' })
+  execFileSync(process.execPath, [CLI, 'init', '--no-install'], { cwd: dir, stdio: 'ignore' })
   fs.writeFileSync(
     path.join(dir, '.agent', 'tasks', 'T-001.md'),
-    ['---', 'id: T-001', 'owner: claude', 'scope: code.js', 'exit:', 'phase: plan', '---', ''].join('\n'),
+    ['---', 'id: T-001', 'owner: claude-opus-5', 'scope: code.js', 'exit:', 'phase: plan', '---', ''].join('\n'),
   )
   fs.writeFileSync(
     path.join(dir, '.agent', 'log', '2026-08-31T1200Z-claude-aaaa1111.md'),

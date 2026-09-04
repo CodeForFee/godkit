@@ -1,7 +1,7 @@
 ---
 id: T-002
 title: Evolve snapshot and evidence safety
-owner: Hooke
+owner: unrecorded     # predates the model-id rule; not back-filled
 scope: lib/evolve.js, templates/log.md, tests/evolve.test.js
 exit: Snapshot, quarantine, parser, trust, and cleanup regressions pass
 phase: done

@@ -23,6 +23,14 @@ Before your first edit, every session:
 4. Check the bug list before fixing anything. Already `[x]`? Either it regressed — new id, say so — or you were about to redo finished work.
 5. **Claim your scope** on the board: file globs, your task, UTC time, `wip`.
 
+**Sign your work with your model, never your tool.** `claude-opus-5`, `claude-sonnet-5`,
+`codex-5.6-terra`, `codex-5.6-sol`, `gemini-3.6-pro`, `gemini-3.8-flash` — not `claude`, `codex`,
+`cursor`, `antigravity`. One tool runs many models with different strengths, costs and failure
+modes, and the next agent reading your log has to know which one made the call it is about to
+trust. State it in your board claim, your task `owner:`, and your log's `agent:`. If you are not
+certain of your own exact model id, say so and ask — do not guess, and do not fall back to the
+tool name. `godkit verify` rejects a bare tool name.
+
 No `.agent/` directory? Create it and continue. One time, ten seconds, do not ask permission.
 
 **If your scope overlaps an open claim, stop. Do not edit.** Take a non-overlapping seam; or do something the holder listed under Handoff for a *different* file; or, if the claim is over 24h old, mark it `stale`, take it over, and say so in your log. Never two owners on one file.

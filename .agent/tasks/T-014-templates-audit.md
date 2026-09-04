@@ -1,7 +1,7 @@
 ---
 id: T-014
 title: templates audit — one source per fact, nothing orphaned
-owner: claude
+owner: unrecorded     # predates the model-id rule; not back-filled
 scope: scripts/sync-templates.js, templates/*, skills/godkit-handoff/SKILL.md, package.json, .gitattributes, tests/{cli,package}.test.js
 exit: `npm test` green, and `sync-templates.js --check` exits non-zero on a drifted template
 phase: done

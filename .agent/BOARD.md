@@ -37,6 +37,7 @@ One owner per file. Workers update only their task and unique log; root alone ed
 | T-010 | public release prep and the refactor seam | claude | done | `.agent/tasks/T-010-release-refactor.md` |
 | T-011 | give the status vocabulary teeth — `godkit verify` | claude | done | `.agent/tasks/T-011-task-contract.md` |
 | T-014 | templates audit — one source per fact | claude | done | `.agent/tasks/T-014-templates-audit.md` |
+| T-015 | v1.1: one-command install, greenfield, sprint, model identity, lazy rewrite | claude-opus-5 | done | `.agent/tasks/T-015-v11-product.md` |
 
 ## Bugs
 
@@ -61,6 +62,16 @@ One owner per file. Workers update only their task and unique log; root alone ed
   reachable when a path component has an 8.3 alias, which is why the runner failed and local
   never did.
 
+- [x] B-014 `godkit init` rewrote `~/.claude/settings.json` on every call once init started doing
+  the machine half, so parallel test files raced on one rename and Windows returned EPERM. Root
+  cause was `writeSettings` in `lib/install.js`, which wrote unconditionally even when the new body
+  was byte-identical to the old — not the tests, and not the new init behaviour on its own. Fixed
+  at `lib/install.js:206` (no-op when unchanged) plus `machineReady()` in `bin/godkit.js`, so init
+  only touches home config when something is actually missing.
+- [x] B-015 `lib/sprint.js` read `T-NNN` ids out of HTML comments, so the shipped sprint template's
+  worked example reported two tasks nobody wrote as missing on every fresh sprint. Root cause was
+  the extraction regex running over the raw text; fixed by stripping comments first.
+
 - [ ] B-013 `godkit init` must never be run inside the godkit repo itself: it appends AGENTS.md's
   own body back into AGENTS.md, CLAUDE.md and the cursor rules, because here AGENTS.md is the
   generator source rather than a managed copy. Not a defect in `applyBlock` — appending a marked
@@ -69,7 +80,20 @@ One owner per file. Workers update only their task and unique log; root alone ed
 
 ## Binding decisions
 
-- Node 18+ and zero runtime dependencies remain hard constraints; version stays `1.0.0`.
+- Node 18+ and zero runtime dependencies remain hard constraints; version stays `1.0.0` until the
+  first actual publish — there is no released version to move away from.
+- **An agent is identified by its MODEL, never its tool.** `claude-opus-5`, not `claude`. One tool
+  runs many models with different costs and failure modes, and the next agent reading an unproven
+  claim needs to know which one made it. Enforced by `godkit verify` (`no-identity`), stated in
+  `AGENTS.md` so every host repeats it. Deliberately NOT a shipped registry of known ids: an
+  allowlist is wrong within a quarter and then rejects the truth. `unrecorded` is the one honest
+  value, for entries written before the rule; back-filling a guess would fabricate attribution.
+- **`init` does the machine half only when the machine is not already set up.** It is run once per
+  project and re-run freely; rewriting home config every time is churn, and on Windows an EPERM as
+  soon as two land together. Tests never run the machine half at all.
+- The CLI owns only what a machine can decide. `sprint new` makes the file and `sprint close`
+  checks the tasks; cutting the waves stays with the model, exactly as `scan`/`save` splits from
+  `godkit-map`.
 - `.agent/` remains committed. Generated map files are regenerated, never textually merged.
 - `AGENTS.md` is the canonical rule body; host files preserve user text through managed blocks.
 - Project skills are approved snapshots, not live links; foreign projections are never adopted silently.
@@ -95,6 +119,14 @@ One owner per file. Workers update only their task and unique log; root alone ed
 
 ## Last 3 handoffs
 
+- 2026-09-05 claude-opus-5 — T-015 done: `npx godkit init` is now the single install command
+  (machine half runs once, `--no-install` opts out), `init --new` gives greenfield a brief instead
+  of an impossible map, `godkit sprint` runs waves of file-disjoint tasks behind a join gate,
+  every agent must now declare its model rather than its tool (`godkit verify` rejects a bare tool
+  name), and `godkit-lazy` was rewritten around a speed ladder — 7047 -> 5120 chars injected per
+  session and per subagent. Found and fixed B-014 and B-015. 211 tests / 209 passed / 2 skipped,
+  parallel-clean twice. Claim released. **The map is stale — 34 files changed; that is the next
+  seam.**
 - 2026-08-30 claude — T-013 done: added `godkit-triage`, the GitHub comment plane (fresh-base
   diffs, the confidence x severity posting gate, batch clustering). Prose + `gh`, no code, no
   dependency. 188 tests / 186 passed / 2 skipped, skills and commands both 16. Claim released.

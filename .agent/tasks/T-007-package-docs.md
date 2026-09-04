@@ -1,7 +1,7 @@
 ---
 id: T-007
 title: Package, docs, and release contracts
-owner: claude
+owner: unrecorded     # predates the model-id rule; not back-filled
 scope: package.json, .github/workflows, scripts/check-versions.js, templates/gitattributes, README.md, docs/agent-portability.md, skills/godkit-evolve/SKILL.md, tests/package.test.js
 exit: Packed install smoke passes; manifests/Gemini/release contracts and docs agree
 phase: done

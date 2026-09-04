@@ -61,8 +61,9 @@ function main() {
     return
   }
 
-  const agent = process.env.PLUGIN_DATA ? 'codex' : 'claude'
-  const name = logName(agent, sid)
+  // The filename carries the model, so the placeholder stays a placeholder: only the model knows
+  // which model it is, and guessing it here is how 'claude' ended up in every historical log.
+  const name = logName('<your-model-id>', sid)
   process.stdout.write(
     JSON.stringify({
       decision: 'block',
@@ -70,7 +71,11 @@ function main() {
         'Clock out first: this session changed project files but has no exact-session handoff log. ' +
         'Write .agent/log/' + name + ' (agent, session, scope, status, then Did / Verified / Bugs / ' +
         'Decisions / Left-next), then update .agent/BOARD.md and THREAD if another agent is ' +
-        'waiting. This check repeats until that log exists; see godkit-handoff.',
+        'waiting. Replace <your-model-id> and the `agent:` field with the model you are running ' +
+        'as — claude-opus-5, claude-sonnet-5, claude-opus-4.8, claude-opus-4.7, claude-opus-4.6, ' +
+        'claude-sonnet-4.6, claude-fable-5, codex-5.6-sol, codex-5.6-terra, codex-5.6-luna, ' +
+        'codex-5.5, gemini-3.8-flash, gemini-3.7-flash, gemini-3.6-pro, gemini-3.1 — never the tool ' +
+        'name. This check repeats until that log exists; see godkit-handoff.',
     }) + '\n',
   )
 }

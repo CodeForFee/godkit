@@ -1,13 +1,12 @@
 ---
 name: godkit-test
 description: >
-  Decide what counts as verified, and write the smallest check that would fail if the logic
-  broke. Covers what to test and what not to, how to prove a bug is actually fixed (the symptom
-  path AND the sibling callers), what evidence to record in a task file, and why a passing
-  return value is not evidence. Use when finishing a seam, when a task reaches its Test phase,
-  when deciding whether a change needs a test at all, when a bug fix needs proving, or when the
-  user says "test this", "does this work", "prove it", "write a test", "how do we verify",
-  "is it actually fixed". Do NOT use to run an existing suite — just run it.
+  Decide what counts as verified, and write the smallest check that would fail if the logic broke.
+  What to test and what not to, how to prove a bug is actually fixed (the symptom path AND the
+  sibling callers), what evidence belongs in a task file, and why a passing return value is not
+  evidence. Use when finishing a seam, at a task's Test phase, when deciding whether a change needs
+  a test at all, or on "test this", "does this work", "prove it", "write a test", "how do we
+  verify", "is it actually fixed". Do NOT use to run an existing suite — just run it.
 license: MIT
 ---
 

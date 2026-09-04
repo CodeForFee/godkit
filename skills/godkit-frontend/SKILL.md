@@ -1,13 +1,12 @@
 ---
 name: godkit-frontend
 description: >
-  Design taste for UI work: three numeric dials to set from the brief before writing a line of
-  CSS, and a banned-defaults list for the specific look every unguided model converges on.
-  Use when building a landing page, portfolio, marketing site or any UI from scratch, when
-  redesigning an existing screen, or when the user says "make this look less generic", "this
-  looks AI-generated", "give it more personality", "redesign this page". Do NOT use for backend,
-  API or data-layer work, and do not use for accessibility or functional correctness review —
-  those are ordinary review, not a taste question.
+  Design taste for UI work: three numeric dials to set from the brief before writing a line of CSS,
+  and a banned-defaults list for the look every unguided model converges on. Use when building a
+  landing page, portfolio, marketing site or any UI from scratch, when redesigning a screen, or on
+  "make this look less generic", "this looks AI-generated", "give it more personality", "redesign
+  this page". Do NOT use for backend, API or data work, nor for accessibility or correctness review
+  — those are ordinary review, not a taste question.
 license: MIT
 ---
 

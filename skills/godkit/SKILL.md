@@ -1,17 +1,13 @@
 ---
 name: godkit
 description: >
-  The arrival protocol for a repo worked on by several AI agents. On entering any project — new
-  or one you have worked before — read the shared .agent/ state, refresh the project map if it
-  is stale, synthesize the main task, cut it into seams on file boundaries, assign an owner to
-  each, write them out as task files, and claim your scope before editing. Channels a senior
-  tech lead on a team where Claude, Cursor, Codex and Antigravity all point at the same repo:
-  the risk is not writing bad code, it is two agents editing one file or redoing finished work.
-  Use at the START of any session that will change code, on ANY multi-step task, and whenever
-  the user says "godkit", "start", "resume", "continue", "pick up where we left off", "what was
-  done", "who did what", "split this up", "delegate", "parallel", "orchestrate", "hand off", or
-  complains about lost context, repeated work, or agents stepping on each other. Do NOT use for
-  a single-file edit that fits in one turn — just do it.
+  The arrival protocol for a repo several AI agents share. Read .agent/ state, refresh the map if
+  stale, cut the task into seams on file boundaries, assign owners, claim your scope before
+  editing. Includes sprint mode: waves of file-disjoint seams behind a join gate. Use at the START
+  of any session that will change code, on ANY multi-step task, and on "godkit", "start", "resume",
+  "continue", "what was done", "who did what", "split this up", "delegate", "parallel",
+  "orchestrate", "hand off", "sprint", or complaints about lost context, repeated work or agents
+  stepping on each other. Do NOT use for a single-file edit that fits in one turn.
 argument-hint: "[task]"
 license: MIT
 ---
@@ -33,7 +29,8 @@ Before your first edit, every session, every project. Four states, four response
 
 | State | What you see | Do |
 |---|---|---|
-| **Unknown project** | no `.agent/` | `godkit init`, then build the map (**godkit-map**). One time. Do not ask permission. |
+| **Empty project** | no `.agent/`, no code | `godkit init --new`. Fill `.agent/BRIEF.md`, then cut the first sprint from it. No map — there is nothing to map yet. |
+| **Unknown project** | no `.agent/`, code exists | `godkit init`, then build the map (**godkit-map**). One time. Do not ask permission. |
 | **Known but drifted** | `.agent/` exists, map reports STALE | Refresh the map before you trust it. A stale map is worse than none — it is confidently wrong. |
 | **Known and current** | map is current | Read board, map, newest two logs. Go. |
 | **Mid-task** | open claims, tasks in `execute` | You are resuming. Read the owning task file and its Handoff section first. |
@@ -59,6 +56,32 @@ Once you know where you are, turn the user's ask into shared state — not into 
 5. **Claim what you are taking**, and post a THREAD block if another agent needs to know.
 
 Skip the task file only when the whole thing genuinely fits in this turn and you will finish it now. Anything that outlives your session gets a file.
+
+## Sprint mode
+
+More than one seam pointed at one goal is a sprint. `godkit sprint new "<goal>"` opens
+`.agent/sprints/S-NNN.md`; the CLI keeps the file and checks the tasks, you cut the waves.
+
+The loop, and it does not vary:
+
+**goal → waves of file-disjoint seams → dispatch the whole wave → join gate → next wave.**
+
+- **A wave is a set of tasks whose file scopes do not overlap.** That is the entire admission rule.
+  Task N+1 touching a file already claimed in this wave drops to the next wave — it does not run in
+  parallel and get merged hopefully. This is "one owner per file", stated at wave level.
+- **Dispatch the wave at once, not one after another.** Serialising work that could run together is
+  the largest waste in agent work, and unlike a wrong answer nothing on screen reveals it.
+- **Every wave ends at a join gate**: one agent runs the full check suite after the merge. Without
+  it you do not have a wave, you have several edits that happened to overlap in time. Each seam's
+  own exit condition proves the seam; the gate proves they still compose.
+- **Route each seam down the cost ladder above.** A sprint does not change the ladder, it runs it
+  several times at once. Cheap tier for mechanical seams, strong tier for judgment, in the same wave.
+- **`godkit sprint close` refuses** while any named task is unfinished or finished with an empty
+  `## Test`. It is the same contract `godkit verify` applies, scoped to this goal.
+
+Report one line per wave, never a narrative:
+
+`wave 2/4 · 3 tasks · verified: npm test → 41 pass · next: T-009 T-010`
 
 ## Everything is a provider
 
@@ -130,7 +153,7 @@ No orchestration essays. If the process description is longer than the work, the
 
 ## The rest of the set
 
-- **godkit-map** — build and refresh the project map.
+- **godkit-map** — build and refresh the project map (skip it on a greenfield repo: use the brief).
 - **godkit-handoff** — the `.agent/` protocol: board, thread, tasks, logs, claims, bugs.
 - **godkit-plan** — cutting seams and assigning owners.
 - **godkit-execute** — the execution pipeline and error recovery.

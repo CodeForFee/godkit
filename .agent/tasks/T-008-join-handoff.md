@@ -1,7 +1,7 @@
 ---
 id: T-008
 title: Join verification and handoff
-owner: claude
+owner: unrecorded     # predates the model-id rule; not back-filled
 scope: .agent/** and read-only repository-wide verification
 exit: Join gate green; independent diff review clean; map current; bugs closed; claims released
 phase: done

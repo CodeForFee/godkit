@@ -1,16 +1,12 @@
 ---
 name: godkit-handoff
 description: >
-  The shared-state protocol for a repo worked on by several AI agents — Claude, Cursor, Codex,
-  Antigravity, or the same tool across different sessions. Defines .agent/BOARD.md (who is
-  working where, open and fixed bugs, binding decisions), .agent/THREAD.md (the append-only
-  conversation between agents), .agent/tasks/ (one file per task, carrying plan, execute,
-  review, test and handoff), and .agent/log/ (one append-only entry per session), plus the
-  clock-in and clock-out checklists that keep them true. Use at the START of any session that
-  will edit code, at the END of any session that did, and whenever the user says "resume",
-  "continue", "what was done", "who did what", "hand off", "log this", "pick up where X left
-  off", asks whether a bug was already fixed, or mentions another tool or agent working on the
-  same project. Also use when there is no .agent/ directory yet and work is about to start.
+  The shared-state protocol: .agent/BOARD.md (claims, bugs, decisions), THREAD.md (append-only
+  agent-to-agent), tasks/ (plan, execute, review, test, handoff) and log/ (one per session), plus
+  the clock-in and clock-out checklists. Use at the START of any session that will edit code, at
+  the END of any that did, when there is no .agent/ yet, and on "resume", "continue", "what was
+  done", "who did what", "hand off", "log this", "was this bug already fixed", or any mention of
+  another tool working the same repo.
 license: MIT
 ---
 
@@ -63,7 +59,8 @@ One file per task, carrying all five phases as sections that fill in as work mov
 ---
 id:                   # T-NNN, monotonic, never reused
 title:
-owner: unassigned
+owner: unassigned     # a model id once claimed — claude-opus-5, codex-5.6-terra, gemini-3.6-pro.
+                      # The tool name is not an owner: one tool runs many models.
 scope:                # file globs — this is what makes overlap detectable
 exit:                 # the command that proves this done, not a description of done
 phase: plan           # plan | execute | review | test | done | blocked
@@ -120,7 +117,8 @@ Filename sorts chronologically: `2026-08-19T1403Z-claude-82df4726.md` — timest
 
 ```markdown
 ---
-agent: ""             # the tool and model that ran, e.g. claude-opus-5
+agent: ""             # the MODEL that ran, not the tool: claude-opus-5, codex-5.6-terra,
+                      # gemini-3.6-pro. `godkit verify` rejects a bare "claude" or "codex".
 session: ""           # the host's session id; the filename carries its first 8 characters
 started: ""
 ended: ""             # UTC, e.g. 2026-08-19T1403Z

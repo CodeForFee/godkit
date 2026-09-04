@@ -1,5 +1,6 @@
 ---
-agent: ""             # the tool and model that ran, e.g. claude-opus-5
+agent: ""             # the MODEL that ran, not the tool: claude-opus-5, codex-5.6-terra,
+                      # gemini-3.6-pro. `godkit verify` rejects a bare "claude" or "codex".
 session: ""           # the host's session id; the filename carries its first 8 characters
 started: ""
 ended: ""             # UTC, e.g. 2026-08-19T1403Z

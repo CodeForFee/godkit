@@ -1,14 +1,12 @@
 ---
 name: godkit-triage
 description: >
-  Turn a GitHub issue or PR scope into posted comments and reviews, without asking the maintainer
-  to do the analysis. Covers resolving artifacts with `gh` instead of asking, reviewing against a
-  freshly fetched base rather than a stale local branch, the confidence-and-severity gate that
-  decides what is worth posting publicly, treating existing comments as a posting rule rather than
-  an analysis one, clustering a batch by shared files, and comparing PRs that target one issue.
-  Use when the user says "triage", "review this PR", "look at these issues", "handle the backlog",
-  gives issue or PR numbers or URLs, or asks what to reply. Do NOT use for reviewing your own
-  uncommitted work — that is a normal review, and orchestration post-mortems are godkit-review.
+  Turn a GitHub issue or PR scope into posted comments and reviews: resolve artifacts with `gh`
+  instead of asking, review against a freshly fetched base, apply the confidence-and-severity gate
+  before posting publicly, cluster a batch by shared files. Use on "triage", "review this PR",
+  "look at these issues", "handle the backlog", or when given issue or PR numbers or URLs. Do NOT
+  use for your own uncommitted work — that is ordinary review; orchestration post-mortems are
+  godkit-review.
 license: MIT
 ---
 

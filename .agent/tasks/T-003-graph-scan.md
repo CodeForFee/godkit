@@ -1,7 +1,7 @@
 ---
 id: T-003
 title: Graph transaction and scan safety
-owner: Kuhn
+owner: unrecorded     # predates the model-id rule; not back-filled
 scope: lib/graph.js, lib/scan.js, tests/graph.test.js, tests/scan.test.js
 exit: Absolute IDs rejected, edge last-wins, atomic graph write, ignore matcher safe
 phase: done

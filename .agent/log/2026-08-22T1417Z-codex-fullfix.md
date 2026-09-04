@@ -1,5 +1,5 @@
 ---
-agent: codex
+agent: "unrecorded"   # predates the model-id rule; not back-filled
 session: codex-fullfix-20260822
 started: 2026-08-22T14:04:10Z
 ended: 2026-08-22T14:17:00Z
