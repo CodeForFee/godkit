@@ -3,9 +3,21 @@
 
   // Prerendered first: every word below is in the served HTML before a byte of JS runs.
   // GSAP only layers motion on top of a page that already works.
-  onMount(async () => {
-    const { init } = await import('$lib/motion.js')
-    return init()
+  // Svelte only registers a cleanup returned SYNCHRONOUSLY from onMount - the resolved value of
+  // an async one is ignored. So the disposer is captured in a closure and called from a sync
+  // return instead; without this the GSAP context is never reverted, and every hot reload leaves
+  // its ScrollTriggers measuring a DOM that no longer exists.
+  onMount(() => {
+    let dispose
+    let gone = false
+    import('$lib/motion.js').then(({ init }) => {
+      if (gone) return
+      dispose = init()
+    })
+    return () => {
+      gone = true
+      if (dispose) dispose()
+    }
   })
 
   // The session lifecycle — this is the "quy trình", and it is the product in one row.

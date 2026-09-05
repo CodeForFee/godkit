@@ -18,12 +18,13 @@ export function init() {
   // back a moment later.
   if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return () => {}
 
-  // Hide from HERE, not from CSS. If this module never loads the page still reads; if it does,
-  // the from-state is applied in the same frame the tweens are built, so there is no flash.
-  gsap.set(HIDDEN, { opacity: 0 })
-  gsap.set('[data-wire]', { strokeDashoffset: 200 })
-
   const ctx = gsap.context(() => {
+    // Hide from HERE, not from CSS: if this module never loads the page still reads. And it must
+    // be INSIDE the context - a gsap.set() outside it is not reverted by ctx.revert(), so every
+    // hot reload and every unmount used to leave the page hidden with no tweens left to reveal it.
+    gsap.set(HIDDEN, { opacity: 0 })
+    gsap.set('[data-wire]', { strokeDashoffset: 200 })
+
     // ── hero: one entrance, then it never moves again ──────────────────────
     gsap
       .timeline({ defaults: { ease: 'power3.out' } })
@@ -139,6 +140,31 @@ export function init() {
     })
   })
 
-  ScrollTrigger.refresh()
-  return () => ctx.revert()
+  // ScrollTrigger records every start/end position at creation time. This page loads three
+  // webfonts, and when they swap in every element below the fold moves - so a trigger measured
+  // against the fallback font can end up describing a position the reader has already scrolled
+  // past, and it never fires. Its element then sits at opacity 0 forever. Cached fonts are fast
+  // enough to hide it, uncached fonts are not, which is exactly why it worked intermittently.
+  //
+  // Re-measuring after fonts and after load costs nothing and removes the whole race.
+  const remeasure = () => ScrollTrigger.refresh()
+  remeasure()
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(remeasure).catch(() => {})
+  if (document.readyState !== 'complete') window.addEventListener('load', remeasure, { once: true })
+
+  // And the floor under all of it: whatever the reason - a refresh that still measured wrong, a
+  // throw inside the context, a browser that never paints a frame - nothing stays invisible.
+  // A landing page that shows nothing is worse than one with no animation at all.
+  const safety = setTimeout(() => {
+    for (const el of q(HIDDEN)) {
+      if (Number(getComputedStyle(el).opacity) < 0.05) gsap.set(el, { opacity: 1, x: 0, y: 0, scale: 1 })
+    }
+    gsap.set('[data-wire]', { strokeDashoffset: 0 })
+  }, 2600)
+
+  return () => {
+    clearTimeout(safety)
+    window.removeEventListener('load', remeasure)
+    ctx.revert()
+  }
 }
