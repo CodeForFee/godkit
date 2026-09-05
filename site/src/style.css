@@ -1,0 +1,514 @@
+:root {
+  --bg: #f7f5f1;
+  --card: #fffefc;
+  --surface: rgba(24, 20, 14, 0.022);
+  --line: rgba(24, 20, 14, 0.13);
+  --line-2: rgba(24, 20, 14, 0.26);
+  --fg: #191612;
+  --dim: #55504a;
+  --faint: #6e675f;
+  --amber: #b4530b;
+  --orange: #9a3412;
+  --tint: rgba(180, 83, 11, 0.07);
+  --tint-line: rgba(180, 83, 11, 0.38);
+  --grad: linear-gradient(135deg, #c2680d, #9a3412);
+  --serif: 'Newsreader', ui-serif, Georgia, serif;
+  --sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif;
+  --mono: 'JetBrains Mono', ui-monospace, Menlo, monospace;
+}
+
+html { background: var(--bg); scroll-behavior: smooth; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--sans);
+  font-size: 16px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+}
+
+/* No entrance animation and no scroll reveal: the page is the finished document on first paint.
+   The only motion left is hover feedback on things you can actually click. */
+
+code { font-family: var(--mono); font-size: 0.87em; }
+
+/* ── ambient background ─────────────────────────────────────────────── */
+.bg { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+.glow { position: absolute; border-radius: 50%; filter: blur(110px); opacity: 0.13; }
+.glow-a {
+  width: 46rem; height: 46rem; top: -24rem; left: 50%; margin-left: -23rem;
+  background: radial-gradient(circle, #f59e0b, transparent 68%);
+}
+.glow-b {
+  width: 34rem; height: 34rem; top: 62%; left: 8%;
+  background: radial-gradient(circle, #fb923c, transparent 70%);
+  opacity: 0.09;
+}
+.grid {
+  position: absolute; inset: 0;
+  background-image:
+    linear-gradient(var(--line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--line) 1px, transparent 1px);
+  background-size: 68px 68px;
+  mask-image: radial-gradient(ellipse 90% 55% at 50% 0%, #000 20%, transparent 78%);
+  opacity: 0.4;
+}
+
+/* ── hero, centred ──────────────────────────────────────────────────── */
+.hero {
+  position: relative; z-index: 1;
+  max-width: 60rem;
+  margin: 0 auto;
+  padding: clamp(4.5rem, 12vh, 9rem) 1.5rem clamp(3rem, 7vh, 5rem);
+  text-align: center;
+}
+.mark { color: var(--fg); line-height: 0; margin-bottom: 2rem; }
+
+.eyebrow {
+  display: inline-flex; align-items: center; gap: 0.6rem;
+  font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.1em;
+  color: var(--dim);
+  border: 1px solid var(--line); border-radius: 100px;
+  padding: 0.4rem 0.95rem; margin: 0 0 2rem;
+  background: var(--card);
+}
+.dot {
+  width: 6px; height: 6px; border-radius: 50%; background: var(--amber);
+  box-shadow: 0 0 0 3px var(--tint);
+}
+
+h1 {
+  font-family: var(--serif);
+  font-weight: 300;
+  font-size: clamp(2.6rem, 7.4vw, 5.4rem);
+  line-height: 1.03;
+  letter-spacing: -0.032em;
+  margin: 0 0 1.6rem;
+}
+h1 em {
+  font-style: italic;
+  background: var(--grad);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.sub {
+  max-width: 40rem; margin: 0 auto 2.5rem;
+  color: var(--dim); font-size: clamp(1rem, 1.7vw, 1.15rem); line-height: 1.65;
+}
+
+.actions {
+  display: flex; flex-wrap: wrap; gap: 0.75rem; justify-content: center; align-items: center;
+}
+.cmd {
+  font: inherit; cursor: default;
+  border: 1px solid var(--line-2); border-radius: 10px;
+  background: var(--card);
+  padding: 0.8rem 1.3rem;
+  color: var(--fg);
+  transition: border-color 0.25s, background 0.25s, transform 0.25s;
+}
+.cmd:hover { border-color: var(--tint-line); background: var(--tint); transform: translateY(-1px); }
+.cmd code::before { content: '$ '; color: var(--amber); }
+.cmd.big { padding: 1rem 1.7rem; font-size: 1.05rem; }
+
+.ghost {
+  display: inline-flex; align-items: center; gap: 0.45rem;
+  color: var(--dim); text-decoration: none;
+  padding: 0.8rem 1.1rem; border-radius: 10px; border: 1px solid transparent;
+  font-size: 0.92rem; transition: color 0.2s, border-color 0.2s;
+}
+.ghost:hover { color: var(--fg); border-color: var(--line); }
+
+.stats {
+  list-style: none; margin: 3.5rem 0 0; padding: 0;
+  display: flex; flex-wrap: wrap; justify-content: center; gap: 0.75rem 3rem;
+}
+.stats li { display: flex; flex-direction: column; gap: 0.15rem; }
+.stats b {
+  font-family: var(--serif); font-weight: 400; font-size: 2rem; line-height: 1;
+  background: var(--grad); -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.stats span { font-family: var(--mono); font-size: 0.66rem; color: var(--faint); letter-spacing: 0.06em; }
+
+/* ── sections, centred ──────────────────────────────────────────────── */
+main { position: relative; z-index: 1; }
+.sec {
+  max-width: 62rem; margin: 0 auto;
+  padding: clamp(4rem, 10vh, 7rem) 1.5rem;
+  text-align: center;
+}
+.sec.narrow { max-width: 46rem; }
+
+.kicker {
+  font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.18em;
+  text-transform: uppercase; color: var(--amber); margin: 0 0 1rem;
+}
+h2 {
+  font-family: var(--serif); font-weight: 300;
+  font-size: clamp(1.9rem, 4.2vw, 3rem);
+  line-height: 1.1; letter-spacing: -0.025em;
+  margin: 0 0 1.2rem;
+}
+.lead {
+  max-width: 42rem; margin: 0 auto 2.75rem;
+  color: var(--dim); font-size: 1.02rem; line-height: 1.7;
+}
+.lead.sm { font-size: 0.95rem; margin-top: 2rem; margin-bottom: 0; }
+.lead code, h2 code { color: var(--amber); }
+.lead strong { color: var(--fg); font-weight: 600; }
+
+blockquote {
+  font-family: var(--serif); font-weight: 300; font-style: italic;
+  font-size: clamp(1.3rem, 3vw, 2rem); line-height: 1.35;
+  margin: 3.5rem auto 0; max-width: 34rem; color: var(--fg);
+}
+
+/* ── the yes/no badge, used by every comparison on the page ─────────── */
+.badge {
+  display: inline-flex; align-items: center; gap: 0.4rem;
+  font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.1em; text-transform: uppercase;
+  border: 1px solid var(--line); border-radius: 100px; padding: 0.2rem 0.65rem;
+  color: var(--faint); background: var(--card); white-space: nowrap;
+}
+.badge::before { content: '·'; font-weight: 700; }
+.badge.yes { color: var(--amber); border-color: var(--tint-line); background: var(--tint); }
+.badge.yes::before { content: '✓'; }
+.badge.no { color: #9f1239; border-color: rgba(159, 18, 57, 0.3); background: rgba(159, 18, 57, 0.05); }
+.badge.no::before { content: '✕'; }
+
+/* ── problem: two panels, side by side ──────────────────────────────── */
+.compare { display: grid; gap: 1rem; text-align: left; }
+@media (min-width: 760px) { .compare { grid-template-columns: 1fr 1fr; gap: 1.25rem; } }
+
+.cmp {
+  border: 1px solid var(--line); border-radius: 16px;
+  padding: 1.4rem 1.4rem 1.25rem; background: var(--card);
+  display: flex; flex-direction: column;
+}
+.cmp.good { border-color: var(--tint-line); }
+.cmp-h { margin: 0 0 1.1rem; }
+.cmp-cap { color: var(--dim); font-size: 0.88rem; line-height: 1.6; margin: auto 0 0; padding-top: 1.1rem; }
+
+.memlist { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.5rem; }
+.memlist li {
+  display: flex; align-items: center; justify-content: space-between; gap: 0.75rem;
+  border: 1px solid var(--line); border-radius: 9px; padding: 0.55rem 0.8rem;
+  background: var(--bg);
+}
+.memlist b { font-size: 0.9rem; font-weight: 600; }
+.memlist code { color: var(--faint); font-size: 0.72rem; }
+.memlist.row { grid-template-columns: repeat(3, 1fr); }
+.memlist.row li { justify-content: center; padding: 0.55rem 0.4rem; }
+.memlist.row b { font-size: 0.78rem; text-align: center; }
+
+.wires { display: block; width: 100%; height: 3.4rem; }
+.wires path { fill: none; stroke: var(--amber); stroke-width: 1.25; opacity: 0.8; }
+.hub {
+  margin: 0; text-align: center;
+  border: 1px solid var(--tint-line); border-radius: 10px;
+  padding: 0.6rem; background: var(--tint);
+}
+.hub code { color: var(--amber); font-weight: 500; font-size: 0.95rem; }
+.hub span { display: block; font-family: var(--mono); font-size: 0.62rem; color: var(--dim); margin-top: 0.2rem; }
+
+/* ── the workflow ───────────────────────────────────────────────────── */
+.flow { position: relative; display: grid; gap: 0.85rem; text-align: left; }
+@media (min-width: 700px) { .flow { grid-template-columns: repeat(3, 1fr); } }
+@media (min-width: 1000px) { .flow { grid-template-columns: repeat(6, 1fr); gap: 0.7rem; } }
+
+.track {
+  display: none;
+  position: absolute; top: 1.55rem; left: 4%; right: 4%; height: 1px;
+  background: var(--line);
+}
+@media (min-width: 1000px) { .track { display: block; } }
+
+.step {
+  border: 1px solid var(--line); border-radius: 14px;
+  padding: 1.1rem 1rem 1.15rem; background: var(--card);
+  position: relative; transition: border-color 0.3s, transform 0.3s;
+}
+.step:hover { border-color: var(--tint-line); transform: translateY(-3px); }
+.step-num {
+  font-family: var(--mono); font-size: 0.62rem; color: #fff;
+  background: var(--grad); border-radius: 100px;
+  width: 1.9rem; height: 1.35rem; display: grid; place-items: center;
+  font-weight: 700; letter-spacing: 0.04em; margin-bottom: 0.75rem;
+}
+.step h3 { margin: 0 0 0.35rem; font-size: 0.98rem; font-weight: 600; letter-spacing: -0.01em; }
+.step p { margin: 0; font-size: 0.8rem; line-height: 1.55; color: var(--dim); }
+
+.rules {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: center;
+  gap: 1.25rem; margin-top: 3.5rem;
+  border: 1px solid var(--line); border-radius: 16px;
+  padding: 1.6rem 1.5rem; background: var(--card);
+}
+.rule {
+  margin: 0; font-family: var(--serif); font-style: italic; font-weight: 300;
+  font-size: clamp(1.05rem, 2.2vw, 1.45rem); color: var(--fg);
+}
+.rule code { font-style: normal; color: var(--amber); }
+.rule-sep { width: 1px; height: 1.6rem; background: var(--line-2); }
+
+/* ── terminal windows stay dark: a shell is dark everywhere else too ─── */
+.win {
+  --line: rgba(255, 255, 255, 0.1);
+  --faint: #8b8c96;
+  --amber: #fbbf24;
+  --orange: #fb923c;
+  border: 1px solid rgba(24, 20, 14, 0.18); border-radius: 14px; overflow: hidden;
+  background: #14131a; text-align: left;
+  box-shadow: 0 24px 50px -32px rgba(24, 20, 14, 0.7);
+}
+.win-bar {
+  display: flex; align-items: center; gap: 0.45rem;
+  padding: 0.7rem 1rem; border-bottom: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.03);
+}
+.win-bar i { width: 9px; height: 9px; border-radius: 50%; background: rgba(255, 255, 255, 0.22); }
+.win-bar span {
+  margin-left: 0.6rem; font-family: var(--mono); font-size: 0.68rem; color: var(--faint);
+}
+.win pre {
+  margin: 0; padding: 1.25rem 1.35rem; overflow-x: auto;
+  font-size: 0.76rem; line-height: 1.85; color: #c8c9d2;
+}
+.win code { font-family: var(--mono); font-size: inherit; }
+.win .f { color: var(--amber); }
+.win .c { color: var(--faint); }
+.win .p { color: var(--orange); }
+.win .m { color: #7dd3fc; }
+.win .ok { color: #86efac; }
+
+/* ── waves: top to bottom, because that is the order they run in ────── */
+.waves {
+  list-style: none; margin: 0 0 2.5rem; padding: 0;
+  display: grid; gap: 0.5rem; text-align: left;
+  max-width: 40rem; margin-inline: auto;
+}
+.wv, .waves .gate {
+  border: 1px solid var(--line); border-radius: 12px;
+  padding: 0.9rem 1.1rem; background: var(--card);
+}
+.wv-h {
+  display: block; font-family: var(--mono); font-size: 0.63rem; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--dim); margin-bottom: 0.5rem;
+}
+.tasks { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+.tasks i {
+  font-style: normal; font-family: var(--mono); font-size: 0.7rem; color: var(--fg);
+  background: var(--bg); border: 1px solid var(--line); border-radius: 5px; padding: 0.14rem 0.5rem;
+}
+.wv p, .waves .gate p { margin: 0.55rem 0 0; font-size: 0.82rem; color: var(--dim); }
+.wv.done { border-color: var(--tint-line); background: var(--tint); }
+.wv.done .wv-h, .wv.done .tasks i { color: var(--amber); }
+.wv.done .tasks i { border-color: var(--tint-line); background: transparent; }
+.waves .gate {
+  border-style: dashed; border-color: var(--tint-line); background: transparent;
+  margin-inline: 1.5rem;
+}
+.waves .gate .wv-h { color: var(--amber); margin-bottom: 0; }
+.waves .gate p { margin-top: 0.3rem; }
+
+/* ── identity cards ─────────────────────────────────────────────────── */
+.idcards { display: grid; gap: 0.75rem; margin-bottom: 2.5rem; text-align: left; }
+@media (min-width: 620px) { .idcards { grid-template-columns: 1fr 1fr; } }
+.idc {
+  border: 1px solid var(--line); border-radius: 12px; padding: 1.1rem;
+  display: flex; flex-direction: column; align-items: flex-start; gap: 0.55rem;
+  background: var(--card);
+}
+.idc code { font-size: 0.9rem; }
+.idc-why { font-size: 0.82rem; color: var(--dim); line-height: 1.5; }
+.idc.bad code { color: var(--faint); text-decoration: line-through; }
+.idc.good { border-color: var(--tint-line); background: var(--tint); }
+.idc.good code { color: var(--amber); }
+
+/* ── hosts: a matrix, because the point is comparing rows ───────────── */
+.tablewrap { border: 1px solid var(--line); border-radius: 14px; background: var(--card); }
+.matrix { width: 100%; border-collapse: collapse; text-align: left; }
+.matrix th, .matrix td {
+  padding: 0.85rem 1.1rem; border-bottom: 1px solid var(--line); vertical-align: middle;
+}
+.matrix tbody tr:last-child th, .matrix tbody tr:last-child td { border-bottom: 0; }
+
+/* Narrow: one card per tool. A four-column matrix that has to scroll sideways hides the very
+   column the section exists to show. */
+@media (max-width: 780px) {
+  .matrix thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+  .matrix, .matrix tbody, .matrix tr, .matrix th, .matrix td { display: block; }
+  .matrix tbody tr { border-bottom: 1px solid var(--line); padding: 0.5rem 0 0.9rem; }
+  .matrix tbody tr:last-child { border-bottom: 0; }
+  .matrix tbody th { padding-bottom: 0.4rem; border-bottom: 0; }
+  .matrix td { border-bottom: 0; padding: 0.2rem 1.1rem; display: flex; gap: 0.75rem; align-items: baseline; }
+  .matrix td::before {
+    content: attr(data-label); flex: 0 0 6.5rem;
+    font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--faint);
+  }
+}
+.matrix thead th {
+  font-family: var(--mono); font-weight: 400; font-size: 0.62rem;
+  letter-spacing: 0.12em; text-transform: uppercase; color: var(--faint);
+  background: var(--surface);
+}
+.matrix tbody th { font-size: 0.95rem; font-weight: 600; white-space: nowrap; }
+.matrix td code { color: var(--dim); font-size: 0.75rem; overflow-wrap: anywhere; }
+.matrix .na { font-family: var(--mono); font-size: 0.72rem; color: var(--faint); }
+.matrix tbody tr:hover { background: var(--surface); }
+
+/* ── cli ────────────────────────────────────────────────────────────── */
+.cmds { display: grid; gap: 0.4rem; text-align: left; }
+.cmd-row {
+  display: grid; gap: 0.2rem 1.5rem; align-items: baseline;
+  padding: 0.85rem 1.1rem; border: 1px solid var(--line); border-radius: 11px;
+  background: var(--card); transition: border-color 0.25s, background 0.25s;
+}
+@media (min-width: 720px) { .cmd-row { grid-template-columns: 15rem 1fr; } }
+.cmd-row:hover { border-color: var(--tint-line); background: var(--tint); }
+.cmd-row code { color: var(--fg); font-weight: 500; }
+.cmd-row span { color: var(--dim); font-size: 0.88rem; }
+.cmd-row span code { color: var(--amber); }
+
+/* ── cta ────────────────────────────────────────────────────────────── */
+.cta {
+  position: relative; z-index: 1;
+  max-width: 46rem; margin: 0 auto; text-align: center;
+  padding: clamp(4rem, 10vh, 7rem) 1.5rem clamp(5rem, 12vh, 8rem);
+}
+.cta h2 { margin-bottom: 2rem; }
+.cta p { font-family: var(--mono); font-size: 0.72rem; color: var(--faint); margin: 1.5rem 0 0; }
+
+footer {
+  position: relative; z-index: 1;
+  border-top: 1px solid var(--line);
+  padding: 2rem 1.5rem 3rem; text-align: center;
+  display: flex; flex-wrap: wrap; gap: 1.5rem; justify-content: center;
+  font-family: var(--mono); font-size: 0.72rem; color: var(--faint);
+}
+footer a { color: var(--dim); text-decoration: none; }
+footer a:hover { color: var(--amber); }
+
+/* ══ ambient motion ═══════════════════════════════════════════════════
+   Everything below loops on its own from first paint. Nothing here waits
+   for a scroll position, and nothing hides content until it fires — the
+   page is already readable with animation off. */
+
+@keyframes float-a { 50% { transform: translate3d(1.5rem, 2.5rem, 0) scale(1.07); } }
+@keyframes float-b { 50% { transform: translate3d(-2rem, -1.5rem, 0) scale(1.1); } }
+.glow-a { animation: float-a 26s ease-in-out infinite; }
+.glow-b { animation: float-b 21s ease-in-out infinite; }
+
+/* the mark's four brackets breathe around the core they all write to */
+@keyframes breathe { 50% { opacity: 0.85; transform: scale(1.06); } }
+.mark svg > g:first-of-type {
+  transform-box: fill-box; transform-origin: center;
+  animation: breathe 5.5s ease-in-out infinite;
+}
+
+@keyframes blip {
+  0%, 100% { box-shadow: 0 0 0 3px var(--tint); }
+  50% { box-shadow: 0 0 0 6px rgba(180, 83, 11, 0.02); }
+}
+.dot { animation: blip 2.6s ease-in-out infinite; }
+
+/* ── problem: the isolated side reaches out and never lands ─────────── */
+.bad .memlist li { padding-right: 0.5rem; }
+.cut {
+  position: relative; flex: 0 0 auto; width: 1.5rem; height: 1px; margin-right: 0.9rem;
+  background: repeating-linear-gradient(90deg, var(--line-2) 0 3px, transparent 3px 6px);
+}
+.cut::after {
+  content: '✕'; position: absolute; right: -0.85rem; top: -0.55rem;
+  font-size: 0.62rem; color: #9f1239;
+}
+@keyframes reach { 0%, 100% { opacity: 0.25; } 50% { opacity: 0.9; } }
+.bad .memlist li:nth-child(1) .cut { animation: reach 4.2s ease-in-out infinite; }
+.bad .memlist li:nth-child(2) .cut { animation: reach 4.2s ease-in-out 1.4s infinite; }
+.bad .memlist li:nth-child(3) .cut { animation: reach 4.2s ease-in-out 2.8s infinite; }
+
+/* ── and the shared side keeps flowing into one directory ───────────── */
+@keyframes wire-flow { to { stroke-dashoffset: -28; } }
+.wires path { stroke-dasharray: 5 9; animation: wire-flow 1.6s linear infinite; }
+.wires path:nth-child(2) { animation-duration: 1.25s; }
+.wires path:nth-child(3) { animation-duration: 1.9s; }
+
+@keyframes hub-in {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(180, 83, 11, 0.18); }
+  55% { box-shadow: 0 0 0 8px rgba(180, 83, 11, 0); }
+}
+.hub { animation: hub-in 2.4s ease-out infinite; }
+
+/* ── the workflow runs its loop, forever, on its own ────────────────── */
+.track { overflow: visible; }
+.pulse {
+  position: absolute; top: -3px; left: 0; width: 3.5rem; height: 3px; border-radius: 3px;
+  background: var(--grad); transform: translateX(-50%);
+  animation: run 7.2s linear infinite;
+}
+@keyframes run {
+  0% { left: 0; opacity: 0; }
+  4% { opacity: 1; }
+  92% { opacity: 1; }
+  100% { left: 100%; opacity: 0; }
+}
+
+/* each card lights as the pulse reaches it — six slots in one 7.2s lap */
+@keyframes step-on {
+  0%, 16%, 100% { border-color: var(--line); transform: translateY(0); box-shadow: none; }
+  4%, 12% {
+    border-color: var(--tint-line); transform: translateY(-4px);
+    box-shadow: 0 10px 24px -18px rgba(24, 20, 14, 0.55);
+  }
+}
+@keyframes num-on { 0%, 16%, 100% { transform: scale(1); } 4%, 12% { transform: scale(1.12); } }
+.step { animation: step-on 7.2s linear infinite; animation-delay: calc(var(--i) * 1.2s); }
+.step-num {
+  transform-origin: left center;
+  animation: num-on 7.2s linear infinite; animation-delay: calc(var(--i) * 1.2s);
+}
+.step:hover { animation-play-state: paused; }
+
+.loopnote {
+  display: flex; align-items: center; justify-content: center; gap: 0.5rem;
+  font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.06em;
+  color: var(--faint); margin: 1.4rem 0 0;
+}
+.loop-arrow::before {
+  content: '↻'; display: inline-block; font-size: 0.95rem; color: var(--amber);
+  animation: spin 5s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── sprints: wave, gate, wave, gate, close — on repeat ─────────────── */
+@keyframes lit {
+  0%, 22%, 100% { border-color: var(--line); background: var(--card); }
+  6%, 16% { border-color: var(--tint-line); background: var(--tint); }
+}
+@keyframes lit-task {
+  0%, 22%, 100% { border-color: var(--line); color: var(--fg); }
+  6%, 16% { border-color: var(--tint-line); color: var(--amber); }
+}
+.waves > * { animation: lit 8s ease-in-out infinite; }
+.waves .tasks i { animation: lit-task 8s ease-in-out infinite; }
+.waves > :nth-child(1), .waves > :nth-child(1) .tasks i { animation-delay: 0s; }
+.waves > :nth-child(2), .waves > :nth-child(2) .tasks i { animation-delay: 1.5s; }
+.waves > :nth-child(3), .waves > :nth-child(3) .tasks i { animation-delay: 2.6s; }
+.waves > :nth-child(4), .waves > :nth-child(4) .tasks i { animation-delay: 4.1s; }
+.waves > :nth-child(5), .waves > :nth-child(5) .tasks i { animation-delay: 5.2s; }
+.waves .gate { animation-name: lit; background: transparent; }
+.wv.done { animation: none; }
+
+/* Motion is decoration here, never the delivery mechanism for content. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; }
+  .pulse { display: none; }
+}

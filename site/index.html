@@ -1,0 +1,383 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <meta name="theme-color" content="#f7f5f1" />
+
+    <title>Godkit — one shared harness for every AI agent</title>
+    <meta
+      name="description"
+      content="Claude Code, Cursor, Codex and Antigravity all point at the same repo. Godkit gives them one committed board, map and log — so work is not redone and two agents never edit the same file."
+    />
+    <link rel="canonical" href="https://godkit.vercel.app/" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Godkit — one shared harness for every AI agent" />
+    <meta
+      property="og:description"
+      content="One committed .agent/ directory. Read it before you edit, write your log before you finish. Zero dependencies."
+    />
+    <meta name="twitter:card" content="summary_large_image" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;0,6..72,500;1,6..72,300;1,6..72,400&family=JetBrains+Mono:wght@400;500;700&family=Instrument+Sans:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+
+    <script type="module" src="/src/main.ts"></script>
+  </head>
+  <body>
+    <div class="bg" aria-hidden="true">
+      <div class="glow glow-a"></div>
+      <div class="glow glow-b"></div>
+      <div class="grid"></div>
+    </div>
+
+    <!-- ══ hero ══════════════════════════════════════════════════════════ -->
+    <header class="hero">
+      <div class="mark">
+        <svg viewBox="0 0 128 128" width="62" height="62" aria-hidden="true">
+          <g fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" opacity=".45">
+            <path d="M64 34v14M64 80v14M34 64h14M80 64h14" />
+            <rect x="49" y="9" width="30" height="25" rx="6" />
+            <rect x="49" y="94" width="30" height="25" rx="6" />
+            <rect x="9" y="49" width="25" height="30" rx="6" />
+            <rect x="94" y="49" width="25" height="30" rx="6" />
+          </g>
+          <rect x="46" y="46" width="36" height="36" rx="9" fill="url(#g)" />
+          <g stroke="#fff" stroke-width="4" stroke-linecap="round">
+            <path d="M55 58h18M55 64h18M55 70h11" />
+          </g>
+          <defs>
+            <linearGradient id="g" x1="46" y1="46" x2="82" y2="82" gradientUnits="userSpaceOnUse">
+              <stop stop-color="#c2680d" /><stop offset="1" stop-color="#9a3412" />
+            </linearGradient>
+          </defs>
+        </svg>
+      </div>
+
+      <p class="eyebrow"><span class="dot"></span> v1.0.0 · zero dependencies · MIT</p>
+
+      <h1>One shared harness<br />for <em>every</em> AI agent</h1>
+
+      <p class="sub">
+        Four tools, one repo, four private memories. Godkit gives them one memory that is
+        committed.
+      </p>
+
+      <div class="actions">
+        <button class="cmd" type="button"><code>npx @codeforfee/godkit init</code></button>
+        <a class="ghost" href="https://github.com/CodeForFee/godkit">
+          GitHub
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M7 17 17 7M9 7h8v8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </a>
+      </div>
+
+      <ul class="stats">
+        <li><b>0</b><span>runtime dependencies</span></li>
+        <li><b>16</b><span>skills, same everywhere</span></li>
+        <li><b>4</b><span>agent tools, one protocol</span></li>
+        <li><b>209</b><span>tests, green</span></li>
+      </ul>
+    </header>
+
+    <main>
+      <!-- ══ problem ═══════════════════════════════════════════════════── -->
+      <section class="sec" id="problem">
+        <p class="kicker">The problem</p>
+        <h2>Every agent arrives blind</h2>
+        <p class="lead">
+          It cannot see what was already done, or which files another agent is holding. Private
+          memory cannot fix that: Cursor cannot read Claude's, and Claude cannot read Cursor's.
+        </p>
+
+        <div class="compare">
+          <div class="cmp bad">
+            <p class="cmp-h"><span class="badge no">without godkit</span></p>
+            <ul class="memlist">
+              <li><b>Claude Code</b><code>~/.claude/</code><span class="cut" aria-hidden="true"></span></li>
+              <li><b>Cursor</b><code>.cursor/</code><span class="cut" aria-hidden="true"></span></li>
+              <li><b>Codex</b><code>~/.codex/</code><span class="cut" aria-hidden="true"></span></li>
+            </ul>
+            <p class="cmp-cap">
+              Three private memories, none readable by the other two — so the same work gets done
+              twice and two agents edit one file.
+            </p>
+          </div>
+
+          <div class="cmp good">
+            <p class="cmp-h"><span class="badge yes">with godkit</span></p>
+            <ul class="memlist row">
+              <li><b>Claude Code</b></li>
+              <li><b>Cursor</b></li>
+              <li><b>Codex</b></li>
+            </ul>
+            <svg class="wires" viewBox="0 0 300 54" preserveAspectRatio="none" aria-hidden="true">
+              <path d="M50 0 V22 H150 V50" /><path d="M150 0 V50" /><path d="M250 0 V22 H150 V50" />
+            </svg>
+            <p class="hub"><code>.agent/</code> <span>committed — it shows up in the diff</span></p>
+            <p class="cmp-cap">
+              One board, one map, one log, in the repo every tool already opens.
+            </p>
+          </div>
+        </div>
+
+        <blockquote>
+          The only shared memory between tools<br />is the filesystem they both open.
+        </blockquote>
+      </section>
+
+      <!-- ══ the workflow ══════════════════════════════════════════════── -->
+      <section class="sec" id="flow">
+        <p class="kicker">The protocol</p>
+        <h2>Six steps, every session, every tool</h2>
+        <p class="lead">
+          Not a suggestion: on Claude Code and Codex a <code>Stop</code> hook blocks the turn until
+          the log exists.
+        </p>
+
+        <div class="flow">
+          <div class="track"><span class="pulse"></span></div>
+          <div class="step" style="--i: 0">
+            <div class="step-num">01</div>
+            <h3>Clock in</h3>
+            <p>Read the board, the map, the last two logs.</p>
+          </div>
+          <div class="step" style="--i: 1">
+            <div class="step-num">02</div>
+            <h3>Claim</h3>
+            <p>Your file globs, on the board, before you edit.</p>
+          </div>
+          <div class="step" style="--i: 2">
+            <div class="step-num">03</div>
+            <h3>Work</h3>
+            <p>Inside your scope. Found a bug outside it? File it.</p>
+          </div>
+          <div class="step" style="--i: 3">
+            <div class="step-num">04</div>
+            <h3>Verify</h3>
+            <p>Run the exit condition. A return value is not evidence.</p>
+          </div>
+          <div class="step" style="--i: 4">
+            <div class="step-num">05</div>
+            <h3>Log</h3>
+            <p>Real paths, real commands, real output.</p>
+          </div>
+          <div class="step" style="--i: 5">
+            <div class="step-num">06</div>
+            <h3>Hand off</h3>
+            <p>Release the claim. The next agent starts cold.</p>
+          </div>
+        </div>
+
+        <p class="loopnote"><span class="loop-arrow" aria-hidden="true"></span> and the next session starts at 01 again</p>
+
+        <div class="rules">
+          <p class="rule">Read <code>.agent/</code> before you edit.</p>
+          <span class="rule-sep"></span>
+          <p class="rule">Write your log before you finish.</p>
+        </div>
+      </section>
+
+      <!-- ══ the directory ═════════════════════════════════════════════── -->
+      <section class="sec" id="state">
+        <p class="kicker">The shared state</p>
+        <h2>One directory, and it is committed</h2>
+        <p class="lead">
+          Not a database, not a service, not a plugin API — markdown every tool can already open
+          and git can already merge.
+        </p>
+
+        <div class="win">
+          <div class="win-bar"><i></i><i></i><i></i><span>.agent/</span></div>
+          <pre><code><span class="f">BOARD.md</span>               <span class="c">roster · claims · bugs · decisions — one screen</span>
+<span class="f">THREAD.md</span>              <span class="c">append-only conversation between agents</span>
+<span class="f">BRIEF.md</span>               <span class="c">what this is, before there is code to map</span>
+<span class="f">MAP.md</span>                 <span class="c">what this codebase is (generated)</span>
+<span class="f">graph.json</span>             <span class="c">the machine-readable map</span>
+<span class="f">sprints/S-001.md</span>       <span class="c">a goal, and the waves of tasks under it</span>
+<span class="f">tasks/T-001-*.md</span>       <span class="c">Plan · Execute · Review · Test · Handoff</span>
+<span class="f">log/&lt;UTC&gt;-&lt;model&gt;.md</span>   <span class="c">one per session, never edited by anyone else</span></code></pre>
+        </div>
+
+        <p class="lead sm">
+          <strong>One log file per session</strong> is the whole concurrency design: two tools
+          never write the same file, so git merges them without a thought.
+        </p>
+      </section>
+
+      <!-- ══ sprints ═══════════════════════════════════════════════════── -->
+      <section class="sec" id="sprints">
+        <p class="kicker">Sprints</p>
+        <h2>Waves that cannot collide</h2>
+        <p class="lead">
+          A task is one seam. Several seams aimed at one goal is a sprint — and the only rule that
+          governs a wave is which files it touches.
+        </p>
+
+        <ol class="waves">
+          <li class="wv">
+            <span class="wv-h">Wave 1 — runs in parallel</span>
+            <span class="tasks"><i>T-001</i><i>T-002</i><i>T-003</i></span>
+            <p>No two of them touch the same file.</p>
+          </li>
+          <li class="gate">
+            <span class="wv-h">Join gate</span>
+            <p>Full suite green before the next wave starts.</p>
+          </li>
+          <li class="wv">
+            <span class="wv-h">Wave 2 — runs in parallel</span>
+            <span class="tasks"><i>T-004</i><i>T-005</i></span>
+            <p>A task wanting a file wave 1 claimed waited for this one.</p>
+          </li>
+          <li class="gate">
+            <span class="wv-h">Join gate</span>
+            <p>Full suite green again.</p>
+          </li>
+          <li class="wv done">
+            <span class="wv-h">Sprint closes</span>
+            <span class="tasks"><i>every task proven</i></span>
+            <p><code>sprint close</code> refuses while anything is unproven.</p>
+          </li>
+        </ol>
+
+        <div class="win">
+          <div class="win-bar"><i></i><i></i><i></i><span>godkit sprint</span></div>
+          <pre><code><span class="p">$</span> godkit sprint
+S-001  open  ship auth
+
+  task     owner               phase     state
+  T-001    <span class="m">claude-opus-5</span>       done      <span class="ok">proven</span>
+  T-002    <span class="m">codex-5.6-terra</span>     done      <span class="ok">proven</span>
+  T-003    <span class="m">gemini-3.6-pro</span>      execute   ok
+
+  1 blocker(s) — `godkit sprint close` lists them</code></pre>
+        </div>
+      </section>
+
+      <!-- ══ identity ══════════════════════════════════════════════════── -->
+      <section class="sec narrow" id="identity">
+        <p class="kicker">Identity</p>
+        <h2>Signed by a model, never by a tool</h2>
+        <div class="idcards">
+          <div class="idc bad">
+            <span class="badge no">rejected</span>
+            <code>agent: "claude"</code>
+            <span class="idc-why">Which model? Costs and failure modes differ.</span>
+          </div>
+          <div class="idc good">
+            <span class="badge yes">accepted</span>
+            <code>agent: "claude-opus-5"</code>
+            <span class="idc-why">Answerable — the next agent knows who claimed it.</span>
+          </div>
+        </div>
+        <p class="lead">
+          One tool runs many models, and an agent reading someone else's unproven claim needs to
+          know which one made it. <code>godkit verify</code> rejects a bare tool name.
+        </p>
+      </section>
+
+      <!-- ══ hosts ═════════════════════════════════════════════════════── -->
+      <section class="sec" id="hosts">
+        <p class="kicker">Compatibility</p>
+        <h2>Four tools, one protocol</h2>
+        <p class="lead">Same 16 skills, same <code>.agent/</code>. Only the install path differs.</p>
+
+        <div class="tablewrap">
+          <table class="matrix">
+            <thead>
+              <tr>
+                <th scope="col">Tool</th>
+                <th scope="col">Skills go to</th>
+                <th scope="col">Rules file</th>
+                <th scope="col">Protocol is</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <th scope="row">Claude Code</th>
+                <td data-label="Skills go to"><code>~/.claude/skills/</code></td>
+                <td data-label="Rules file"><code>CLAUDE.md</code></td>
+                <td data-label="Protocol is"><span class="badge yes">enforced by a hook</span></td>
+              </tr>
+              <tr>
+                <th scope="row">Codex</th>
+                <td data-label="Skills go to"><code>~/.agents/skills/</code></td>
+                <td data-label="Rules file"><code>AGENTS.md</code></td>
+                <td data-label="Protocol is"><span class="badge yes">enforced by a hook</span></td>
+              </tr>
+              <tr>
+                <th scope="row">Cursor</th>
+                <td data-label="Skills go to"><span class="na">no skill dir</span></td>
+                <td data-label="Rules file"><code>.cursor/rules/godkit.mdc</code></td>
+                <td data-label="Protocol is"><span class="badge">instructed</span></td>
+              </tr>
+              <tr>
+                <th scope="row">Antigravity</th>
+                <td data-label="Skills go to"><code>~/.gemini/antigravity/</code></td>
+                <td data-label="Rules file"><code>.agents/rules/godkit.md</code></td>
+                <td data-label="Protocol is"><span class="badge">instructed</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <p class="lead sm">
+          <strong>Enforced</strong> means the turn is blocked until the log exists.
+          <strong>Instructed</strong> means the rule is in the tool's own rules file.
+          All four are generated from one <code>AGENTS.md</code> and byte-compared in CI, so they
+          cannot drift apart.
+        </p>
+      </section>
+
+      <!-- ══ cli ═══════════════════════════════════════════════════════── -->
+      <section class="sec" id="cli">
+        <p class="kicker">Reference</p>
+        <h2>What you actually type</h2>
+        <div class="cmds">
+          <div class="cmd-row">
+            <code>godkit init</code>
+            <span>scaffold <code>.agent/</code> + the rule files, and set up this machine once</span>
+          </div>
+          <div class="cmd-row">
+            <code>godkit init --new</code>
+            <span>a project with no code yet: a brief instead of a map</span>
+          </div>
+          <div class="cmd-row">
+            <code>godkit sprint new "…"</code>
+            <span>a goal, and waves of file-disjoint tasks under it</span>
+          </div>
+          <div class="cmd-row">
+            <code>godkit sprint close</code>
+            <span>refuses while anything in it is unfinished or unproven</span>
+          </div>
+          <div class="cmd-row">
+            <code>godkit verify</code>
+            <span>every task and log against the rules the templates state</span>
+          </div>
+          <div class="cmd-row">
+            <code>godkit doctor</code>
+            <span>what is set up, and whether the map went stale</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- ══ cta ═══════════════════════════════════════════════════════── -->
+      <section class="cta">
+        <h2>Give them a memory they share</h2>
+        <button class="cmd big" type="button"><code>npx @codeforfee/godkit init</code></button>
+        <p>Node 18+. No dependencies. Nothing to configure.</p>
+      </section>
+    </main>
+
+    <footer>
+      <a href="https://www.npmjs.com/package/@codeforfee/godkit">npm</a>
+      <a href="https://github.com/CodeForFee/godkit">source</a>
+      <span>MIT © CodeForFee</span>
+    </footer>
+  </body>
+</html>
