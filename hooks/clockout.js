@@ -28,6 +28,38 @@ function sessionLog(agentDir, sid) {
   return null
 }
 
+// Housekeeping after a verified clock-out, so nobody has to remember it: move finished items out of
+// the files every session reads, refresh .agent/SKILLS.md for hosts with no hooks, and link any new
+// project skill the safety scan passes. Each step is independent and none may fail the hook.
+function maintain(root) {
+  const fs = require('fs')
+  const { paths } = require('../lib/paths')
+  try {
+    require('../lib/memory').archive(root)
+  } catch (error) {
+    warning('clockout archive', error)
+  }
+  try {
+    const evolve = require('../lib/evolve')
+    const rep = evolve.report(root)
+    if (rep.skills.length || rep.candidates.length) {
+      const file = paths(root).skillsDoc
+      const next = evolve.renderSkillsDoc(root, rep)
+      let prev = null
+      try {
+        prev = fs.readFileSync(file, 'utf8')
+      } catch {
+        /* first write */
+      }
+      const stamp = (s) => String(s).replace(/\*\*Generated:\*\* \S+/, '')
+      if (prev === null || stamp(prev) !== stamp(next)) require('../lib/graph').atomicWriteFile(file, next)
+    }
+    if (rep.skills.some((r) => !r.linked.length && !evolve.blocked(r.findings))) evolve.linkProjectSkills(root)
+  } catch (error) {
+    warning('clockout evolve', error)
+  }
+}
+
 function main() {
   const payload = readHookInput('clockout')
   if (payload.stop_hook_active) return // already blocked once this turn; blocking again loops forever
@@ -46,6 +78,7 @@ function main() {
     const unproven = checkLog(context.agentDir, written).find((f) => f.tag === 'no-verify')
     if (!unproven) {
       clearWork(payload)
+      maintain(context.stateRoot)
       return
     }
     process.stdout.write(
@@ -63,7 +96,9 @@ function main() {
 
   // The filename carries the model, so the placeholder stays a placeholder: only the model knows
   // which model it is, and guessing it here is how 'claude' ended up in every historical log.
-  const name = logName('<your-model-id>', sid)
+  // Built by hand: logName() sanitizes '<' and '>' to '-', and agents that replaced the inner text
+  // left '--model--' filenames behind.
+  const name = logName('MODEL', sid).replace('-MODEL', '-<your-model-id>')
   process.stdout.write(
     JSON.stringify({
       decision: 'block',
@@ -72,10 +107,8 @@ function main() {
         'Write .agent/log/' + name + ' (agent, session, scope, status, then Did / Verified / Bugs / ' +
         'Decisions / Left-next), then update .agent/BOARD.md and THREAD if another agent is ' +
         'waiting. Replace <your-model-id> and the `agent:` field with the model you are running ' +
-        'as — claude-opus-5, claude-sonnet-5, claude-opus-4.8, claude-opus-4.7, claude-opus-4.6, ' +
-        'claude-sonnet-4.6, claude-fable-5, codex-5.6-sol, codex-5.6-terra, codex-5.6-luna, ' +
-        'codex-5.5, gemini-3.8-flash, gemini-3.7-flash, gemini-3.6-pro, gemini-3.1 — never the tool ' +
-        'name. This check repeats until that log exists; see godkit-handoff.',
+        'as (e.g. claude-opus-5, codex-5.6-terra, gemini-3.6-pro) — never the tool name. This ' +
+        'check repeats until that log exists; see godkit-handoff.',
     }) + '\n',
   )
 }

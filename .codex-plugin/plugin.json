@@ -1,6 +1,6 @@
 {
   "name": "godkit",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "One shared harness for every AI agent. Read .agent/ before you edit, log before you finish.",
   "author": {
     "name": "CodeForFee",

@@ -88,20 +88,10 @@ function skillPairs(spec, names) {
   return { base, pairs: names.map((n) => [path.join(SKILLS, n), path.join(base, n)]) }
 }
 
-// Whether this machine already has the skills placed and the hooks registered for every tool that
-// takes them. False on a first run, true forever after — which is what keeps `init` from touching
-// home config it has nothing to add to.
+// Whether this machine already has the hooks registered for every tool that takes them. False on
+// a first run, true forever after — which is what keeps `init` from touching home config it has
+// nothing to add to. Skills are no longer part of it: `init` puts them in the project.
 function machineReady() {
-  const names = skillNames()
-  if (!names.length) return true // nothing to install; not our problem to report here
-
-  for (const spec of Object.values(TOOLS)) {
-    if (spec.style === 'rules-only') continue
-    const base = path.join(os.homedir(), ...spec.dir)
-    const probe = spec.style === 'folder' ? path.join(base, 'godkit') : path.join(base, names[0])
-    if (!fs.existsSync(probe)) return false
-  }
-
   const lib = require('../lib/install')
   for (const [, file] of lib.settingsTargets()) {
     let record
@@ -110,24 +100,68 @@ function machineReady() {
     } catch {
       return true // unreadable settings are cmdHooks' problem to report, not init's to overwrite
     }
-    let found = 0
-    for (const groups of Object.values((record.settings.hooks) || {})) {
-      for (const group of groups || []) {
-        for (const handler of (group && group.hooks) || []) if (lib.isOurHandler(handler)) found++
-      }
-    }
-    if (found < lib.HOOKS.length) return false
+    if (countOurHooks(record.settings) < lib.HOOKS.length) return false
+    if (hooksPointElsewhere(record.settings)) return false // an older copy's path: re-point
   }
   return true
 }
 
+function eachOurHandler(settings, fn) {
+  const lib = require('../lib/install')
+  for (const groups of Object.values((settings && settings.hooks) || {})) {
+    for (const group of groups || []) {
+      for (const handler of (group && group.hooks) || []) if (lib.isOurHandler(handler)) fn(handler)
+    }
+  }
+}
+
+function countOurHooks(settings) {
+  let found = 0
+  eachOurHandler(settings, () => found++)
+  return found
+}
+
+// True when a registered godkit hook runs a script from a different copy than this one.
+function hooksPointElsewhere(settings) {
+  const here = path.join(ROOT, 'hooks').replace(/\\/g, '/')
+  let elsewhere = false
+  eachOurHandler(settings, (h) => {
+    if (!h.command.replace(/\\/g, '/').includes(here)) elsewhere = true
+  })
+  return elsewhere
+}
+
+// The per-project skill copies: every skill, into the two paths the hosts read. Committed with the
+// project, so a fresh clone on another machine has them with nothing installed.
+const PROJECT_SKILL_DIRS = [['.claude', 'skills'], ['.agents', 'skills']]
+
+function installProjectSkills(root) {
+  const { installOne } = require('../lib/install')
+  const names = skillNames()
+  const label = 'godkit@' + version()
+  let done = 0
+  const refused = []
+  for (const dir of PROJECT_SKILL_DIRS) {
+    for (const n of names) {
+      const result = installOne(path.join(SKILLS, n), path.join(root, ...dir, n), false, { copy: true, label })
+      if (result.ok) done++
+      else refused.push(dir.concat(n).join('/') + ' — ' + result.reason)
+    }
+  }
+  return { names, done, refused }
+}
+
 function cmdInit(args) {
+  const startedAt = Date.now()
   const given = args.find((a) => !a.startsWith('-'))
   const root = given ? path.resolve(given) : projectRoot(process.cwd())
-  const greenfield = args.includes('--new')
   const p = paths(root)
   const name = path.basename(root)
   const vars = { PROJECT: name, UTC: utcStamp() }
+  const code = require('../lib/scan').codeCount(root)
+  // A folder with no code is a new project whether or not anyone remembered --new.
+  const greenfield = args.includes('--new') || code.count === 0
+  const hadAgent = fs.existsSync(p.dir)
 
   fs.mkdirSync(p.tasks, { recursive: true })
   fs.mkdirSync(p.log, { recursive: true })
@@ -141,6 +175,9 @@ function cmdInit(args) {
   // this project is. Non-goals is the load-bearing line: on an empty repo it is the only thing
   // stopping an agent from inventing scope.
   if (greenfield && writeIfAbsent(p.brief, tpl('BRIEF.md', vars))) wrote.push('.agent/BRIEF.md')
+  // The SessionStart hook scaffolds with --quiet: its stdout is the agent's context, and the
+  // project half of a repo that already opted in is all it needs.
+  if (args.includes('--quiet')) return
 
   // The always-on rules, at the path each host already reads. These files belong to the user as
   // much as to us, so our text goes in a marked block and everything outside it is left alone.
@@ -158,41 +195,68 @@ function cmdInit(args) {
     ['.gitattributes', gitattributes, 'hash'],
   ]
   const refused = []
+  const rules = []
   for (const [rel, content, style] of managed) {
     const result = writeManaged(path.join(root, rel), content, style)
     const label = rel.replace(/\\/g, '/')
     if (result.action === 'refused') refused.push(label + ' — ' + result.reason)
-    else if (result.action !== 'unchanged') wrote.push(label + ' (' + result.action + ')')
+    else if (result.action !== 'unchanged') {
+      wrote.push(label + ' (' + result.action + ')')
+      rules.push(label + (result.action === 'appended' ? ' (block added, your text kept)' : ''))
+    }
   }
 
-  log('godkit: ' + name)
-  if (wrote.length) for (const w of wrote) log('  + ' + w)
-  else log('  already set up — nothing to write')
-  for (const r of refused) log('  ! ' + r)
+  const skills = args.includes('--no-skills') ? null : installProjectSkills(root)
 
-  // The machine half, in the same command: three commands to get started is three chances to run
-  // one and believe you ran all of them. `installOne` still refuses any destination it does not
-  // own, so this only ever adds what is missing.
-  //
-  // Only when something IS missing, though. `init` is run per project and re-run freely, and
-  // rewriting ~/.claude/settings.json on every one of those is churn at best — and on Windows, an
-  // EPERM as soon as two of them land together. A machine gets set up once.
-  if (!args.includes('--no-install') && !machineReady()) {
+  // The machine half, in the same command: hooks registered once per machine, and re-pointed when
+  // a newer copy runs. `init` is re-run freely, so a machine already set up is left alone.
+  let machine = null
+  if (!args.includes('--no-install') && !machineReady()) machine = registerHooks('install', false)
+
+  const ui = require('../lib/ui').create()
+  if (!ui.on) {
+    const kind = greenfield ? 'new project' : 'existing project, ' + code.count + (code.capped ? '+' : '') + ' code files'
+    log('godkit: ' + name + ' (' + kind + ')')
+    if (wrote.length) for (const w of wrote) log('  + ' + w)
+    else log('  already set up — nothing to write')
+    for (const r of refused) log('  ! ' + r)
+    if (skills) log('  skills: ' + skills.names.length + ' -> .claude/skills .agents/skills')
+    for (const r of (skills && skills.refused) || []) log('  ! skipped ' + r)
+    for (const m of machine || []) log('  hooks ' + m.tool + ': ' + m.added + ' registered (' + m.file + ')')
     log('')
-    cmdInstall([])
-    log('')
-    cmdHooks(['install'])
+    if (greenfield) {
+      log('Next: open your agent and describe what to build. It fills .agent/BRIEF.md from your')
+      log('prompt and cuts the first sprint from it. No map yet: there is no code to map.')
+    } else {
+      log('Next: open your agent and give it a task. Its first session builds the map with the')
+      log('godkit-map skill, then claims its scope on .agent/BOARD.md before it edits.')
+    }
+    return
   }
 
-  log('')
-  if (greenfield) {
-    log('Next: fill in .agent/BRIEF.md — what this is, for whom, the stack, and the non-goals.')
-    log('Then `godkit sprint new "<goal>"` and cut the first wave from it. No map yet: there is')
-    log('no code to map.')
-  } else {
-    log('Next: run the godkit-map skill to build the project map, then claim your scope on')
-    log('.agent/BOARD.md before you edit.')
+  const { c } = ui
+  const total = require('../lib/install').HOOKS.length
+  ui.header('godkit', version(), 'one shared brain for every AI agent')
+  ui.kv('Project', c.bold(name))
+  ui.kv('Detected', c.amber(ui.sym('spark')) + ' ' + (greenfield
+    ? 'new project — no code yet'
+    : 'existing project — ' + code.count + (code.capped ? '+' : '') + ' code files' + (code.top ? ' · ' + code.top.slice(1) : '')))
+  ui.write()
+  const agentFiles = ['BRIEF', 'BOARD', 'THREAD', 'MAP'].filter((f) => fs.existsSync(path.join(p.dir, f + '.md')))
+  if (hadAgent) ui.row('skip', 'Memory', 'kept — .agent/ is never overwritten')
+  else ui.row('ok', 'Memory', c.under('.agent/') + '  ' + agentFiles.concat('tasks', 'log').join(' · '))
+  ui.row(rules.length ? 'ok' : 'skip', 'Rules', rules.length ? rules.join(' · ') : 'up to date')
+  for (const r of refused) ui.row('warn', '', r)
+  if (skills) {
+    ui.row('ok', 'Skills', skills.names.length + ' installed   ' + c.under('.claude/skills') + '  ' + c.under('.agents/skills'))
+    for (const r of skills.refused) ui.row('warn', '', 'skipped ' + r)
   }
+  if (machine) ui.row('ok', 'Machine', machine.map((m) => m.tool + ' ' + m.added + '/' + total).join(' · ') + '   ' + c.dim(ROOT))
+  else ui.row('skip', 'Machine', args.includes('--no-install') ? 'skipped (--no-install)' : 'already set up')
+  ui.done('Ready', startedAt)
+  ui.next(greenfield
+    ? ['Open your AI agent here and describe what to build.', 'It writes the brief, plans and codes on its own.']
+    : ['Open your AI agent and give it a task. The first session', 'maps the codebase automatically, then does the work.'])
 }
 
 function cmdInstall(args) {
@@ -269,20 +333,47 @@ function cmdHooks(args) {
     return
   }
 
+  for (const r of registerHooks(action, dryRun)) {
+    if (r.error) log('  ' + r.tool.padEnd(8) + 'skipped — ' + r.error)
+    else log('  ' + r.tool.padEnd(8) + (dryRun ? 'would ' : '') + action + ': ' +
+        r.added + ' registered, ' + r.removed + ' replaced  (' + r.file + ')')
+  }
+}
+
+// Codex never read ~/.codex/settings.json; godkit 1.0 wrote its hooks there anyway. Any of ours
+// found there are removed on every install or uninstall — the user's own entries are left alone.
+function legacyTargets() {
+  const home = process.env.CODEX_HOME || path.join(os.homedir(), '.codex')
+  return [['codex', path.join(home, 'settings.json')]]
+}
+
+function registerHooks(action, dryRun) {
+  const lib = require('../lib/install')
+  const results = []
   for (const [tool, file] of lib.settingsTargets()) {
     if (action === 'uninstall' && !fs.existsSync(file)) continue
     let record
     try {
       record = lib.readSettings(file)
     } catch (err) {
-      log('  ' + tool.padEnd(8) + 'skipped — ' + err.message)
+      results.push({ tool, file, error: err.message })
       continue
     }
-    const result = lib.applyHooks(record.settings, { uninstall: action === 'uninstall' })
+    const result = lib.applyHooks(record.settings, { uninstall: action === 'uninstall', hooksDir: path.join(ROOT, 'hooks') })
     lib.writeSettings(file, result.settings, record, dryRun)
-    log('  ' + tool.padEnd(8) + (dryRun ? 'would ' : '') + action + ': ' +
-        result.added + ' registered, ' + result.removed + ' replaced  (' + file + ')')
+    results.push({ tool, file, added: result.added, removed: result.removed })
   }
+  for (const [, file] of legacyTargets()) {
+    if (!fs.existsSync(file)) continue
+    try {
+      const record = lib.readSettings(file)
+      if (!countOurHooks(record.settings)) continue
+      lib.writeSettings(file, lib.applyHooks(record.settings, { uninstall: true }).settings, record, dryRun)
+    } catch {
+      /* not ours to repair */
+    }
+  }
+  return results
 }
 
 // The deterministic half of building the map: walk, categorize, resolve imports, group into
@@ -657,7 +748,9 @@ function cmdVerify(args) {
 function cmdDoctor() {
   const root = projectRoot(process.cwd())
   const p = paths(root)
-  log('godkit ' + version())
+  const ui = require('../lib/ui').create()
+  if (ui.on) ui.header('godkit', version(), path.basename(root))
+  else log('godkit ' + version())
   log('project: ' + root)
   log('')
 
@@ -676,7 +769,9 @@ function cmdDoctor() {
       // A greenfield project has no code yet, so "MISSING" is a false alarm — the brief is
       // standing in for the map until there is something to map.
       if (fs.existsSync(p.brief) && !fs.existsSync(p.graph)) {
-        log('    map          greenfield — no code to map yet (.agent/BRIEF.md is the brief)')
+        // ...until the first wave lands code. From then on a missing map is a real gap.
+        if (require('../lib/scan').codeCount(root, 1).count) log('    map          MISSING — code exists now; run the godkit-map skill')
+        else log('    map          greenfield — no code to map yet (.agent/BRIEF.md is the brief)')
       } else {
         const { staleness, summary } = require('../lib/freshness')
         log('    map          ' + summary(staleness(root, p.meta)))
@@ -713,6 +808,10 @@ function cmdDoctor() {
   log('')
   const names = skillNames()
   log('  skills in package: ' + names.length)
+  for (const dir of PROJECT_SKILL_DIRS) {
+    const n = names.filter((x) => fs.existsSync(path.join(root, ...dir, x, 'SKILL.md'))).length
+    log('  ' + dir.join('/').padEnd(15) + n + ' of ' + names.length + (n < names.length ? ' — `godkit init` copies them' : ''))
+  }
   for (const [t, spec] of Object.entries(TOOLS)) {
     if (spec.style === 'rules-only') {
       const f = path.join(root, '.cursor', 'rules', 'godkit.mdc')
@@ -731,11 +830,63 @@ function cmdDoctor() {
   cmdHooks([])
 }
 
+// Search everything agents ever wrote, archive included, in a bounded answer. This is how an
+// agent remembers what happened to a file without reading the whole history into its context.
+function cmdRecall(args) {
+  const root = projectRoot(process.cwd())
+  const query = args.filter((a) => !a.startsWith('-')).join(' ').trim()
+  if (!query) {
+    log('godkit recall <file|words> — every word must appear on the line; newest first')
+    process.exitCode = 1
+    return
+  }
+  const { recall } = require('../lib/memory')
+  const result = recall(root, query)
+  const ui = require('../lib/ui').create()
+  if (!result.hits.length) {
+    log('no matches for "' + query + '" in .agent/ (logs, board, thread, tasks, archive)')
+    return
+  }
+  if (!ui.on) {
+    process.stdout.write(result.text)
+    if (result.more) log('+' + result.more + ' more — narrow the query')
+    return
+  }
+  const { c } = ui
+  ui.write()
+  ui.write('  ' + c.amber(ui.sym('mark')) + ' ' + c.bold(c.cyan('recall')) + '  ' + query + '   ' +
+    c.dim(result.hits.length + (result.more ? '+' + result.more : '') + ' matches · newest first'))
+  ui.write()
+  for (const h of result.hits) {
+    ui.write('  ' + c.dim(h.file + ':' + h.line))
+    ui.write('    ' + h.text)
+  }
+  ui.write()
+}
+
 function cmdUninstall(args) {
   const targets = args.filter((a) => !a.startsWith('-'))
   const dryRun = args.includes('--dry-run')
   const names = skillNames()
   const { removeOne } = require('../lib/install')
+
+  // --project: the copies `init` put into this project. Only marked godkit copies are removed.
+  if (args.includes('--project')) {
+    const root = projectRoot(process.cwd())
+    for (const dir of PROJECT_SKILL_DIRS) {
+      let removed = 0
+      const kept = []
+      for (const n of names) {
+        const result = removeOne(path.join(root, ...dir, n), path.join(SKILLS, n), dryRun)
+        if (result.how === 'absent') continue
+        if (result.ok) removed++
+        else kept.push(n)
+      }
+      log(dir.join('/') + ': ' + (dryRun ? 'would remove ' : 'removed ') + removed)
+      if (kept.length) log('   kept (not ours): ' + kept.join(', '))
+    }
+    return
+  }
 
   for (const t of targets.length ? targets : Object.keys(TOOLS)) {
     const spec = TOOLS[t]
@@ -755,44 +906,65 @@ function cmdUninstall(args) {
   log('')
   log('Left in place: this project\'s .agent/ directory and rule files. Delete them by hand if')
   log('you want them gone — they are your project\'s memory, not the package\'s.')
+  log('Skill copies inside this project: `godkit uninstall --project`.')
   log('Project skills linked into .claude/ or .agents/: `godkit skills --unlink`.')
 }
 
-const HELP = `godkit — one shared harness for every AI agent
+const COMMANDS = [
+  ['SETUP', null, [
+    ['init [path] [--new]', 'set up this project · auto-detects new vs existing'],
+    ['doctor', 'health check: what is set up, what is stale'],
+  ]],
+  ['MEMORY', null, [
+    ['recall <file|words>', 'search all history — logs, board, thread, archive'],
+    ['verify [--quiet]', 'are "done" claims backed by evidence? non-zero if not'],
+  ]],
+  ['WORK', 'your agent runs these itself', [
+    ['sprint [new "<goal>"|close]', 'a goal and its waves of file-disjoint tasks'],
+    ['scan · save', 'build the project map (godkit-map)'],
+    ['skills [--link|--unlink]', 'this project\'s own skills in .agent/skills/'],
+    ['evolve [--write]', 'what each project skill\'s evidence says'],
+    ['refactor [--all]', 'which code files churn and get blamed most'],
+  ]],
+  ['MACHINE', null, [
+    ['hooks [status|install|uninstall]', 'hook registrations for claude and codex'],
+    ['install [tool...]', 'skills into ~/ for every project (init already covers this one)'],
+    ['uninstall [tool|--project]', 'remove skills godkit placed; never touches .agent/'],
+    ['--version', 'the installed version'],
+  ]],
+]
 
-  godkit init [path] [--new] [--no-install]
-                            scaffold .agent/ and the per-tool rule files into a project, and
-                            install the skills and hooks on this machine. --new is greenfield:
-                            no map, a .agent/BRIEF.md instead. --no-install skips the machine
-                            half.
-  godkit install [tool...]  install the skills for claude, codex, antigravity (default: all)
-  godkit scan [path]        walk the project and group it into batches for the map
-  godkit save [file]        save a merged graph as the map (graph.json, MAP.md, meta.json)
-  godkit sprint [new "<goal>"|close]
-                            a sprint is a goal plus waves of file-disjoint tasks. No argument
-                            reports the current one; close refuses while any task in it is
-                            unfinished or finished with nothing under ## Test.
-  godkit skills [--link|--unlink] [tool...] [--force]
-                            this project's own skills in .agent/skills/: list them, or link
-                            them into the paths claude and codex read
-  godkit evolve [--write]   re-read the logs: what each project skill's evidence says.
-                            --write projects it to .agent/SKILLS.md
-  godkit refactor [--all]   re-read the logs: which code files are churned and blamed most
-  godkit hooks [status|install|uninstall] [--dry-run]
-                            the hook registrations in the claude and codex settings files
-  godkit verify [--quiet]   check .agent/tasks/ and .agent/log/ against the rules the
-                            templates state: an exit condition, evidence behind a done
-                            claim, a handoff behind anything else. Non-zero on findings.
-  godkit doctor             what is set up here, and whether the map is stale
-  godkit uninstall [tool]   remove the installed skills (leaves your .agent/ alone)
-  godkit --version          the installed version
+function help(stream) {
+  const out = stream || process.stdout
+  const ui = require('../lib/ui').create(out)
+  const { c } = ui
+  if (ui.on) ui.header('godkit', version(), 'install once, then just prompt your agent')
+  else ui.write('godkit ' + version() + ' — install once, then just prompt your agent\n')
+  for (const [group, note, rows] of COMMANDS) {
+    ui.write('  ' + c.bold(group) + (note ? '  ' + c.dim('(' + note + ')') : ''))
+    for (const [cmd, what] of rows) ui.write('    ' + c.cyan(cmd.padEnd(34)) + c.dim(what))
+    ui.write()
+  }
+}
 
-After init, run the godkit-map skill to build the project map. On a new project, init --new
-writes a brief instead, and there is nothing to map yet.
-`
+// init, install and hooks write paths meant to outlive this process. Run from npx, this process
+// lives in a cache npm prunes at will — so those three re-run from the stable copy instead.
+function fromStableHome(cmd, args) {
+  if (!['init', 'install', 'hooks'].includes(cmd)) return false
+  const stable = require('../lib/install').stableRoot(version())
+  if (path.resolve(stable) === ROOT) return false
+  const { execFileSync } = require('child_process')
+  try {
+    execFileSync(process.execPath, [path.join(stable, 'bin', 'godkit.js'), cmd, ...args], { stdio: 'inherit' })
+  } catch (err) {
+    process.exitCode = err.status || 1
+  }
+  return true
+}
 
 function main() {
   const [cmd, ...args] = process.argv.slice(2)
+  if (fromStableHome(cmd, args)) return
   switch (cmd) {
     case 'init':
       return cmdInit(args)
@@ -812,6 +984,8 @@ function main() {
       return cmdRefactor(args)
     case 'hooks':
       return cmdHooks(args)
+    case 'recall':
+      return cmdRecall(args)
     case 'verify':
       return cmdVerify(args)
     case 'doctor':
@@ -826,9 +1000,10 @@ function main() {
     case 'help':
     case '--help':
     case '-h':
-      return process.stdout.write(HELP)
+      return help()
     default:
-      process.stderr.write('godkit: unknown command "' + cmd + '"\n\n' + HELP)
+      process.stderr.write('godkit: unknown command "' + cmd + '"\n\n')
+      help(process.stderr)
       process.exit(1)
   }
 }

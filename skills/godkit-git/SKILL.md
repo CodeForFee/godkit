@@ -1,11 +1,10 @@
 ---
 name: godkit-git
 description: >
-  Git mechanics for a repo several agents edit at once: worktrees as the technical backstop for a
-  board claim, commit as the actual checkpoint, and why .agent/ rarely conflicts. Use when starting
-  real parallel work, when deciding how to record a verified step, when a merge touches .agent/, or
-  on "worktree", "parallel branches", "merge conflict in the board", "how do we commit this". Do
-  NOT use for release mechanics — versioning, changelogs and tagging are a different concern.
+  Git for a repo several agents edit at once: worktrees behind a board claim, commit as the
+  checkpoint, why .agent/ rarely conflicts. Use when starting parallel work, recording a verified
+  step, a merge touching .agent/, or "worktree", "parallel branches", "merge conflict in the board",
+  "how do we commit this". Not for releases.
 license: MIT
 ---
 

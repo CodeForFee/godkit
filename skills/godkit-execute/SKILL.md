@@ -1,12 +1,10 @@
 ---
 name: godkit-execute
 description: >
-  Run planned work through five stages so nothing ships unverified and nothing retries forever:
-  pre-execute (validate scope and capability), guard (deny-only), execute (bounded), post-execute
-  (verify against the world, not the return value), checkpoint. Includes error recovery — retry
-  only on verified advancement — and what to do when a delegated result comes back unproven. Use on
-  "execute", "carry out the plan", "run it", "verify this", "it failed again", or when running or
-  checking delegated work. Do NOT use for a single edit with an obvious check.
+  Run planned work in five stages — pre-execute, guard, execute (bounded), post-execute (verify
+  against the world), checkpoint — with retry only on verified advancement. Use on "execute", "carry
+  out the plan", "run it", "verify this", "it failed again", or when running or checking delegated
+  work. Not for a single edit with an obvious check.
 license: MIT
 ---
 

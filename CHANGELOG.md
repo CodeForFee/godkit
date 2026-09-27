@@ -2,6 +2,34 @@
 
 All notable changes to godkit. Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow [semver](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] — 2026-09-27
+
+Install once, then just prompt: the agent picks its own skills, and every session costs less.
+
+### Install
+
+- `init` detects a new project by itself (no code files); `--new` now only forces it.
+- `init` copies **all skills into the project** (`.claude/skills/`, `.agents/skills/`), marked as godkit's, so they are committed and a fresh clone needs nothing installed. Re-running refreshes them; a directory you wrote is never replaced. `godkit uninstall --project` removes them.
+- Run from `npx`, `init`, `install` and `hooks` re-run from a stable copy in `~/.godkit/<version>/`. Hooks and links used to point into npm's `_npx` cache and break when npm pruned it.
+- Codex hooks go to `~/.codex/hooks.json`, the file Codex reads. 1.0 wrote them to `~/.codex/settings.json`, which Codex never read; any found there are removed.
+- `init` re-points hooks registered from an older copy.
+- A human-facing CLI: the project logo, colour, grouped help. Plain text whenever output is piped, run by an agent or hook, under CI, or with `NO_COLOR` — that output lands in a model's context.
+
+### Automatic
+
+- The rules block carries a **Which skill, when** table, so every host — Cursor and Antigravity included, which read `.agents/skills/<name>/SKILL.md` — chooses the skill by situation.
+- The session hook scaffolds `.agent/` in an empty folder (greenfield) or an opted-in clone that lacks it, and tells the agent to fill `BRIEF.md` from the user's prompt rather than hand it back.
+- After a verified clock-out: finished board items (fixed bugs beyond the newest ten, handoffs beyond three) and thread blocks older than 14 days move to `.agent/archive/` — moved, never deleted; decisions and open work never move. `.agent/SKILLS.md` is refreshed and new project skills that pass the safety scan are linked.
+- `doctor` and the brief notice when a greenfield project gains code and needs its first map.
+
+### Memory and tokens
+
+- `godkit recall <file|words>` searches logs, board, thread, tasks, sprints and the archive in a bounded (2KB) answer.
+- The session brief is a constant ≤3KB digest — live claims, open bugs, decisions, one line per recent log — instead of an 8KB clip of raw files.
+- `godkit-lazy` no longer re-injects its 6KB skill every session and subagent; its ladders live in the rules block, and the hook adds one line.
+- Skill descriptions, loaded every session, are 30% shorter with every trigger phrase kept. `godkit` and `godkit-handoff` move sprint mode, provider routing, file formats and the memory guide into `references/`, loaded on demand; a test fails if any rule line from before the move is missing.
+- The rules add token discipline for input and output: filter long output, delegate by pointer, answer first, one line per log item.
+
 ## [1.0.0] — 2026-09-05
 
 First public release.

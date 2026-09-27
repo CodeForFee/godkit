@@ -1,12 +1,11 @@
 ---
 name: godkit-map
 description: >
-  Build or refresh the project map — .agent/graph.json plus a readable MAP.md — so every agent
-  arriving later knows the architecture, entry points and landmines without re-reading the repo.
-  Scans, analyzes in batches, derives layers and a start-here tour, saves incrementally. Use when
-  there is no map, when it reports STALE, after a large merge or refactor, or on "map this",
-  "index this", "understand this codebase", "what is this project", "refresh the map". Do NOT use
-  to answer what the existing map already answers — grep it.
+  Build or refresh the project map (.agent/graph.json + MAP.md): scan, analyze in batches, derive
+  layers and a start-here tour, save incrementally. Use when there is no map, it reports STALE or
+  MISSING, after a large merge or refactor, or on "map this", "index this", "understand this
+  codebase", "what is this project", "refresh the map". Not to answer what the map already answers —
+  grep it.
 argument-hint: "[--full | --refresh]"
 license: MIT
 ---

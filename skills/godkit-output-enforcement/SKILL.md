@@ -1,12 +1,10 @@
 ---
 name: godkit-output-enforcement
 description: >
-  Guards against a generated deliverable being handed over stubbed, truncated, or described instead
-  of written. Locks a deliverable count before generating, bans "// rest of implementation" and
-  "and so on", and defines how to pause cleanly at a token limit instead of compressing or skipping
-  ahead. Use whenever producing a full file, several files, or any "give me the whole thing"
-  deliverable. Do NOT use for whether a delegated task actually succeeded — run its check, do not
-  read its prose; that is godkit-execute's post-execute stage.
+  Stops a deliverable being handed over stubbed, truncated or described instead of written: lock the
+  count first, ban "// rest of implementation" and "and so on", pause cleanly at a token limit. Use
+  whenever producing a full file, several files, or any "give me the whole thing" deliverable. Not
+  for judging delegated results (godkit-execute).
 license: MIT
 ---
 

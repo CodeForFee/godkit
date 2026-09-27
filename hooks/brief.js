@@ -1,93 +1,184 @@
 #!/usr/bin/env node
 'use strict'
-// SessionStart: inject a bounded, no-follow view of the canonical shared state. Every content
-// section has its own byte budget so a large BOARD can never starve MAP, logs, THREAD, or reminder.
+// SessionStart: inject a bounded, no-follow digest of the canonical shared state. The budget is a
+// constant, not a fraction of the history: however long the project has run, this costs the same.
+// Live work (claims, open bugs, decisions) is quoted; finished work is a one-line pointer, and
+// `godkit recall` reaches everything else.
 
 const fs = require('fs')
 const path = require('path')
 
-const MAX_BRIEF = 8 * 1024
-const RESERVED = 600
+const ROOT = path.resolve(__dirname, '..')
+const CLI = 'node "' + path.join(ROOT, 'bin', 'godkit.js').replace(/\\/g, '/') + '"'
+const MAX_BRIEF = 3 * 1024
 const LIMITS = {
-  board: 2560,
-  map: 800,
-  skills: 800,
-  log: 900,
-  thread: 700,
+  board: 1300,
+  map: 600,
+  logs: 550,
+  thread: 300,
+  notes: 400,
 }
+const LOGS_SHOWN = 5
 
 const REMINDER =
-'Claim your scope on the board before you edit. If your files overlap an open claim, do not ' +
-'edit them. Sign the claim and your log with the MODEL you are running as (claude-opus-5, ' +
-'claude-sonnet-5, claude-opus-4.8, claude-opus-4.7, claude-opus-4.6, claude-sonnet-4.6, ' +
-'claude-fable-5, codex-5.6-sol, codex-5.6-terra, codex-5.6-luna, codex-5.5, gemini-3.8-flash, ' +
-'gemini-3.7-flash, gemini-3.6-pro, gemini-3.1) — not the tool name. Write your exact-session log ' +
-'entry before this session ends.'
+  'Claim your scope on the board before you edit; never edit inside an open claim. Sign claims ' +
+  'and logs with your exact model id, not the tool name. Log before you finish. ' +
+  'History: `godkit recall <file|words>`. CLI: ' + CLI
 
 function clippedRead(agentDir, file, limit, tail) {
   const { fitBytes, readContained } = require('../lib/paths')
-  const result = readContained(agentDir, file, limit, tail)
+  const result = readContained(agentDir, file, 64 * 1024, tail)
   if (!result) return null
-  let text = result.text.trim()
-  if (result.truncated) text = tail ? '…\n' + text : text + '\n…'
-  return fitBytes(text, limit, tail)
+  return fitBytes(result.text.trim(), limit, tail)
+}
+
+// The board, minus what does not bind anyone: the roster, fixed bugs, and older handoffs.
+function boardDigest(text) {
+  const out = []
+  let keep = true
+  let section = ''
+  let handoffs = 0
+  let prevKept = false
+  for (const line of String(text || '').split(/\r?\n/)) {
+    if (/^# /.test(line)) continue
+    if (/^## /.test(line)) {
+      section = line.toLowerCase()
+      keep = !/roster|open notes/.test(section)
+      handoffs = 0
+      if (keep) out.push(line)
+      continue
+    }
+    if (!keep || /^<!--.*-->$/.test(line.trim()) || !line.trim()) {
+      prevKept = false
+      continue
+    }
+    if (/^## bugs/.test(section) && /^\s*[-*] \[x\]/i.test(line)) {
+      prevKept = false
+      continue
+    }
+    if (/handoff/.test(section)) {
+      if (/^[-*] /.test(line)) handoffs++
+      if (handoffs > 1) {
+        prevKept = false
+        continue
+      }
+    }
+    if (/^\s*\|[\s|-]*\|\s*$/.test(line)) continue // table separator rows
+    if (/^## tasks/.test(section) && /\|\s*done\s*\|/i.test(line)) continue
+    // Structure only — rows, bullets, the sprint line. The prose between them explains the board
+    // to a first-time reader, and every session after the first pays for it.
+    const continues = /^\s{2,}\S/.test(line) && prevKept // a wrapped bullet travels with it
+    prevKept = continues || /^\s*(\||[-*] |\d+\. |\*\*)/.test(line)
+    if (!prevKept) continue
+    out.push(line)
+  }
+  // Headings left with nothing under them say nothing.
+  return out.filter((line, i) => !/^## /.test(line) || (out[i + 1] && !/^## /.test(out[i + 1]))).join('\n')
 }
 
 function field(body, name) {
   const frontmatter = String(body || '').match(/^---\r?\n([\s\S]*?)\r?\n---/)
   if (!frontmatter) return null
   const match = frontmatter[1].match(new RegExp('^' + name + ':\\s*(.+)$', 'mi'))
-  return match ? match[1].trim() : null
+  return match ? match[1].replace(/\s+#.*$/, '').replace(/^"|"$/g, '').trim() : null
 }
 
-function skillsSummary(agentDir, p) {
-  const { containedEntries, fitBytes, readContained } = require('../lib/paths')
-  const generated = clippedRead(agentDir, p.skillsDoc, LIMITS.skills, false)
-  if (generated) return generated
+function logLine(agentDir, file) {
+  const { readContained } = require('../lib/paths')
+  const body = (readContained(agentDir, file, 4096, false) || {}).text || ''
+  const task = (body.match(/## Task\s*\r?\n+([^\r\n<#][^\r\n]*)/) || [])[1]
+  const bits = [field(body, 'agent'), field(body, 'status'), field(body, 'scope')].filter(Boolean)
+  return '- ' + path.basename(file, '.md').slice(0, 16) + ' ' + bits.join(' · ') + (task ? ' — ' + task.trim() : '')
+}
 
-  const lines = []
-  for (const entry of containedEntries(agentDir, p.skills, 64)) {
-    if (!entry.isDirectory || entry.name.startsWith('.')) continue
-    const skillFile = path.join(entry.path, 'SKILL.md')
-    const body = readContained(agentDir, skillFile, 2048, false)
-    if (!body) continue
-    const origin = field(body.text, 'origin') || 'authored'
-    const enabled = field(body.text, 'enabled')
-    lines.push('- ' + entry.name.replace(/[\r\n]/g, '-') + ' (' + origin + (enabled === 'false' ? ', disabled' : '') + ')')
+function unfilled(text, heading) {
+  const m = String(text || '').match(new RegExp('## ' + heading + '\\s*\\r?\\n([\\s\\S]*?)(?=\\r?\\n## |$)'))
+  return !m || !m[1].replace(/<!--[\s\S]*?-->/g, '').trim()
+}
+
+function mapState(context, p) {
+  const { containedPath } = require('../lib/paths')
+  const hasCode = () => require('../lib/scan').codeCount(context.worktreeRoot, 1).count > 0
+  if (fs.existsSync(p.brief) && !fs.existsSync(p.graph)) {
+    const brief = clippedRead(context.agentDir, p.brief, 16 * 1024, false) || ''
+    if (!hasCode()) {
+      return unfilled(brief, 'What this is')
+        ? 'NEW PROJECT. FIRST STEP, even for a one-turn build: fill .agent/BRIEF.md from the ' +
+          'user\'s prompt yourself — a line or two per section; infer the stack, ask only if nothing ' +
+          'hints at it and it is hard to reverse. Do not ask the user to fill it. Then build; open ' +
+          '`godkit sprint new "<goal>"` only if the build is bigger than one turn.'
+        : 'New project, brief filled, no code yet — work the open sprint.\n' + (brief.slice(0, 400))
+    }
+    return 'MAP MISSING — code exists now. Run the godkit-map skill before relying on your own reading.'
   }
-  if (!lines.length) return '(none recorded)'
-  lines.push('List any project skill you use in your log\'s `skills:` frontmatter.')
-  return fitBytes(lines.join('\n'), LIMITS.skills)
-}
-
-function mapSummary(context, p) {
-  const { containedPath, fitBytes } = require('../lib/paths')
   const lines = []
   try {
-    const metaExists = fs.existsSync(p.meta)
-    if (!metaExists || containedPath(context.agentDir, p.meta, 'file')) {
+    if (!fs.existsSync(p.meta) || containedPath(context.agentDir, p.meta, 'file')) {
       const { staleness, summary } = require('../lib/freshness')
       const state = staleness(context.worktreeRoot, p.meta)
       lines.push(summary(state))
       if (state.state === 'stale' && state.changed.length) {
-        lines.push('Changed: ' + state.changed.slice(0, 10).join(', '))
+        lines.push('Changed: ' + state.changed.slice(0, 8).join(', '))
         lines.push('Refresh with godkit-map before relying on this map.')
       }
-    } else {
-      lines.push('map freshness unavailable: unsafe .agent/meta.json was ignored')
-    }
+    } else lines.push('map freshness unavailable: unsafe .agent/meta.json was ignored')
   } catch (error) {
     lines.push('map freshness unavailable: ' + error.message)
   }
+  if (!fs.existsSync(p.graph)) lines.push('No map yet — run the godkit-map skill first.')
+  else {
+    const map = clippedRead(context.agentDir, p.map, LIMITS.map, false)
+    if (map) lines.push(map.replace(/<!--[\s\S]*?-->\s*/g, ''))
+  }
+  return lines.join('\n')
+}
 
-  const map = clippedRead(context.agentDir, p.map, LIMITS.map, false)
-  if (map) lines.push(map)
-  else lines.push('(MAP.md missing or unsafe)')
-  return fitBytes(lines.join('\n'), LIMITS.map)
+// Pointers the agent acts on after its task, read from files already written — no recompute here.
+function notes(context, p) {
+  const out = []
+  const doc = clippedRead(context.agentDir, p.skillsDoc, 8192, false)
+  if (doc) {
+    const candidates = (doc.match(/^## Capture candidates[\s\S]*?(?=^## |$(?![\s\S]))/m) || [''])[0]
+      .split(/\r?\n/).filter((l) => /^\s*[-*] /.test(l)).length
+    const quarantined = (doc.match(/QUARANTINED/g) || []).length
+    if (candidates) out.push('evolve: ' + candidates + ' capture candidate(s) — run godkit-evolve AFTER your task.')
+    if (quarantined) out.push('evolve: ' + quarantined + ' project skill(s) QUARANTINED — see .agent/SKILLS.md.')
+  }
+  const { containedEntries } = require('../lib/paths')
+  const skills = containedEntries(context.agentDir, p.skills, 64).filter((e) => e.isDirectory && !e.name.startsWith('.'))
+  if (skills.length) out.push('Project skills (.agent/skills/): ' + skills.map((e) => e.name).join(', ') + '. Name any you use in your log\'s `skills:` frontmatter.')
+  return out.join('\n')
+}
+
+// A repo opted in (its rule files carry the godkit block) but has no .agent/ — a fresh clone of a
+// project that keeps .agent/ out of git — or a folder with no code at all, where a new project is
+// starting. Either way the scaffold is ten seconds nobody should have to ask for.
+function shouldScaffold(root) {
+  for (const f of ['CLAUDE.md', 'AGENTS.md']) {
+    try {
+      if (fs.readFileSync(path.join(root, f), 'utf8').includes('<!-- godkit:start -->')) return true
+    } catch {
+      /* absent */
+    }
+  }
+  try {
+    if (path.resolve(root) === path.resolve(require('os').homedir())) return false
+  } catch {
+    /* no home: fall through */
+  }
+  return require('../lib/scan').codeCount(root, 1).count === 0
+}
+
+// Messages only: the file's own preamble explains the format, which nobody needs every session.
+function threadTail(agentDir, file) {
+  const { fitBytes } = require('../lib/paths')
+  const text = clippedRead(agentDir, file, 64 * 1024, true) || ''
+  const at = text.search(/^## \d{4}-\d{2}-\d{2}T/m)
+  return at === -1 ? null : fitBytes(text.slice(at).trim(), LIMITS.thread, true)
 }
 
 function section(title, content) {
-  return '### ' + title + '\n' + (content || '(missing)')
+  return content ? '### ' + title + '\n' + content : ''
 }
 
 function main() {
@@ -95,42 +186,49 @@ function main() {
   const { readHookInput } = require('../lib/session')
   const payload = readHookInput('brief')
   const cwd = typeof payload.cwd === 'string' && payload.cwd ? payload.cwd : process.cwd()
-  const context = findAgentContext(cwd)
+  let context = findAgentContext(cwd)
+
+  if (!context.agentDir && shouldScaffold(context.stateRoot)) {
+    try {
+      require('child_process').execFileSync(
+        process.execPath,
+        [path.join(ROOT, 'bin', 'godkit.js'), 'init', context.stateRoot, '--quiet', '--no-install', '--no-skills'],
+        { stdio: 'ignore', timeout: 5000 },
+      )
+    } catch {
+      /* fall through to the hint below */
+    }
+    context = findAgentContext(cwd)
+  }
 
   if (!context.agentDir) {
     process.stdout.write(
-      'No .agent/ directory in this repo. Several agents share this project, so before ' +
-        'your first edit run `godkit init` (or load godkit-handoff and create it by hand). Until ' +
-        'it exists, nothing you do is visible to the next agent.\n',
+      'No .agent/ here. If you will change code, run `' + CLI + ' init` first (no permission ' +
+        'needed); until it exists, nothing you do is visible to the next agent.\n',
     )
     return
   }
 
   const p = paths(context.stateRoot)
-  const parts = ['## Handoff (.agent/) — read before editing, log before finishing']
-  parts.push(section('BOARD.md', clippedRead(context.agentDir, p.board, LIMITS.board, false)))
-  parts.push(section('MAP.md', mapSummary(context, p)))
-  parts.push(section('Project skills (.agent/skills/)', skillsSummary(context.agentDir, p)))
+  const board = clippedRead(context.agentDir, p.board, 64 * 1024, false)
+  const logs = logEntries(context.agentDir).slice(0, LOGS_SHOWN).map((f) => logLine(context.agentDir, f))
 
-  const logs = logEntries(context.agentDir).slice(0, 2)
-  if (!logs.length) parts.push(section('Recent logs', '(none recorded)'))
-  for (const entry of logs) {
-    const name = fitBytes(path.basename(entry).replace(/[\r\n]/g, '-'), 48)
-    parts.push(section('log/' + name, clippedRead(context.agentDir, entry, LIMITS.log, false)))
-  }
+  const parts = [
+    '## Handoff (.agent/) — read before editing, log before finishing',
+    // State first: "new project" or "map missing" decides what the agent does before anything else.
+    section('MAP', fitBytes(mapState(context, p), LIMITS.map)),
+    section('BOARD (live items only)', board && fitBytes(boardDigest(board), LIMITS.board)),
+    section('Recent logs (newest first; open one only if its scope overlaps yours)', logs.length ? fitBytes(logs.join('\n'), LIMITS.logs) : '(none yet)'),
+    section('THREAD (tail)', threadTail(context.agentDir, p.thread)),
+    fitBytes(notes(context, p), LIMITS.notes),
+  ].filter(Boolean)
 
-  parts.push(section('THREAD.md (tail)', clippedRead(context.agentDir, p.thread, LIMITS.thread, true)))
-
-  let body = parts.join('\n\n')
-  const bodyBudget = MAX_BRIEF - Buffer.byteLength(REMINDER, 'utf8') - 3
-  if (Buffer.byteLength(body, 'utf8') > bodyBudget) body = fitBytes(body, bodyBudget)
-  const brief = body + '\n\n' + REMINDER + '\n'
-
-  // The per-section limits leave at least RESERVED bytes for headings and the final reminder.
-  if (Buffer.byteLength(brief, 'utf8') > MAX_BRIEF) {
-    throw new Error('brief budget invariant exceeded (' + RESERVED + ' reserved bytes)')
-  }
-  process.stdout.write(brief)
+  // The exact log name the Stop hook will look for, so the first log written is the right one.
+  const sid = require('../lib/paths').sessionSlug(payload.session_id)
+  const reminder = REMINDER + (sid ? '\nYour log this session: .agent/log/<UTC>-<your-model-id>-' + sid + '.md' : '')
+  const bodyBudget = MAX_BRIEF - Buffer.byteLength(reminder, 'utf8') - 3
+  const body = fitBytes(parts.join('\n\n'), bodyBudget)
+  process.stdout.write(body + '\n\n' + reminder + '\n')
 }
 
 try {

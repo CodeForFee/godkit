@@ -1,86 +1,56 @@
 # Godkit — shared agent harness
 
-You are not the only agent in this repo. Someone worked here before you and someone will work here after you — a different model, a different tool, a different day, with none of your context. Work that cannot be resumed is work you will pay for twice.
-
-Two rules, not negotiable:
+You are not the only agent in this repo. Someone worked here before you and someone will after — a different model, a different tool, none of your context. Work that cannot be resumed is work you pay for twice.
 
 **Read `.agent/` before you edit. Write your log before you finish.**
 
-## Clock in
+## Every session
 
-Before your first edit, every session:
+1. **Arrive.** The session brief (or `.agent/BOARD.md`, `MAP.md`, newest `log/`) gives claims, open bugs and binding decisions. Older history: `godkit recall <file|words>` — never read the archive by hand.
+2. **Claim** your scope on the board (file globs, task, UTC, `wip`) before the first edit. Overlaps an open claim? Do not edit: take another seam, or mark a claim over 24h `stale` and say so in your log.
+3. **Sign** with your model id (`claude-opus-5`, `codex-5.6-terra`), never the tool name. Unsure of it? Say so; do not guess.
+4. **Out-of-scope bug?** Add `B-NNN` to the board and keep going. Messages to other agents: append to `.agent/THREAD.md`.
+5. **Clock out.** `.agent/log/<UTC>-<model>[-<session8>].md`: real paths, the command you ran and its deciding output. Release the claim; a fixed bug stays `[x]` with its root-cause location. Commit `.agent/` with the code.
 
-1. Read `.agent/BOARD.md` — who is working where, which bugs are open, which are already fixed, which decisions bind you.
-2. Read `.agent/MAP.md` for what this codebase is. Stale or missing? Refresh it before you rely on it.
-3. Read the newest two entries in `.agent/log/`, plus any entry whose `scope` overlaps the files you are about to touch.
-   If `.agent/skills/` exists, read `.agent/SKILLS.md` — this project keeps its own skills, and one of them may already do what you are about to work out from scratch.
-4. Check the bug list before fixing anything. Already `[x]`? Either it regressed — new id, say so — or you were about to redo finished work.
-5. **Claim your scope** on the board: file globs, your task, UTC time, `wip`.
+No `.agent/`? Run `godkit init` — no permission needed. `godkit` not on PATH? Use the CLI line in the brief, or `npx -y @codeforfee/godkit`.
 
-**Sign your work with your model, never your tool.** `claude-opus-5`, `claude-sonnet-5`,
-`codex-5.6-terra`, `codex-5.6-sol`, `gemini-3.6-pro`, `gemini-3.8-flash` — not `claude`, `codex`,
-`cursor`, `antigravity`. One tool runs many models with different strengths, costs and failure
-modes, and the next agent reading your log has to know which one made the call it is about to
-trust. State it in your board claim, your task `owner:`, and your log's `agent:`. If you are not
-certain of your own exact model id, say so and ask — do not guess, and do not fall back to the
-tool name. `godkit verify` rejects a bare tool name.
+## Which skill, when
 
-No `.agent/` directory? Create it and continue. One time, ten seconds, do not ask permission.
+Choose by situation and load a skill only when its row applies. No skill tool in your host? Read `.agents/skills/<name>/SKILL.md`.
 
-**If your scope overlaps an open claim, stop. Do not edit.** Take a non-overlapping seam; or do something the holder listed under Handoff for a *different* file; or, if the claim is over 24h old, mark it `stale`, take it over, and say so in your log. Never two owners on one file.
+| Situation | Do |
+|---|---|
+| `.agent/BRIEF.md` unfilled — a new project | fill it from the user's prompt yourself **first**, even for a one-turn build; a sprint (**godkit**) only if it is bigger |
+| Start of a session that will change code | **godkit** — skip it for a one-turn edit |
+| No map, or the brief says STALE or MISSING | **godkit-map**, before trusting your own reading |
+| Task bigger than one turn | **godkit-plan** → **godkit-execute** → **godkit-test** |
+| Ending a session that edited files | **godkit-handoff** |
+| A hard-to-reverse decision, before it goes on the board | **godkit-doubt** |
+| UI from scratch, or a redesign | **godkit-frontend** |
+| A full file or many files as the deliverable | **godkit-output-enforcement** |
+| Parallel branches, worktrees, a merge touching `.agent/` | **godkit-git** |
+| A GitHub issue or PR | **godkit-triage** |
+| Something failed, looped, or got done twice | **godkit-review** |
+| The same file fixed a third time | **godkit-refactor** |
+| The brief lists a capture candidate | **godkit-evolve**, after the main task |
+| Any coding task | **godkit-lazy** — always on, the ladders below |
+| "How does godkit work?" | **godkit-help** |
 
-## While working
+## Fewest turns, least code
 
-- Scope grew past your claim? Widen the claim **before** touching the new files, not after.
-- Found a bug outside your scope? Add it to the board as a new `B-NNN` and keep going. Do not fix it — that is someone's claimed file, and a drive-by fix is exactly the collision this prevents.
-- Talk to the other agents in `.agent/THREAD.md`. Append only, never edit someone else's block.
+**Turns.** Brief and map → `godkit recall` → `rg -n` → read only the line ranges they point at. Read once, wide, in one parallel batch; never re-read a file you just read or edited. Edit, do not rewrite. Verify once, at the end.
 
-## Clock out
+**Code.** Stop at the first rung that holds: needed at all? → already in this repo? → stdlib? → native platform feature? → installed dependency? → one line? → only then the minimum that works. The ladder runs *after* you understand the problem: trace the real flow first, and fix a bug where every caller routes through, not only on the path the ticket names. No abstraction nobody asked for. Mark a deliberate shortcut with a `godkit:` comment naming its ceiling.
 
-Every session that touched a file, before your turn ends:
+**Splitting.** Fits this turn → do it. Otherwise split on **file boundaries**, each seam with scope, exit condition and verification. Route each seam to the cheapest provider that can do it — a command before a model, a small model before a strong one. Never accept a delegated result without running its check.
 
-1. **Write `.agent/log/<UTC>-<agent>[-<session8>].md`** — real file paths with line numbers, real commands with their real output. "Refactored auth" helps nobody. List any `.agent/skills/` skill you used in the `skills:` frontmatter field — that self-report is the only evidence those skills ever get.
-2. **Update the board** — release your claim, open or close bugs, record any decision, prepend one line to the handoff list.
-3. **Bug ids `B-NNN` are monotonic and never reused.** A fixed bug stays listed with `[x]`, its **root-cause location** (not the symptom) and its log pointer — that is how the next agent tells "already fixed" from "never looked at".
-4. Commit `.agent/` in the same commit as the code. Separated, they drift.
+## Token discipline
 
-`status: partial` or `blocked` makes "Left / next" mandatory, and specific enough for a different tool to resume cold. A `blocked` task also names **which kind** of blocked in `blocked:` — `needs-decision`, `needs-evidence`, `external-wait`, or `needs-owner` — so the next agent knows whether they can act. An unlogged session is invisible work — the next agent will assume it never happened, and be right to.
-
-`godkit verify` checks all of this and exits non-zero: an empty `exit:`, a `done` claim with no evidence under `## Test` or `## Verified`, an unfinished task with an empty handoff. A log claiming `done` with nothing verified will not clock out.
-
-## How to split work
-
-Stop at the first rung that holds:
-
-1. Fits in this turn? Do it. No decomposition, no delegation, no plan document.
-2. Sequential in this session? Step through it with checkpoints.
-3. Has natural seams? Split on **file boundaries**, never on abstract layers that share files. Each seam gets scope, exit condition, verification.
-4. Needs a specialist? One scoped worker, with only the tools that scope needs.
-5. Needs real parallelism? Fan out over **disjoint file sets**, then gate on the join — one agent runs the full check suite after the merge.
-6. Needs iteration? Hard max-rounds cap and a measurable exit condition. No cap means no loop.
-
-Route each seam to the cheapest provider that *can* do it: a command (`rg`, the test suite, `tsc --noEmit`, `git log`) before a model, this turn before a spawn, a small model before a strong one. The strong tier is for judgment, not for typing. Check capability before dispatch and fail loud — a silently degraded result is worse than a refusal, because you will believe it.
-
-Never accept a delegated result without verifying it. "It said it passed" is not evidence. Run the check.
-
-## How to write the code
-
-Stop at the first rung that holds:
-
-1. Does this need to exist at all?
-2. Does it already exist in this repo? Reuse it.
-3. Does the standard library do it? Use it.
-4. Does a native platform feature cover it? Use it.
-5. Does an already-installed dependency solve it? Use it.
-6. Can it be one line? One line.
-7. Only then: the minimum code that works.
-
-The ladder runs *after* you understand the problem, not instead of it. Read the task and the code it touches, trace the real flow end to end, then climb. A bug report names a symptom — grep every caller and fix the shared function once; patching only the path the ticket names leaves a sibling caller broken.
-
-No abstractions nobody asked for. No new dependency for what a few lines do. Deletion over addition, boring over clever, fewest files possible. Shortest working diff wins — but the smallest change in the wrong place is not lazy, it is a second bug.
-
-Mark deliberate shortcuts that cut a real corner with a `godkit:` comment naming the ceiling and the upgrade path.
+- Filter long output before it enters context (`| tail -30`, `-q`); from a test run keep the failures and the summary line.
+- Delegate with `file:line` pointers and an exit condition, never pasted content; ask for a result of ten lines or fewer.
+- Reply with the result first and at most three lines of explanation, in the user's language. Do not restate the task or recap a diff the user can see.
+- Board, thread and log entries are one line per item; `## Verified` holds the command and the one to five lines that decide it.
 
 ## Never simplify away
 
-Reading the board, claiming your scope, verifying a delegated result, logging what you did — those four are the protocol. Beyond them: input validation at trust boundaries, error handling that prevents data loss, security, accessibility, and anything explicitly requested. Non-trivial logic leaves one runnable check behind; trivial one-liners need none.
+Reading the board, claiming, verifying a delegated result, logging — the protocol. Input validation at trust boundaries, error handling that prevents data loss, security, accessibility, and anything explicitly requested. Non-trivial logic leaves one runnable check behind.

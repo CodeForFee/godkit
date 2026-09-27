@@ -1,12 +1,11 @@
 ---
 name: godkit-handoff
 description: >
-  The shared-state protocol: .agent/BOARD.md (claims, bugs, decisions), THREAD.md (append-only
-  agent-to-agent), tasks/ (plan, execute, review, test, handoff) and log/ (one per session), plus
-  the clock-in and clock-out checklists. Use at the START of any session that will edit code, at
-  the END of any that did, when there is no .agent/ yet, and on "resume", "continue", "what was
-  done", "who did what", "hand off", "log this", "was this bug already fixed", or any mention of
-  another tool working the same repo.
+  The shared-state protocol: BOARD.md (claims, bugs, decisions), THREAD.md, tasks/, log/, and the
+  clock-in and clock-out checklists. Use at the START of a session that will edit code, at the END
+  of one that did, when there is no .agent/, or on "resume", "continue", "what was done", "who did
+  what", "hand off", "log this", "was this bug already fixed", or another tool working the same
+  repo.
 license: MIT
 ---
 
@@ -20,153 +19,7 @@ Everything else on this page is the shape of those two.
 
 ## The shared state
 
-All of it lives in the repo and is committed. In the repo because Cursor cannot read Claude's memory directory and Claude cannot read Cursor's — **the only shared memory between tools is the filesystem they both open**.
-
-```
-.agent/
-├── BOARD.md              one screen, current truth, rewritten often
-├── THREAD.md             append-only conversation between agents
-├── MAP.md                what this codebase is (generated — see godkit-map)
-├── graph.json            the machine-readable map
-├── SKILLS.md             this project's own skills (generated — see godkit-evolve)
-├── skills/
-│   └── refresh-fixture-db/SKILL.md
-├── tasks/
-│   └── T-003-token-refresh.md
-└── log/
-    ├── 2026-08-19T1102Z-cursor.md
-    └── 2026-08-19T1403Z-claude-82df4726.md
-```
-
-One log file per session, never edited by anyone else, is the whole trick: two tools writing at the same moment never conflict, and git merges them without a thought. The board stays small enough that conflicts there are rare and trivial.
-
-### `.agent/BOARD.md`
-
-Sections: **Roster** (which providers exist here, what each can do, what each costs), **Now** (open claims), **Tasks** (the index), **Bugs**, **Decisions**, **Last 3 handoffs**. Keep it to one screen — the moment it needs scrolling, it stops being read.
-
-A Decisions entry earns its place only if it states the **reason**, not just the outcome — "X
-over Y" with no why cannot be revisited when the reason stops holding, only obeyed. Worth a
-pressure-test before it goes in — see **godkit-doubt** — since every future agent that reads it
-treats it as binding.
-
-### `.agent/tasks/T-NNN-<slug>.md`
-
-One file per task, carrying all five phases as sections that fill in as work moves. Frontmatter is the machine-readable part — `godkit verify` parses exactly these fields:
-
-<!-- godkit:task-frontmatter -->
-
-```markdown
----
-id:                   # T-NNN, monotonic, never reused
-title:
-owner: unassigned     # a model id once claimed — claude-opus-5, codex-5.6-terra, gemini-3.6-pro.
-                      # The tool name is not an owner: one tool runs many models.
-scope:                # file globs — this is what makes overlap detectable
-exit:                 # the command that proves this done, not a description of done
-phase: plan           # plan | execute | review | test | done | blocked
-blocked:              # only when phase is blocked: needs-decision | needs-evidence | external-wait | needs-owner
-created:              # UTC, e.g. 2026-08-19T1340Z
----
-```
-
-<!-- /godkit:task-frontmatter -->
-
-Filled in, that reads:
-
-```markdown
----
-id: T-003
-title: fix token refresh loop
-owner: claude
-scope: src/auth/*
-exit: `npm test auth` green and no refresh loop over a 2h session
-phase: execute
-blocked:
-created: 2026-08-19T1340Z
----
-
-## Plan
-## Execute
-## Review
-## Test
-## Handoff
-```
-
-`scope` and `exit` are not optional. A task with no exit condition cannot be finished, only abandoned. **Handoff may not be empty unless `phase: done`.**
-
-Ids are monotonic and never reused. A finished task keeps its file — that is the record of why the code looks the way it does.
-
-### `.agent/THREAD.md`
-
-For messages that need a reader. Append only, newest at the bottom, never edit someone else's block:
-
-```markdown
-## 2026-08-19T1403Z · claude · T-003
-@cursor — token refresh done, `src/auth/*` released. The `+email` 500 is B-004, still open,
-I did not touch it. Blocking on: nothing.
----
-```
-
-Use it when another agent must know something to act: you released a claim they were waiting on, you found a bug in their scope, you need a decision. Findings and reasoning go in your log; the thread is for things addressed to someone.
-
-### `.agent/log/<UTC>-<agent>[-<session8>].md`
-
-Filename sorts chronologically: `2026-08-19T1403Z-claude-82df4726.md` — timestamp, tool, then the first 8 characters of the session id if the tool has one.
-
-<!-- godkit:log-frontmatter -->
-
-```markdown
----
-agent: ""             # the MODEL that ran, not the tool: claude-opus-5, codex-5.6-terra,
-                      # gemini-3.6-pro. `godkit verify` rejects a bare "claude" or "codex".
-session: ""           # the host's session id; the filename carries its first 8 characters
-started: ""
-ended: ""             # UTC, e.g. 2026-08-19T1403Z
-scope: ""             # file globs you actually touched
-status: "done"        # done | partial | blocked
-skills: ""            # .agent/skills/ skills you used, comma-separated. Empty is fine.
----
-```
-
-<!-- /godkit:log-frontmatter -->
-
-A real one, filled in:
-
-```markdown
----
-agent: "claude-opus-5"
-session: "82df4726"
-started: "2026-08-19T1340Z"
-ended: "2026-08-19T1403Z"
-scope: "src/auth/*"
-status: "done"
-skills: "refresh-fixture-db"
----
-
-## Task
-One line. What you were asked to do.
-
-## Did
-- guard the expiry comparison — src/auth/token.ts:88
-- drop the now-dead retry wrapper — src/auth/refresh.ts:12-31
-
-## Verified
-- `npm test auth` → 14 pass
-- manual: login with a `+` in the email → still 500 (B-004, not mine)
-
-## Bugs
-- fixed B-003 — refresh loop. Root cause was the shared `isExpired`, not the caller the report named.
-- found B-004 — login 500 on `+` in email. Open, added to board.
-
-## Decisions
-- httpOnly cookie over localStorage — XSS.
-
-## Left / next
-- no test yet for the `+email` case
-- did NOT touch src/auth/session.ts — cursor holds that claim
-```
-
-Sections may be empty. **"Left / next" may not be empty when status is `partial` or `blocked`** — that section is the entire reason the next agent can start.
+Writing a board entry, task file or log and unsure of the format? Read `references/formats.md` — the `.agent/` layout, BOARD sections, and the task and log templates `godkit verify` parses.
 
 ## What `godkit verify` checks
 
@@ -205,7 +58,7 @@ Before your first edit, every session:
 
 1. **Read `.agent/BOARD.md`.** No `.agent/`? Run `godkit init` and continue. One time, ten seconds, do not ask permission.
 2. **Read `.agent/MAP.md`.** Stale or missing? Refresh it — see **godkit-map**. A stale map is worse than no map, because you will act on it.
-3. **Read the newest two log entries**, plus any whose `scope` overlaps files you will touch: `grep -l "src/auth" .agent/log/*.md`.
+3. **Read the log entries whose `scope` overlaps files you will touch** — the brief lists the newest one line each; `godkit recall src/auth` finds older ones, archive included.
 4. **Read the THREAD tail.** Someone may be blocked on you.
 5. **Check the bug list before fixing anything.** Already `[x]`? Read that log entry — either it regressed (say so, new id) or you were about to redo finished work.
 6. **Check the decisions.** They bind you. If one is wrong, argue with the user and record the reversal; never silently contradict it.
@@ -223,32 +76,18 @@ Before your first edit, every session:
 
 Before your turn ends — every session that touched a file:
 
-1. **Write the log entry.** Concrete paths with line numbers, real commands with their real output. "Refactored auth" helps nobody. List any `.agent/skills/` skill you used in `skills:` — that self-report is the only evidence those skills ever get.
+1. **Write the log entry.** Concrete paths with line numbers, real commands with the one to five output lines that decide them — not the whole dump. "Refactored auth" helps nobody. List any `.agent/skills/` skill you used in `skills:` — that self-report is the only evidence those skills ever get.
 2. **Update the task file** — fill the phase section you worked, set `phase:`, write Handoff.
 3. **Update the board** — release your claim, close or add bugs, add any decision, prepend one line to *Last 3 handoffs* and trim to three.
 4. **Post to THREAD** if another agent is waiting on something you just changed.
 5. **Bug bookkeeping**: `B-NNN` ids are monotonic and never reused or renumbered. A fixed bug stays with `[x]`, its fix location and its log pointer — that is how the next agent tells "already fixed" from "never looked at". Record the **root cause location**, not the symptom: a sibling caller may still be broken, and the next agent needs to know where you actually cut.
 6. **Commit `.agent/` with your code change.** The log and the diff belong in the same commit; separated, they drift.
 
+The rest is automatic where hooks run: after a verified clock-out, old fixed bugs, older handoffs and old thread blocks move to `.agent/archive/` (moved, never deleted — `godkit recall` searches them), `.agent/SKILLS.md` is refreshed, and new project skills that pass the safety scan are linked. Do not trim the board by hand beyond the handoff list.
+
 ## Memory: what goes where
 
-Four tiers. Putting a fact in the wrong one is how knowledge gets lost.
-
-| Tier | Lives in | Holds | Who reads it |
-|---|---|---|---|
-| **Map** | `.agent/MAP.md`, `graph.json` | what the codebase *is* | every agent, on arrival |
-| **Skills** | `.agent/skills/`, `SKILLS.md` | procedures this project repeats — see **godkit-evolve** | every agent, on arrival |
-| **Board** | `.agent/BOARD.md` | current claims, bugs, binding decisions | every agent, first thing |
-| **Log** | `.agent/log/*.md` | what happened this session | every agent, forever |
-| **Private** | the tool's own store | user preferences, tool quirks, cross-project habits | that one tool only |
-
-Rules:
-
-- **If another agent needs it, it goes in `.agent/`.** Private memory is invisible to every other tool. A decision recorded only in Claude's memory does not exist for Cursor.
-- **Bootstrap from the map, not from opening files.** `.agent/MAP.md` exists so arrival costs a read, not a re-derivation — grep it for what a piece of code is before reading the code itself. Re-deriving architecture turn by turn is the cost this whole protocol exists to avoid.
-- **Do not record what the repo already records.** Code structure, git history, what a function does, a fix you already logged — all already written down. Memory that duplicates the repo goes stale and then lies.
-- Private memory is for what the repo cannot say: how the *user* wants to work, which tool broke on what, standing preferences.
-- In doubt, put it under Decisions on the board. Every tool can read it.
+Unsure whether something belongs in the board, the thread, a log, a task or a skill? Read `references/memory.md`.
 
 ## Splitting work across tools
 

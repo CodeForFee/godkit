@@ -142,7 +142,7 @@ test('the generated rule copies are in sync with AGENTS.md', () => {
 // changed position in one and not the other) and nothing caught it. The templates are the source
 // now; this asserts the skill agrees even when the suite runs without pretest.
 test('the task and log blocks in godkit-handoff are the templates verbatim', () => {
-  const skill = read(path.join('skills', 'godkit-handoff', 'SKILL.md'))
+  const skill = read(path.join('skills', 'godkit-handoff', 'references', 'formats.md'))
   for (const [name, template] of [['task', 'task.md'], ['log', 'log.md']]) {
     const front = read(path.join('templates', template)).match(/^---\r?\n[\s\S]*?\r?\n---/)
     assert.ok(front, template + ' has no frontmatter')
@@ -270,4 +270,36 @@ test('the shipped gitattributes template matches this repo own rules', () => {
     if (!line.startsWith('.agent/')) continue
     assert.ok(own.includes(line), '.gitattributes is missing: ' + line)
   }
+})
+
+// Trimming what loads every session must never delete what a skill teaches. Sections moved to a
+// skill's references/ are loaded on demand; every heading, bullet, numbered step and table row that
+// existed before the split is still somewhere in that skill, verbatim. A line removed on purpose is
+// removed from the fixture in the same commit, which makes the deletion a reviewed decision.
+test('no rule line was lost when skills moved detail into references/', () => {
+  const lost = []
+  for (const row of read('tests/fixtures/rule-lines.tsv').split('\n').filter(Boolean)) {
+    const tab = row.indexOf('\t')
+    const skill = row.slice(0, tab)
+    const line = row.slice(tab + 1)
+    const dir = path.join('skills', skill)
+    const refs = path.join(ROOT, dir, 'references')
+    const files = [path.join(dir, 'SKILL.md')].concat(
+      fs.existsSync(refs) ? fs.readdirSync(refs).map((f) => path.join(dir, 'references', f)) : [],
+    )
+    if (!files.some((f) => read(f).includes(line))) lost.push(skill + ': ' + line.slice(0, 80))
+  }
+  assert.deepEqual(lost, [])
+})
+
+test('what every session loads stays small: rules block and all skill descriptions', () => {
+  assert.ok(Buffer.byteLength(read('AGENTS.md')) <= 5 * 1024, 'AGENTS.md grew past 5KB')
+  let total = 0
+  for (const dir of fs.readdirSync(path.join(ROOT, 'skills'))) {
+    const m = read(path.join('skills', dir, 'SKILL.md')).match(/^description: >\r?\n([\s\S]*?)(?=^[a-z-]+:)/m)
+    assert.ok(m, dir + ': description must be a folded block')
+    assert.ok(m[1].length <= 520, dir + ': description is ' + m[1].length + ' bytes')
+    total += m[1].length
+  }
+  assert.ok(total <= 6.5 * 1024, 'descriptions total ' + total + ' bytes')
 })

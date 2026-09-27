@@ -90,34 +90,23 @@ Append-only everywhere is deliberate: **one log file per session** means two too
 
 ## Install
 
-<table>
-<tr>
-<td width="50%" valign="top">
-
-**An existing project**
-
 ```bash
 npx @codeforfee/godkit init
 ```
 
-Scaffolds `.agent/` and the per-tool rule files, and — the first time on this machine only — places the skills and registers the hooks.
+That is the whole install, for a project with code or an empty folder — `init` tells them apart by itself. Then open Claude Code, Codex, Cursor or Antigravity and just write your prompt. Nothing else to learn, no skill to pick.
 
-</td>
-<td width="50%" valign="top">
+What happens without you:
 
-**A project with no code yet**
+| Situation | What the agent does on its own |
+|:--|:--|
+| **New project** (no code) | fills `.agent/BRIEF.md` from your first prompt, opens a sprint, builds wave 1, logs it |
+| **Existing project** | maps the codebase in its first session, then does your task |
+| **Fresh clone** of a godkit repo | the session hook recreates `.agent/` if it is not committed |
+| **Any task** | picks the right skill from the "Which skill, when" table in the rules |
+| **End of a session** | writes its log; the hook archives finished items and refreshes project skills |
 
-```bash
-npx @codeforfee/godkit init --new
-```
-
-No map is built, because there is nothing to map. You get `.agent/BRIEF.md` instead, and the first sprint is cut from it.
-
-</td>
-</tr>
-</table>
-
-A machine that is already set up is left alone, so running `init` in your next repo touches nothing outside it. `--no-install` does the project half only.
+`init` writes `.agent/`, the rule files, and **all 16 skills into the project** (`.claude/skills/`, `.agents/skills/`) so they are committed with it: a teammate who clones the repo has everything, with nothing installed. The first time on a machine it also registers the hooks — from a stable copy in `~/.godkit/<version>/`, never from npx's cache, which npm prunes. Re-running `init` after an upgrade refreshes the skill copies and re-points the hooks; a skill directory you wrote yourself is never replaced.
 
 <details>
 <summary><b>Doing the machine half yourself, or scripting it</b></summary>
@@ -160,10 +149,10 @@ Everything outside those markers is yours and is never touched, so an existing `
 
 | Tool | Skills | Always-on rules | Hooks |
 |:--|:--|:--|:--:|
-| **Claude Code** | `~/.claude/skills/` | `CLAUDE.md` | ✅ |
-| **Codex** | `~/.agents/skills/` | `AGENTS.md` | ✅ |
-| **Cursor** | — | `.cursor/rules/godkit.mdc` | — |
-| **Antigravity** | `~/.gemini/antigravity/skills/godkit` | `.agents/rules/godkit.md` | — |
+| **Claude Code** | `.claude/skills/` | `CLAUDE.md` | ✅ `~/.claude/settings.json` |
+| **Codex** | `.agents/skills/` | `AGENTS.md` | ✅ `~/.codex/hooks.json` |
+| **Cursor** | reads `.agents/skills/<name>/SKILL.md` on demand | `.cursor/rules/godkit.mdc` | — |
+| **Antigravity** | reads `.agents/skills/<name>/SKILL.md` on demand | `AGENTS.md`, `.agents/rules/godkit.md` | — |
 
 Where a tool has no hook support, the always-on rule file *is* the enforcement. That is why they all say the same thing. On Claude Code the protocol is **enforced**; everywhere else it is **instructed**, and the shared `.agent/` state is what makes that difference survivable.
 
@@ -176,7 +165,7 @@ Where a tool has no hook support, the always-on rule file *is* the enforcement. 
 
 ```bash
 godkit hooks status       # how many are registered, and where
-godkit hooks install      # into ~/.claude/settings.json and ~/.codex/settings.json
+godkit hooks install      # into ~/.claude/settings.json and ~/.codex/hooks.json
 godkit hooks uninstall
 godkit hooks install --dry-run
 ```
@@ -252,7 +241,8 @@ It is enforced by **shape**, not by a shipped list of known model ids: an allowl
 
 | Command | Does |
 |:--|:--|
-| `godkit init [path] [--new] [--no-install]` | scaffold `.agent/` and the rule files; `--new` for a project with no code |
+| `godkit init [path] [--new] [--no-install]` | set up this project: `.agent/`, rule files, all skills; auto-detects a new project |
+| `godkit recall <file\|words>` | search all history — logs, board, thread, tasks, archive — in a bounded answer |
 | `godkit install [tool...]` | install the skills for claude, codex, antigravity (default: all) |
 | `godkit sprint [new "goal" \| close]` | a goal and its waves of file-disjoint tasks |
 | `godkit scan [path]` | walk the project and group it into batches for the map |
@@ -263,7 +253,7 @@ It is enforced by **shape**, not by a shipped list of known model ids: an allowl
 | `godkit hooks [status\|install\|uninstall]` | the hook registrations, with `--dry-run` |
 | `godkit verify [--quiet]` | tasks and logs against the rules the templates state; non-zero on findings |
 | `godkit doctor` | what is set up here, whether the map is stale, which hooks are registered |
-| `godkit uninstall [tool]` | remove the skills godkit installed (leaves your `.agent/` alone) |
+| `godkit uninstall [tool\|--project]` | remove the skills godkit placed (leaves your `.agent/` alone) |
 | `godkit --version` | the installed version |
 
 ## Skills

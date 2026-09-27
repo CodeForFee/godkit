@@ -40,11 +40,47 @@ function repo() {
   return real
 }
 
-test('brief tells you to set up when there is no .agent/', () => {
+test('brief only hints, and writes nothing, in a repo with code that never opted in', () => {
+  const d = repo()
+  fs.writeFileSync(path.join(d, 'app.js'), 'module.exports = 1\n')
+  const out = runHook('brief.js', { cwd: d })
+  assert.match(out, /No \.agent\/ here/)
+  assert.match(out, /bin\/godkit\.js" init/, 'the hint names a CLI that works without godkit on PATH')
+  assert.equal(fs.existsSync(path.join(d, '.agent')), false)
+  fs.rmSync(d, { recursive: true, force: true })
+})
+
+test('brief scaffolds .agent/ in an opted-in clone that lacks it, then briefs from it', () => {
+  const d = repo()
+  fs.writeFileSync(path.join(d, 'app.js'), 'module.exports = 1\n')
+  fs.writeFileSync(path.join(d, 'CLAUDE.md'), '<!-- godkit:start -->\nrules\n<!-- godkit:end -->\n')
+  const out = runHook('brief.js', { cwd: d })
+  assert.ok(fs.existsSync(path.join(d, '.agent', 'BOARD.md')), 'scaffolded')
+  assert.equal(fs.existsSync(path.join(d, '.agent', 'BRIEF.md')), false, 'code exists: not greenfield')
+  assert.match(out, /Handoff \(\.agent\/\)/)
+  assert.match(out, /No map yet — run the godkit-map skill/)
+  fs.rmSync(d, { recursive: true, force: true })
+})
+
+test('brief turns an empty folder into a greenfield project and says to fill the brief', () => {
   const d = repo()
   const out = runHook('brief.js', { cwd: d })
-  assert.match(out, /No \.agent\/ directory/)
-  assert.match(out, /godkit init/)
+  assert.ok(fs.existsSync(path.join(d, '.agent', 'BRIEF.md')))
+  assert.match(out, /NEW PROJECT\. FIRST STEP, even for a one-turn build: fill \.agent\/BRIEF\.md/)
+  assert.ok(out.indexOf('NEW PROJECT') < out.indexOf('BOARD'), 'the project state leads the brief')
+  assert.match(out, /Do not ask the user to fill it/)
+  fs.rmSync(d, { recursive: true, force: true })
+})
+
+test('the brief stays within its constant budget however large the board grows', () => {
+  const d = repo()
+  fs.mkdirSync(path.join(d, '.agent', 'log'), { recursive: true })
+  const bugs = Array.from({ length: 400 }, (_, i) => '- [x] B-' + i + ' fixed ' + 'x'.repeat(80))
+  fs.writeFileSync(path.join(d, '.agent', 'BOARD.md'), '# Board\n\n## Bugs\n' + bugs.join('\n') + '\n- [ ] B-999 open one\n')
+  const out = runHook('brief.js', { cwd: d })
+  assert.ok(Buffer.byteLength(out) <= 3 * 1024 + 1, 'brief is ' + Buffer.byteLength(out) + ' bytes')
+  assert.match(out, /B-999 open one/, 'open work survives the digest')
+  assert.doesNotMatch(out, /B-1 fixed/, 'fixed work does not')
   fs.rmSync(d, { recursive: true, force: true })
 })
 
@@ -65,14 +101,17 @@ test('brief includes the newest log entries, newest first', () => {
   const log = path.join(d, '.agent', 'log')
   fs.mkdirSync(log, { recursive: true })
   fs.writeFileSync(path.join(d, '.agent', 'BOARD.md'), '# Board\n')
-  fs.writeFileSync(path.join(log, '2026-01-01T0000Z-old.md'), 'OLDEST ENTRY\n')
-  fs.writeFileSync(path.join(log, '2026-06-01T0000Z-mid.md'), 'MIDDLE ENTRY\n')
-  fs.writeFileSync(path.join(log, '2026-08-01T0000Z-new.md'), 'NEWEST ENTRY\n')
+  const entry = (task) =>
+    '---\nagent: "claude-opus-5"\nstatus: "done"\nscope: "src/x.js"\n---\n\n## Task\n\n' + task + '\n\n## Did\n\nBODY DETAIL\n'
+  for (let m = 1; m <= 7; m++) {
+    fs.writeFileSync(path.join(log, '2026-0' + m + '-01T0000Z-a.md'), entry('TASK ' + m))
+  }
 
   const out = runHook('brief.js', { cwd: d })
-  assert.match(out, /NEWEST ENTRY/)
-  assert.match(out, /MIDDLE ENTRY/)
-  assert.ok(!out.includes('OLDEST ENTRY'), 'only the newest two are injected')
+  assert.match(out, /2026-07-01T0000Z claude-opus-5 · done · src\/x\.js — TASK 7/)
+  assert.ok(out.indexOf('TASK 7') < out.indexOf('TASK 3'), 'newest first')
+  assert.ok(!out.includes('TASK 2'), 'only the newest five are listed')
+  assert.ok(!out.includes('BODY DETAIL'), 'one line per log, never the body')
   fs.rmSync(d, { recursive: true, force: true })
 })
 
@@ -251,4 +290,33 @@ test('a partial log with no handoff is reported by verify but does not block the
   const findings = require('../lib/contract').checkLog(path.join(d, '.agent'), file)
   assert.deepEqual(findings.map((f) => f.tag), ['resume-blocked'])
   fs.rmSync(d, { recursive: true, force: true })
+})
+
+test('a verified clock-out archives finished board items, silently', () => {
+  const d = repo()
+  const log = path.join(d, '.agent', 'log')
+  fs.mkdirSync(log, { recursive: true })
+  const bugs = Array.from({ length: 12 }, (_, i) => '- [x] B-' + String(i + 1).padStart(3, '0') + ' fixed')
+  fs.writeFileSync(path.join(d, '.agent', 'BOARD.md'), '# Board\n\n## Bugs\n\n' + bugs.join('\n') + '\n\n## Decisions\n\n- keep me\n')
+  fs.writeFileSync(path.join(d, 'code.js'), 'changed\n')
+  recordWork(d, 'feed1234', 'code.js')
+  fs.writeFileSync(path.join(log, '2026-08-22T1200Z-claude-opus-5-feed1234.md'), 'logged\n')
+
+  assert.equal(runHook('clockout.js', { cwd: d, session_id: 'feed1234' }).trim(), '', 'no output on success')
+  const board = fs.readFileSync(path.join(d, '.agent', 'BOARD.md'), 'utf8')
+  assert.doesNotMatch(board, /B-001 fixed/)
+  assert.match(board, /B-012 fixed/)
+  assert.match(board, /keep me/, 'decisions are never archived')
+  assert.ok(fs.readdirSync(path.join(d, '.agent', 'archive')).length, 'moved into .agent/archive/')
+  fs.rmSync(d, { recursive: true, force: true })
+})
+
+test('lazy-activate injects one line at the default level, not the whole skill', () => {
+  const out = execFileSync(process.execPath, [path.join(ROOT, 'hooks', 'lazy-activate.js')], {
+    input: JSON.stringify({ session_id: 'lazy-line' }),
+    encoding: 'utf8',
+    env: { ...process.env, CLAUDE_CONFIG_DIR: STATE, PLUGIN_DATA: '', CODEX_HOME: '', GODKIT_LAZY_MODE: 'full' },
+  })
+  assert.match(out, /GODKIT-LAZY MODE ACTIVE — level: full/)
+  assert.ok(Buffer.byteLength(out) < 200, 'lazy injection is ' + Buffer.byteLength(out) + ' bytes')
 })

@@ -1,12 +1,11 @@
 ---
 name: godkit-lazy
 description: >
-  Fewest turns to the smallest change that works. Two ladders: what already answers the question
-  (the map, a command, this turn) before spending a model; then YAGNI, reuse, stdlib, native, one
-  line, before writing anything new. Levels: lite, full (default), ultra. Use on ANY coding task,
-  and whenever the user says "be lazy", "simplest solution", "minimal", "yagni", "do less",
-  "shortest path", "what can we delete", "make it faster", or complains about over-engineering,
-  bloat, boilerplate or wasted tokens. Do NOT use for non-coding requests.
+  Fewest turns to the smallest change that works: answer from the map, a command or this turn first;
+  then YAGNI, reuse, stdlib, native, one line. Levels lite, full (default), ultra. Use on ANY coding
+  task and on "be lazy", "simplest solution", "minimal", "yagni", "do less", "shortest path", "what
+  can we delete", "make it faster", over-engineering, bloat, boilerplate or wasted tokens. Not for
+  non-coding requests.
 argument-hint: "[lite|full|ultra|off]"
 license: MIT
 ---

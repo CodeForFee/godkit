@@ -1,0 +1,597 @@
+godkit	# Godkit, tech lead mode
+godkit	1. **Lost state** — you redo what was finished, "fix" a bug that was already fixed, or undo a deliberate decision because nothing recorded it.
+godkit	2. **Collision** — two agents edit one file from different mental models. Both diffs look right alone. Together they are a third bug nobody wrote.
+godkit	## Rung 0: arrive properly
+godkit	| State | What you see | Do |
+godkit	|---|---|---|
+godkit	| **Unknown project** | no `.agent/`, code exists | `godkit init`, then build the map (**godkit-map**). One time. Do not ask permission. |
+godkit	| **Known but drifted** | `.agent/` exists, map reports STALE | Refresh the map before you trust it. A stale map is worse than none — it is confidently wrong. |
+godkit	| **Mid-task** | open claims, tasks in `execute` | You are resuming. Read the owning task file and its Handoff section first. |
+godkit	1. Read `.agent/BOARD.md` — who is working where, which bugs are open, which are already fixed, which decisions bind you.
+godkit	2. Read `.agent/MAP.md` for what this codebase is.
+godkit	4. Read the tail of `.agent/THREAD.md` — someone may be waiting on you.
+godkit	5. **Claim your scope** on the board before you edit.
+godkit	## Synthesize the work
+godkit	1. **State the main task in one line.** If the ask is vague, the one line is what you are committing to; say it back before you build on it.
+godkit	2. **Cut it into seams** on file boundaries — see **godkit-plan**. Most work is one seam. A task that *feels* big is usually one seam with a scary name.
+godkit	3. **Write each seam to `.agent/tasks/T-NNN-<slug>.md`** with scope, exit condition and owner. Ids are monotonic; check the board's task index for the next one.
+godkit	4. **Assign owners from the roster**, capability first then cost. An unassigned seam is one everybody assumes somebody else took.
+godkit	5. **Claim what you are taking**, and post a THREAD block if another agent needs to know.
+godkit	## Sprint mode
+godkit	- **A wave is a set of tasks whose file scopes do not overlap.** That is the entire admission rule.
+godkit	- **Dispatch the wave at once, not one after another.** Serialising work that could run together is
+godkit	- **Every wave ends at a join gate**: one agent runs the full check suite after the merge. Without
+godkit	- **Route each seam down the cost ladder above.** A sprint does not change the ladder, it runs it
+godkit	- **`godkit sprint close` refuses** while any named task is unfinished or finished with an empty
+godkit	## Everything is a provider
+godkit	### The cost ladder
+godkit	0. **Can a command answer it?** `rg`, the test suite, `tsc --noEmit`, `git log`. Free, cannot hallucinate, and it is the verification anyway. Most "check whether X" questions die here.
+godkit	1. **Can this turn do it?** You already hold the context; a spawn pays a cold start to re-derive what you know.
+godkit	2. **Can a small or local model do it?** Mechanical edits, filling stubs, a test from a named behaviour, renames, summarizing a diff.
+godkit	3. **Does it need repo-wide reasoning?** Root cause, a refactor spanning modules, "why is this broken", cutting the seams. Strong tier, and worth it.
+godkit	4. **Does it need several at once?** Fan out cheap workers over disjoint files, join with one strong reviewer and one full test run.
+godkit	## The work decomposition ladder
+godkit	1. **Fits in this turn?** Do it. No decomposition, no delegation, no plan document.
+godkit	2. **Sequential in this session?** Step through it with checkpoints.
+godkit	3. **Has natural seams?** Split on the seams, each with scope, exit condition and verification. Seams split on **file boundaries**, never on abstract layers that share files.
+godkit	4. **Needs a specialist?** One scoped worker, with only the tools that scope needs.
+godkit	5. **Needs genuine parallelism?** Fan out over **disjoint file sets**, then gate on the join — one agent runs the full suite after the merge.
+godkit	6. **Needs iteration to converge?** Goal-driven loop with a hard max-rounds cap and a measurable exit. No cap means no loop.
+godkit	7. **Only then:** full multi-phase orchestration.
+godkit	## Rules
+godkit	- **Every delegation carries three things**: scope (which files), exit condition (checkable), verification (the command that proves it). Missing one and you have not delegated, you have gambled.
+godkit	- **Never spawn for work that fits in your current turn.** Below that threshold you pay overhead to do the same work worse.
+godkit	- **Never accept a result without verifying it.** "It said it passed" is not evidence. Run the check.
+godkit	- **One owner per file.** Two seams that must touch one file get serialized. Parallelizing a shared file trades wall-clock for a merge bug.
+godkit	- **Report orthogonal outcomes independently.** "Tests pass but I skipped the migration" is two facts; collapsing them into "done" hands the next agent a trap.
+godkit	- **Depth 3+ means you cut the wrong seams.** Back up and re-split rather than delegating deeper.
+godkit	- **Retry only on verified advancement.** Same inputs and same state give the same outcome. Change something or stop.
+godkit	- **Checkpoint before context-risky steps** — long dumps, wide searches, big test output. Write the state you would hate to lose.
+godkit	- Mark deliberate orchestration shortcuts with a `godkit:` comment naming the ceiling and the upgrade path.
+godkit	## Clock out
+godkit	## Output
+godkit	## The rest of the set
+godkit	- **godkit-map** — build and refresh the project map (skip it on a greenfield repo: use the brief).
+godkit	- **godkit-handoff** — the `.agent/` protocol: board, thread, tasks, logs, claims, bugs.
+godkit	- **godkit-plan** — cutting seams and assigning owners.
+godkit	- **godkit-execute** — the execution pipeline and error recovery.
+godkit	- **godkit-review** — review the work and the process; diagnose a run that went wrong.
+godkit	- **godkit-test** — what counts as verified.
+godkit	- **godkit-lazy** — what to build, and what not to.
+godkit	- **godkit-help** — quick reference card.
+godkit	- `references/PATTERNS.md` — the underlying harness patterns. Load only when designing an orchestration mechanism, not for ordinary work.
+godkit	## Boundaries
+godkit-doubt	# Doubt
+godkit-doubt	## When
+godkit-doubt	## The pass
+godkit-doubt	1. **State the decision and its reason, one line each.** If the reason will not fit in one line,
+godkit-doubt	2. **Argue the strongest case against it**, from a fresh read — not the reasoning that produced
+godkit-doubt	3. **Check it against `.agent/BOARD.md` and `.agent/MAP.md`** for a contradiction — a decision
+godkit-doubt	4. **Resolve.** The adversarial pass did not change your mind → record the original, plus the
+godkit-doubt	## Output
+godkit-doubt	## Boundaries
+godkit-evolve	# Evolve
+godkit-evolve	## Before writing anything
+godkit-evolve	## The three kinds
+godkit-evolve	| Kind | When | Frontmatter |
+godkit-evolve	|---|---|---|
+godkit-evolve	| **captured** | the logs show the same shaped job done three or more times | `origin: captured` |
+godkit-evolve	| **derived** | an existing skill is right except in one narrower context | `origin: derived`, `parent: <name>` |
+godkit-evolve	| **fix** | a skill led to a failure and the instruction that misled is identifiable | `origin: fix` on first repair, then bump `revised:` |
+godkit-evolve	### Captured
+godkit-evolve	### Derived
+godkit-evolve	### Fix
+godkit-evolve	1. Edit the instruction.
+godkit-evolve	2. Bump `revised:` to now. **This resets the evidence window**: the skill is judged on its
+godkit-evolve	3. Add a `## Changelog` line saying what changed and why, naming the `B-NNN` if there is one.
+godkit-evolve	4. Re-run `godkit skills --link`.
+godkit-evolve	## The file
+godkit-evolve	## Rules
+godkit-evolve	- **No bundled executables.** A project skill is instructions. Hosts offer to run scripts a skill
+godkit-evolve	- **No secrets, no tokens, no absolute machine paths.** This file is committed.
+godkit-evolve	- **Write it from the logs, not from memory.** The logs have the real commands with their real
+godkit-evolve	- **Reject more than you write.** A wrong skill auto-loaded into a future agent's context is
+godkit-evolve	## Modes
+godkit-evolve	| Mode | You may |
+godkit-evolve	|---|---|
+godkit-evolve	| `audit_only` | propose in chat; write a skill file only when asked. Captured and derived skills stay inert — they exist in `.agent/skills/` but `godkit skills --link` refuses them |
+godkit-evolve	| `fix_only` | repair existing skills without asking; no new ones |
+godkit-evolve	| `autonomous` | create captured and derived skills without asking |
+godkit-evolve	## What "trusted" means, exactly
+godkit-evolve	| | |
+godkit-evolve	|---|---|
+godkit-evolve	| **trusted** | 3 successes across 3 *distinct* sessions, no failures |
+godkit-evolve	| **provisional** | the default, and where a trusted skill lands after one attributable failure |
+godkit-evolve	| **quarantined** | 2 failures, a blocking safety finding, or `enabled: false` — will not link, even with `--force` |
+godkit-evolve	## Boundaries
+godkit-execute	# Execute
+godkit-execute	## The pipeline
+godkit-execute	### 1. Pre-execute — before you touch anything
+godkit-execute	- **Scope**: is this file inside your claim on the board? If not, claim it first.
+godkit-execute	- **Capability**: do you have the tools, permission and context for this? Missing any → say so and stop. **Fail loud, never half-do.** A silently degraded result is worse than a refusal, because the caller believes it.
+godkit-execute	- **Inputs**: do the paths exist, do the arguments make sense, is the target what you think it is. Read before you overwrite.
+godkit-execute	### 2. Guard — deny-only
+godkit-execute	- destructive and irreversible (delete, force-push, drop, deploy, send) → confirm with the user first unless already authorized for this exact thing
+godkit-execute	- outside your claim → stop
+godkit-execute	- contradicts a board decision → stop and raise it
+godkit-execute	- secrets, credentials, `.env` → never in output, never in a log entry, never in a commit
+godkit-execute	### 3. Execute — bounded
+godkit-execute	### 4. Post-execute — verify against the world
+godkit-execute	| Claim | Weak (do not accept) | Real |
+godkit-execute	|---|---|---|
+godkit-execute	| file changed | the edit tool returned | read the changed lines back, or `git diff` |
+godkit-execute	| tests pass | "should pass now" | run them, paste the count |
+godkit-execute	| build works | it compiled last time | `tsc --noEmit`, `cargo check`, whatever this repo uses |
+godkit-execute	| bug fixed | the symptom path works | the symptom path **and** the sibling callers of the function you touched |
+godkit-execute	| delegated work finished | its report says done | run its verification yourself |
+godkit-execute	### 5. Checkpoint — record it
+godkit-execute	## Error recovery
+godkit-execute	- **Failed twice the same way** → stop retrying. Read the actual error, trace the actual code. The third attempt does not know more than the second.
+godkit-execute	- **Failed differently each time** → you are guessing. Stop and diagnose — see **godkit-review**.
+godkit-execute	- **Blocked on something outside your control** (missing credential, a claim you cannot take, a decision only the user can make) → stop, set the task `phase: blocked`, and set `blocked:` to the kind of blocked it is — `needs-decision`, `needs-evidence`, `external-wait`, or `needs-owner`. Log the exact blocker, tell the user. Do not invent a workaround around a permission. An untyped `blocked` is a `resume-blocked` finding, because it leaves the next agent with no idea whether they can act.
+godkit-execute	- **The same typed blocker twice with nothing advanced** → that is not a retry, it is the loop the rule above names, and the breaker is escalation rather than a third attempt. Record it on the task, say so in your Handoff, and hand it to whoever the blocker points at: the user for `needs-decision`, the claim holder for `needs-owner`. `external-wait` never earns a retry at all — pick up other work.
+godkit-execute	- **Partial success** → finish every part that is not blocked, then report exactly which parts are outstanding and why. Scaling the task down is the user's call, never yours.
+godkit-execute	## Cleanup
+godkit-execute	## Output
+godkit-execute	## Boundaries
+godkit-frontend	# Frontend
+godkit-frontend	## The three dials
+godkit-frontend	| Dial | Low | High |
+godkit-frontend	|---|---|---|
+godkit-frontend	| **DESIGN_VARIANCE** | conventional, safe, easy to scan | unconventional layout, real risk |
+godkit-frontend	| **MOTION_INTENSITY** | static or near-static | animation carries meaning, not decoration |
+godkit-frontend	| **VISUAL_DENSITY** | generous whitespace, few elements per view | dense, information-rich |
+godkit-frontend	## The banned defaults
+godkit-frontend	- purple-to-pink gradient hero background
+godkit-frontend	- centered headline over a mesh-gradient or blob background
+godkit-frontend	- exactly three feature cards, equal width, identical structure
+godkit-frontend	- Inter (or system-ui) + `slate-900` text as the unexamined default font/color pair
+godkit-frontend	- a hero, three features, a CTA, a footer — the generic SaaS template shape, present because it
+godkit-frontend	## Process
+godkit-frontend	1. **Infer the brief.** What is this, who looks at it, how long do they look, once or daily.
+godkit-frontend	2. **Set the three dials** from the brief, one line each, with the one-word reason.
+godkit-frontend	3. **Choose a real design system**, not the default: a font pairing (not Inter alone), a palette
+godkit-frontend	4. **Sketch the motion**, only if `MOTION_INTENSITY` warrants it: what animates, on what trigger,
+godkit-frontend	5. **Pre-flight**: does the result hit any item on the banned-defaults list above? If yes, that
+godkit-frontend	## Variants
+godkit-frontend	| Load `references/<file>` when... | Covers |
+godkit-frontend	|---|---|
+godkit-frontend	| `v1.md` | the brief wants a fixed dial baseline instead of per-brief inference |
+godkit-frontend	| `strict.md` | prior output kept converging on the same layout across separate generations |
+godkit-frontend	| `soft.md` | premium/luxury/boutique-agency feel |
+godkit-frontend	| `minimal.md` | docs site, internal tool, editorial monochrome (Notion/Linear-style) |
+godkit-frontend	| `brutalist.md` | brief explicitly wants brutalist/industrial/terminal aesthetics (beta) |
+godkit-frontend	| `redesign.md` | fixing an EXISTING UI's taste, not building new — audit-first workflow |
+godkit-frontend	| `stitch.md` | producing a design-spec doc for a one-shot screen-generation tool |
+godkit-frontend	| `image-to-code.md` | generating reference images then implementing code to match |
+godkit-frontend	| `imagegen-web.md` | web design comps only, no code |
+godkit-frontend	| `imagegen-mobile.md` | mobile screen/flow comps only, no code |
+godkit-frontend	| `brandkit.md` | a brand-identity board (logo, palette, applications), image only |
+godkit-frontend	## Boundaries
+godkit-git	# Git
+godkit-git	## Worktrees for real parallelism
+godkit-git	## Commit as the checkpoint
+godkit-git	- commit `.agent/` (the log entry, the task file, the released or updated claim) together with
+godkit-git	- a bad next step then reverts to a save point instead of a hand-unwind. "Undo the last twenty
+godkit-git	- small, frequent commits after each verified step beat one large commit at the end — the
+godkit-git	## Why .agent/ rarely conflicts, and what to do when it does
+godkit-git	| File | Conflict frequency | Why |
+godkit-git	|---|---|---|
+godkit-git	| `log/<UTC>-<agent>.md` | never | one file per session, nobody else writes it |
+godkit-git	| `tasks/T-NNN-*.md` | rare | one file per task; two agents on the same task is already a `godkit-handoff` clock-in violation |
+godkit-git	| `BOARD.md` | occasional | append-heavy by convention (new claim rows, new decision lines) — a conflict is almost always both sides adding a different line, which is a trivial union |
+godkit-git	| `THREAD.md` | occasional | append-only, newest at the bottom — same trivial-union shape |
+godkit-git	| `skills/<name>/SKILL.md` | rare | one file per skill; a real edit conflict here is two agents fixing the same skill |
+godkit-git	### The generated half is different: never merge it, regenerate it
+godkit-git	## Boundaries
+godkit-handoff	# Handoff
+godkit-handoff	## The shared state
+godkit-handoff	### `.agent/BOARD.md`
+godkit-handoff	### `.agent/tasks/T-NNN-<slug>.md`
+godkit-handoff	## Plan
+godkit-handoff	## Execute
+godkit-handoff	## Review
+godkit-handoff	## Test
+godkit-handoff	## Handoff
+godkit-handoff	### `.agent/THREAD.md`
+godkit-handoff	## 2026-08-19T1403Z · claude · T-003
+godkit-handoff	### `.agent/log/<UTC>-<agent>[-<session8>].md`
+godkit-handoff	## Task
+godkit-handoff	## Did
+godkit-handoff	- guard the expiry comparison — src/auth/token.ts:88
+godkit-handoff	- drop the now-dead retry wrapper — src/auth/refresh.ts:12-31
+godkit-handoff	## Verified
+godkit-handoff	- `npm test auth` → 14 pass
+godkit-handoff	- manual: login with a `+` in the email → still 500 (B-004, not mine)
+godkit-handoff	## Bugs
+godkit-handoff	- fixed B-003 — refresh loop. Root cause was the shared `isExpired`, not the caller the report named.
+godkit-handoff	- found B-004 — login 500 on `+` in email. Open, added to board.
+godkit-handoff	## Decisions
+godkit-handoff	- httpOnly cookie over localStorage — XSS.
+godkit-handoff	## Left / next
+godkit-handoff	- no test yet for the `+email` case
+godkit-handoff	- did NOT touch src/auth/session.ts — cursor holds that claim
+godkit-handoff	## What `godkit verify` checks
+godkit-handoff	| Tag | Fires on |
+godkit-handoff	|---|---|
+godkit-handoff	| `no-exit` | a task with an empty `scope:` or `exit:`, or one past `plan` still owned by `unassigned` |
+godkit-handoff	| `no-verify` | `phase: done` with an empty `## Test`, or `status: done` with an empty `## Verified` |
+godkit-handoff	| `resume-blocked` | a task past `plan` and short of `done` with an empty `## Handoff`; a log at `partial` or `blocked` with an empty `## Left / next`; a `blocked` task with no typed reason |
+godkit-handoff	### `blocked:` — say which kind of blocked
+godkit-handoff	| Value | The next agent should |
+godkit-handoff	|---|---|
+godkit-handoff	| `needs-decision` | ask the user — do not guess and do not proceed |
+godkit-handoff	| `needs-evidence` | go verify the specific fact, then continue |
+godkit-handoff	| `external-wait` | not retry; pick up other work and check back |
+godkit-handoff	| `needs-owner` | check the board and hand it to whoever holds that scope |
+godkit-handoff	## Clock in
+godkit-handoff	1. **Read `.agent/BOARD.md`.** No `.agent/`? Run `godkit init` and continue. One time, ten seconds, do not ask permission.
+godkit-handoff	2. **Read `.agent/MAP.md`.** Stale or missing? Refresh it — see **godkit-map**. A stale map is worse than no map, because you will act on it.
+godkit-handoff	4. **Read the THREAD tail.** Someone may be blocked on you.
+godkit-handoff	5. **Check the bug list before fixing anything.** Already `[x]`? Read that log entry — either it regressed (say so, new id) or you were about to redo finished work.
+godkit-handoff	6. **Check the decisions.** They bind you. If one is wrong, argue with the user and record the reversal; never silently contradict it.
+godkit-handoff	7. **Claim your scope** — a row in *Now* with file globs, your task, UTC time, `wip`.
+godkit-handoff	## While working
+godkit-handoff	- Scope grew past your claim? **Widen the claim before touching the new files**, not after.
+godkit-handoff	- Found a bug outside your scope? Add it as a new `B-NNN` and keep going. Do not fix it — that is someone's claimed file, and an unclaimed drive-by fix is exactly the collision this protocol prevents.
+godkit-handoff	- Moved a task to a new phase? Update its frontmatter as you go, not at the end.
+godkit-handoff	## Clock out
+godkit-handoff	2. **Update the task file** — fill the phase section you worked, set `phase:`, write Handoff.
+godkit-handoff	3. **Update the board** — release your claim, close or add bugs, add any decision, prepend one line to *Last 3 handoffs* and trim to three.
+godkit-handoff	4. **Post to THREAD** if another agent is waiting on something you just changed.
+godkit-handoff	5. **Bug bookkeeping**: `B-NNN` ids are monotonic and never reused or renumbered. A fixed bug stays with `[x]`, its fix location and its log pointer — that is how the next agent tells "already fixed" from "never looked at". Record the **root cause location**, not the symptom: a sibling caller may still be broken, and the next agent needs to know where you actually cut.
+godkit-handoff	6. **Commit `.agent/` with your code change.** The log and the diff belong in the same commit; separated, they drift.
+godkit-handoff	## Memory: what goes where
+godkit-handoff	| Tier | Lives in | Holds | Who reads it |
+godkit-handoff	|---|---|---|---|
+godkit-handoff	| **Map** | `.agent/MAP.md`, `graph.json` | what the codebase *is* | every agent, on arrival |
+godkit-handoff	| **Skills** | `.agent/skills/`, `SKILLS.md` | procedures this project repeats — see **godkit-evolve** | every agent, on arrival |
+godkit-handoff	| **Board** | `.agent/BOARD.md` | current claims, bugs, binding decisions | every agent, first thing |
+godkit-handoff	| **Log** | `.agent/log/*.md` | what happened this session | every agent, forever |
+godkit-handoff	| **Private** | the tool's own store | user preferences, tool quirks, cross-project habits | that one tool only |
+godkit-handoff	- **If another agent needs it, it goes in `.agent/`.** Private memory is invisible to every other tool. A decision recorded only in Claude's memory does not exist for Cursor.
+godkit-handoff	- **Bootstrap from the map, not from opening files.** `.agent/MAP.md` exists so arrival costs a read, not a re-derivation — grep it for what a piece of code is before reading the code itself. Re-deriving architecture turn by turn is the cost this whole protocol exists to avoid.
+godkit-handoff	- **Do not record what the repo already records.** Code structure, git history, what a function does, a fix you already logged — all already written down. Memory that duplicates the repo goes stale and then lies.
+godkit-handoff	- Private memory is for what the repo cannot say: how the *user* wants to work, which tool broke on what, standing preferences.
+godkit-handoff	- In doubt, put it under Decisions on the board. Every tool can read it.
+godkit-handoff	## Splitting work across tools
+godkit-handoff	- **One owner per file.** Split seams on file boundaries, never on layers that share files.
+godkit-handoff	- Two seams must touch one file → **serialize them**. The wall-clock you save is smaller than the merge bug you buy.
+godkit-handoff	- Each parallel worker gets its own claim, its own scope, its own log entry.
+godkit-handoff	- **The join is a gate**: after the parallel work merges, one agent runs the full check suite and logs the result. Nobody is done until the join passes.
+godkit-handoff	- For the actual git mechanics of running claims in parallel — worktrees, committing as the checkpoint, merging `.agent/` itself — see **godkit-git**.
+godkit-handoff	## Output
+godkit-handoff	## Boundaries
+godkit-help	# Godkit — reference card
+godkit-help	## The two rules
+godkit-help	## Shared state
+godkit-help	## Clock in / clock out
+godkit-help	| In | Out |
+godkit-help	|---|---|
+godkit-help	| read BOARD, MAP, newest 2 logs, THREAD tail | write the log entry |
+godkit-help	| check bugs before fixing | update the task file phase + Handoff |
+godkit-help	| check decisions — they bind you | update the board, release the claim |
+godkit-help	| **claim your scope** | post to THREAD if someone is waiting |
+godkit-help	## Ladders
+godkit-help	## Non-negotiable
+godkit-help	## Skills
+godkit-help	| Skill | Use for |
+godkit-help	|---|---|
+godkit-help	| `godkit` | arriving at a project, synthesizing and splitting the work |
+godkit-help	| `godkit-map` | building or refreshing the project map |
+godkit-help	| `godkit-handoff` | the `.agent/` protocol and its file formats |
+godkit-help	| `godkit-plan` | cutting seams, assigning owners, writing task files |
+godkit-help	| `godkit-execute` | running work through the pipeline, error recovery |
+godkit-help	| `godkit-refactor` | evolving the source code — churn and blame from the logs |
+godkit-help	| `godkit-review` | reviewing the process, or diagnosing a failed run |
+godkit-help	| `godkit-test` | what counts as verified, writing the check |
+godkit-help	| `godkit-lazy` | what to build and what to skip |
+godkit-help	| `godkit-git` | worktrees, commit-as-checkpoint, merging `.agent/` |
+godkit-help	| `godkit-doubt` | pressure-testing a decision before it binds everyone |
+godkit-help	| `godkit-triage` | GitHub issues and PRs: fresh-base diffs, the posting gate, batches |
+godkit-help	| `godkit-frontend` | design taste — dials, banned defaults, 11 style/workflow variants |
+godkit-help	| `godkit-output-enforcement` | catching stubbed or truncated generated output |
+godkit-help	| `godkit-evolve` | capturing, deriving and fixing this project's own skills |
+godkit-help	| `godkit-help` | this card |
+godkit-help	## CLI
+godkit-help	## Where things install
+godkit-help	|---|---|---|---|
+godkit-help	## Boundaries
+godkit-lazy	# Lazy
+godkit-lazy	## Ladder one — fewest turns
+godkit-lazy	1. **Already written down?** `.agent/MAP.md` describes this architecture, `BOARD.md` says which
+godkit-lazy	2. **Can a command answer it?** `rg`, the test suite, `tsc --noEmit`, `git log`. Free, cannot
+godkit-lazy	3. **Read once, wide.** Every file you know you need, one parallel batch. Thinking between
+godkit-lazy	4. **Edit, do not rewrite.** Rewriting a file to change one line bills you for everything unchanged.
+godkit-lazy	5. **Verify once, at the end.** The exit condition is the check.
+godkit-lazy	6. **No plan document for work that fits in this turn.**
+godkit-lazy	## Ladder two — least code
+godkit-lazy	1. **Does this need to exist at all?** Speculative = skip it, say so in one line. (YAGNI)
+godkit-lazy	2. **Already in this repo?** A helper, util, type or pattern → reuse it. Grep before you write;
+godkit-lazy	3. **Stdlib does it?** Use it.
+godkit-lazy	4. **Native feature covers it?** `<input type="date">` over a picker lib, CSS over JS, a DB
+godkit-lazy	5. **Installed dependency solves it?** Use it. Never add one for what a few lines do.
+godkit-lazy	6. **One line?** One line.
+godkit-lazy	7. **Only then:** the minimum code that works.
+godkit-lazy	## Throughput
+godkit-lazy	- **Five files needing the same mechanical change is one pass, not five delegations.** Delegation
+godkit-lazy	- **Disjoint seams go out as one wave, not one after another** — see the sprint section of
+godkit-lazy	- **Report orthogonal outcomes separately.** "Tests pass but I skipped the migration" is two facts;
+godkit-lazy	## Rules
+godkit-lazy	- No unrequested abstractions: no interface with one implementation, no factory for one product, no
+godkit-lazy	- Deletion over addition. Boring over clever; clever is what someone decodes at 3am.
+godkit-lazy	- Complex request? Ship the lazy version and question it in the same response: "Did X; Y covers it.
+godkit-lazy	- Two options the same size? Take the one correct on edge cases. Lazy is less code, not a flimsier
+godkit-lazy	- Mark a shortcut with a real ceiling: `// godkit: greedy grouping, not clustering. Swap if batch
+godkit-lazy	- **Deleting existing code needs Chesterton's Fence:** check `.agent/log/` and `git log` for why it
+godkit-lazy	## Levels
+godkit-lazy	| | code | turns |
+godkit-lazy	|---|---|---|
+godkit-lazy	| **lite** | prefer the simple option, don't argue | ladder one still applies |
+godkit-lazy	| **full** | ladder two enforced, stdlib and native first | both ladders, shortest diff and explanation |
+godkit-lazy	| **ultra** | hunt for what to delete, question the task | answer from the map or a command, or say why you can't |
+godkit-lazy	| **off** | ordinary judgment | — |
+godkit-lazy	## Never be lazy about
+godkit-lazy	## Output
+godkit-lazy	## Boundaries
+godkit-map	# Map
+godkit-map	## Reading the map — do this before building anything
+godkit-map	## Building it
+godkit-map	### 0. Decide how much to do
+godkit-map	| Situation | Do |
+godkit-map	|---|---|
+godkit-map	| no map | full build, below |
+godkit-map	| `SKIP` | nothing changed — stop, you are done |
+godkit-map	| `PARTIAL` | re-analyze only the changed files, patch them into the graph |
+godkit-map	| `ARCHITECTURE` | re-analyze changed files, then redo layers and tour (step 4) |
+godkit-map	| `FULL` | start over |
+godkit-map	### 1. Scan
+godkit-map	### 2. Analyze each batch
+godkit-map	- **Ids are `type:path[:name]`, using the path exactly as `scan.json` gives it.** Ids are identity — a mistyped path silently creates a second node for the same thing.
+godkit-map	- **Summaries say what it is *for*, not what it is called.** "Validates and refreshes auth tokens; the expiry comparison here is the one every caller depends on" earns its place. "Token function" does not.
+godkit-map	### 3. Merge
+godkit-map	### 4. Architecture and tour
+godkit-map	- **`layers[]`** — the real structural grouping of this project, in its own vocabulary. Not "model / view / controller" unless that is genuinely what it is.
+godkit-map	- **`tour[]`** — an ordered start-here path for someone who has never seen the repo. Five to nine steps. The first step is where execution actually begins.
+godkit-map	### 5. Save
+godkit-map	1. normalizes and writes `.agent/graph.json` — dedupes ids, drops dangling edges, sanitizes paths
+godkit-map	2. generates `.agent/MAP.md` from it
+godkit-map	3. writes `.agent/meta.json` **last**, carrying the commit sha
+godkit-map	## Refreshing incrementally
+godkit-map	## Rules
+godkit-map	- **Do not map what the repo already says.** A node per file is useful; a node per getter is noise that makes the graph unusable.
+godkit-map	- **Never hand-edit `MAP.md`.** It is generated; the next refresh overwrites it. Fix the graph.
+godkit-map	- **Do not invent structure.** If a project has no clean layering, say so in the description. A tidy map of a messy repo is a lie that costs the next agent an afternoon.
+godkit-map	- **Record the gotchas.** The map's real value is the landmine that took you an hour to find — the surprising coupling, the file that looks dead and is not.
+godkit-map	- **Absolute paths never enter the graph.** It is committed and pushed; a path leaks the machine layout and the user's name.
+godkit-map	- Mark deliberate mapping shortcuts with a `godkit:` comment naming the ceiling.
+godkit-map	## Output
+godkit-map	## Boundaries
+godkit-output-enforcement	# Output Enforcement
+godkit-output-enforcement	## Banned patterns
+godkit-output-enforcement	| Where | Banned |
+godkit-output-enforcement	|---|---|
+godkit-output-enforcement	| Code | `// ...`, `// rest of implementation`, `// TODO`, `// similar to above`, `// add more as needed`, a bare `...` standing in for real code |
+godkit-output-enforcement	| Prose | "let me know if you want me to continue", "for brevity", "the rest follows the same pattern", "and so on" (replacing actual content) |
+godkit-output-enforcement	| Structure | a skeleton where a full implementation was asked for; first and last section shown, middle skipped; one example plus "repeat for the rest"; describing what the code should do instead of writing it |
+godkit-output-enforcement	## Process
+godkit-output-enforcement	1. **Scope.** Before generating, count the deliverables the request implies — files, functions,
+godkit-output-enforcement	2. **Build.** Generate every one of them completely. No "extend this later" placeholders.
+godkit-output-enforcement	3. **Cross-check.** Before handing it over, recount against step 1. Short by even one → the
+godkit-output-enforcement	## Hitting a length limit mid-deliverable
+godkit-output-enforcement	## Before finalizing
+godkit-output-enforcement	- No banned pattern anywhere in the output.
+godkit-output-enforcement	- Every deliverable from the scope count is present and finished, not sketched.
+godkit-output-enforcement	- Every code block is code that runs, not a description of code.
+godkit-output-enforcement	- Nothing was shortened to fit — if it didn't fit, it was paused, not trimmed.
+godkit-output-enforcement	## Boundaries
+godkit-plan	# Plan
+godkit-plan	## Before you plan: read the shared state
+godkit-plan	## Process
+godkit-plan	| | |
+godkit-plan	|---|---|
+godkit-plan	| **Scope** | file globs, exclusive. Not "auth stuff" — `src/auth/*` |
+godkit-plan	| **Exit** | what "done" means, checkable by someone else |
+godkit-plan	| **Verify** | the command or observation that proves it. `npm test auth` → pass, not "looks right" |
+godkit-plan	| Seam needs | Provider must have |
+godkit-plan	|---|---|
+godkit-plan	| edits across many files | repo access + a window that holds them |
+godkit-plan	| running the suite | shell permission |
+godkit-plan	| root-cause work | the whole call path in context, not one file |
+godkit-plan	| external calls | network, and credentials it is allowed to use |
+godkit-plan	| Seam | Route to | Why not higher |
+godkit-plan	|---|---|---|
+godkit-plan	| "does X exist", "which callers", "did the test pass" | a command — `rg`, the suite, `git log` | free, exact, cannot hallucinate |
+godkit-plan	| you already have the context | this turn | a spawn re-derives what you know |
+godkit-plan	| single-file edit, stub, test from a named behaviour, mechanical rename | cheap tier | no judgment in it |
+godkit-plan	| multi-file refactor, root cause, ambiguous requirements | strong tier | judgment is what you are paying for |
+godkit-plan	| many independent mechanical seams | cheap tier fanned out | + one strong joiner at the gate |
+godkit-plan	## Output
+godkit-plan	## Rules
+godkit-plan	- **Never plan two owners onto one file.** If the split demands it, the split is wrong — re-cut, or serialize.
+godkit-plan	- **No seam without a verification.** "Then it works" is not an exit condition.
+godkit-plan	- **Parallelize only disjoint file sets.** Wall-clock saved is never worth a merge bug.
+godkit-plan	- **Every parallel fan-out needs a join gate** — one agent, full suite, after the merge, logged.
+godkit-plan	- **Do not plan past the first unknown.** If seam 2 depends on what seam 1 discovers, plan seam 1 and say so. Speculative seams get thrown away.
+godkit-plan	- **Cap the depth.** A seam needing its own sub-seams three levels down means the top-level cut was wrong. Back up and re-cut.
+godkit-plan	- Deliberate shortcuts get a `godkit:` note naming the ceiling.
+godkit-plan	## Anti-patterns
+godkit-plan	- **Plan-shaped procrastination** — three seams for two hours of work. Do the work.
+godkit-plan	- **Phase names as seams** — "design / implement / test" is one seam described three times.
+godkit-plan	- **The unassigned seam** — no owner means everyone assumes someone else, or two people do it.
+godkit-plan	- **The unverifiable seam** — if you cannot say how to check it, you cannot say when it is done.
+godkit-plan	## Boundaries
+godkit-refactor	# Refactor
+godkit-refactor	## Start from the report
+godkit-refactor	| column | means |
+godkit-refactor	|---|---|
+godkit-refactor	| `touched` | sessions whose `scope:` or `## Did` named this file |
+godkit-refactor	| `blamed` | `## Bugs` bullets that named it as a root cause |
+godkit-refactor	| `sessions` | distinct sessions — three edits in one session is one session |
+godkit-refactor	| `fan-in` | files the map says depend on this one |
+godkit-refactor	| shape | reading |
+godkit-refactor	|---|---|
+godkit-refactor	| high blamed, low fan-in | a genuinely fragile file. The best candidate there is. |
+godkit-refactor	| high blamed, high fan-in | fragile *and* load-bearing. Fix it, and land the test first. |
+godkit-refactor	| high touched, zero blamed | an active area, not a broken one. Often the newest feature. **Usually leave it.** |
+godkit-refactor	| low everything, high fan-in | quiet and depended on. Not a refactor target — a file to not break. |
+godkit-refactor	## Then read the code
+godkit-refactor	- the same fix applied in three callers, where one guard in the shared function would have done
+godkit-refactor	- a function that grew a new branch every time the file appears in the log
+godkit-refactor	- an invariant enforced at the call sites instead of at the boundary
+godkit-refactor	- two things in one file that change for different reasons, so every change risks the other
+godkit-refactor	## Propose before you cut
+godkit-refactor	## When you do cut
+godkit-refactor	1. **Claim the files on `.agent/BOARD.md` first.** A refactor touches many files; that is what
+godkit-refactor	2. **Root cause, not symptom.** Grep every caller of what you are about to change. One guard in
+godkit-refactor	3. **A behaviour-preserving change needs a test that would have caught the regression**, written
+godkit-refactor	4. **One concern per commit.** A refactor mixed with a fix is a diff nobody can review, and it
+godkit-refactor	5. **Close the loop on the board.** If the refactor fixes the cause behind a `[x]` bug that kept
+godkit-refactor	## What not to refactor
+godkit-refactor	- Code with no test coverage and no bug history. You would be changing something that, as far as
+godkit-refactor	- A file that is high `touched` and zero `blamed`. It is being built, not failing.
+godkit-refactor	- Anything to satisfy a metric. `score` is a heuristic over sixteen markdown files, and it is not
+godkit-refactor	- Generated files. Fix the generator.
+godkit-refactor	## Boundaries
+godkit-review	# Review
+godkit-review	## Look at
+godkit-review	- `.agent/BOARD.md` — claims, task index, bug register, decisions, handoff list
+godkit-review	- `.agent/log/*.md` — the recent entries
+godkit-review	- `.agent/tasks/*.md` — exit conditions, phases, Handoff sections
+godkit-review	- `.agent/THREAD.md` — messages that went unanswered
+godkit-review	- `git log` and the diff — what actually changed
+godkit-review	## Mode 1 — Review
+godkit-review	### Tags
+godkit-review	| Tag | Meaning |
+godkit-review	|---|---|
+godkit-review	| `no-handoff` | session edited files, left no log entry |
+godkit-review	| `claim-collision` | two agents edited one file in overlapping windows |
+godkit-review	| `unclaimed-edit` | files changed outside any claim on the board |
+godkit-review	| `stale-board` | claim never released, bug fixed but still `[ ]`, decision contradicted by the code |
+godkit-review	| `stale-map` | the map describes code that has since moved, and someone acted on it |
+godkit-review	| `scope-leak` | work drifted past its stated scope without widening the claim |
+godkit-review	| `no-verify` | a result was accepted with no command or observation behind it |
+godkit-review	| `no-exit` | a task or delegation with no checkable "done" |
+godkit-review	| `serial-bottleneck` | independent seams run one after another for no reason |
+godkit-review	| `over-delegate` | spawned a worker for what fit in the turn |
+godkit-review	| `wrong-tier` | strong model spent on a seam a command or a cheap tier covered |
+godkit-review	| `model-verify` | a model asked to check what a command proves — expensive and weaker |
+godkit-review	| `lost-context` | a child had to re-derive what the parent already knew |
+godkit-review	| `depth-excess` | delegation three or more levels deep — the seams were cut wrong |
+godkit-review	| `no-recovery` | retried without advancement, or gave up without diagnosing |
+godkit-review	| `resume-blocked` | `partial` or `blocked` with a Handoff too vague to act on |
+godkit-review	| `thread-dropped` | a THREAD message asked for something and nobody answered |
+godkit-review	### Format
+godkit-review	## Mode 2 — Diagnose
+godkit-review	1. **What was supposed to happen** — one line. The exit condition, as stated at the time.
+godkit-review	2. **What happened** — one line, from evidence: logs, `git log`, the transcript, the error. Not from memory.
+godkit-review	3. **The first divergence.** Walk forward until behaviour first differs from intent. The failure surfaced later; the cause is here. Everything after it is a consequence.
+godkit-review	4. **Tag it.**
+godkit-review	5. **The smallest change that prevents a repeat.** One rule, one gate, one claim. If your fix is "be more careful", you have not found the cause.
+godkit-review	### Tags
+godkit-review	| Tag | Signature |
+godkit-review	|---|---|
+godkit-review	| `infinite-loop` | same action retried with unchanged inputs and unchanged state |
+godkit-review	| `context-overflow` | ran out of window mid-task; state that mattered was never written down |
+godkit-review	| `wrong-seam` | the split forced two workers into one file, or made a piece unverifiable alone |
+godkit-review	| `scope-creep` | work drifted past its claim; the diff is much bigger than the task |
+godkit-review	| `missing-gate` | a result was accepted with no verification, and was wrong |
+godkit-review	| `capability-mismatch` | dispatched to a tool lacking the tools, permission, or window |
+godkit-review	| `no-recovery` | failed and stopped with no diagnosis, or retried forever with no advancement |
+godkit-review	| `stale-context` | acted on state that had changed — an old board, a fixed bug, a stale map |
+godkit-review	| `no-handoff` | work redone or undone because the previous session left no log |
+godkit-review	| `claim-collision` | two agents edited one file; both diffs correct alone, broken together |
+godkit-review	| `silent-degradation` | a step half-succeeded and reported success; the caller believed it |
+godkit-review	### Format
+godkit-review	## Rules
+godkit-review	- **Findings only.** No praise, no summary of what went well.
+godkit-review	- **Cite a real location** — a file, a board line, a task id. A finding you cannot point at is a feeling.
+godkit-review	- **One root cause when diagnosing.** Several tags fitting means you stopped before the first divergence. Keep walking back.
+godkit-review	- **Evidence, not reconstruction.** Quote the log line, the error, the two conflicting diffs. A plausible story is not a diagnosis.
+godkit-review	- **Fix the mechanism, not the person.** "The agent should have remembered" is not a fix — the next agent will not remember either. Make it structural: a hook, a claim, a gate, a template field.
+godkit-review	- **The fix must be smaller than the failure.** Recommending a new coordination layer usually means misdiagnosing a missing one-line claim.
+godkit-review	- **Do not propose orchestration heavier than the work.** "Add a coordination doc" for a two-file change is the disease, not the cure.
+godkit-review	- Nothing wrong? Say `orchestration: clean.` and stop. Inventing findings to look thorough wastes the next reader's attention.
+godkit-review	## Boundaries
+godkit-test	# Test
+godkit-test	## The verification ladder
+godkit-test	1. **A command that already exists** — the suite, `tsc --noEmit`, the linter, `git diff`. Free, exact, cannot hallucinate. Most claims die here. Find it before inventing one: `package.json` scripts, a `Makefile`, the CI workflow file. Prefer a checked-in wrapper (`./gradlew test`, `make test`) over an assumed default — the project already decided how it wants to be checked.
+godkit-test	2. **A one-line assertion** you can run right now — a `node -e`, a REPL call, a `curl`. Enough for a pure function or a shape.
+godkit-test	3. **A new test in the existing suite** — when the logic is non-trivial and will be changed again.
+godkit-test	4. **A manual observation, recorded** — when nothing automatable can reach it: a rendered state, a real device, a third-party call. Say exactly what you did and what you saw.
+godkit-test	## What earns a test
+godkit-test	## Proving a bug is fixed
+godkit-test	1. The reported path now works.
+godkit-test	2. **Every sibling caller of the function you changed still works.** Grep the callers — `rg 'isExpired' --type ts` — and check them. If you guarded a shared helper, you just changed behaviour for all of them.
+godkit-test	## What is not evidence
+godkit-test	| Claim | Not evidence | Evidence |
+godkit-test	|---|---|---|
+godkit-test	| the file changed | the edit tool returned ok | read the lines back, or `git diff` |
+godkit-test	| tests pass | "should pass now" | the run, with the count |
+godkit-test	| the build works | it compiled before | the build command, with its output |
+godkit-test	| the bug is fixed | the symptom path works | symptom path **and** sibling callers |
+godkit-test	| delegated work is done | its report says done | you ran its verification yourself |
+godkit-test	| nothing else broke | the diff looks small | the full suite after the change |
+godkit-test	## Recording it
+godkit-test	- `npm test auth` → 14 pass, 0 fail
+godkit-test	- `rg 'isExpired' --type ts` → 4 callers, all covered by the suite above
+godkit-test	- manual: login with a `+` in the email → still 500. Not this task — filed B-004.
+godkit-test	## Rules
+godkit-test	- The check must be able to fail. If it passes on broken code, it proves nothing.
+godkit-test	- Test the behaviour, not the implementation — a test asserting how something works internally breaks on every refactor and catches no bugs.
+godkit-test	- One runnable check for non-trivial logic. No frameworks, no fixtures, no per-function suites unless the project already works that way.
+godkit-test	- A flaky check is worse than none: it trains everyone to ignore red. Fix it or delete it.
+godkit-test	- Do not add a test to raise a number. Coverage is a symptom, never a goal.
+godkit-test	## Output
+godkit-test	## Boundaries
+godkit-triage	# Triage
+godkit-triage	## Resolve the scope yourself
+godkit-triage	| Input | What to do |
+godkit-triage	|---|---|
+godkit-triage	| a URL | `/issues/N` is an issue, `/pull/N` is a PR. Route it, do not confirm it. |
+godkit-triage	| a bare number | Try `gh pr view N`; if that fails, `gh issue view N`. Never ask which it is. |
+godkit-triage	| `#12`, `# 12`, `12` mixed | Normalize to a number list, keep the order, drop exact repeats. |
+godkit-triage	| "the recent ones" | Take a sensible recent slice, **say which slice you took**, and report what you left. |
+godkit-triage	| a field `view` lacks | `gh api` — timeline events, review threads, precise search filters. |
+godkit-triage	| nothing resolvable | Stop with a compact "scope unresolved" line and the command you tried. Not a question. |
+godkit-triage	## Read the right diff
+godkit-triage	1. Fetch the base fresh:
+godkit-triage	2. Diff from the merge base, not the branch tip:
+godkit-triage	3. **A fork PR's branch does not exist on the base repo.** `gh api .../contents?ref=<their-branch>`
+godkit-triage	4. **Record the head SHA you reviewed, and re-check it immediately before posting.** If the PR
+godkit-triage	5. If neither a local nor a GitHub diff can be read, report the failure. Do not review from the
+godkit-triage	## The posting gate
+godkit-triage	- Post publicly only what is **high-confidence AND at least P2**.
+godkit-triage	- For a public P2, also require that this diff *introduces or worsens* it. Do not raise a P2
+godkit-triage	- A high-confidence P0 or P1 is always worth posting. A **low-confidence P1 is not** — drop it, or
+godkit-triage	- "No findings" means none at any severity. It does not mean "no P0".
+godkit-triage	| | Meaning |
+godkit-triage	|---|---|
+godkit-triage	| `P0` | outage, data loss, security breach, or a broken build |
+godkit-triage	| `P1` | likely production bug, serious regression, broken compatibility |
+godkit-triage	| `P2` | correctness, maintainability or missing-test concern at lower risk |
+godkit-triage	## Existing comments gate posting, not analysis
+godkit-triage	- Non-empty delta → one comment that builds on the prior coverage explicitly and states only the
+godkit-triage	- Empty delta → post nothing; report "already covered" with the existing link.
+godkit-triage	- Your own earlier comments count as prior coverage. On a re-run, never stack a near-duplicate.
+godkit-triage	- Refresh comments *immediately before posting* and fold in anything that landed while you were
+godkit-triage	## Findings
+godkit-triage	- Location: src/auth/session.ts:88-94
+godkit-triage	- Problem: the cookie is cleared but the server-side record is not, so a captured
+godkit-triage	- Evidence: `logout()` calls `clearCookie` only; `revoke()` is never reached on this path.
+godkit-triage	- Fix: revoke inside the same transaction as the cookie clear.
+godkit-triage	- Test: log out, replay the old refresh token, expect 401.
+godkit-triage	## Batches
+godkit-triage	- **Related** (same files, same interface, same issue) → review in ONE context. Parallel workers
+godkit-triage	- **Independent** (disjoint files) → these are real seams and may run in parallel. See
+godkit-triage	## Competing PRs
+godkit-triage	1. The issue's own acceptance criteria are the rubric. Nothing else.
+godkit-triage	2. Score each on: does it actually resolve the ask, correctness and error paths, test quality,
+godkit-triage	3. Report the comparison **to the maintainer only**.
+godkit-triage	4. Publicly, each PR still gets its own gate-passing findings. Never rank authors against each
+godkit-triage	## What lands in .agent/
+godkit-triage	- A confirmed bug in **this** repo becomes a `B-NNN` on `.agent/BOARD.md` with its root-cause
+godkit-triage	- Posted comment and review URLs go in the log's `## Did`. They are the evidence this ran.
+godkit-triage	- You commented; you did not fix. Never say a fix was made unless code actually changed.
+godkit-triage	## Output
+godkit-triage	## Boundaries

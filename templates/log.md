@@ -19,7 +19,7 @@ skills: ""            # .agent/skills/ skills you used, comma-separated. Empty i
 
 ## Verified
 
-<!-- The command run and its real output: `npm test` -> 12 passing.
+<!-- The command run and the 1-5 output lines that decide it: `npm test` -> 12 passing.
      `godkit verify` requires this when status is `done`. "Should work" is not a result. -->
 
 ## Bugs

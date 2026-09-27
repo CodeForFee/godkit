@@ -24,7 +24,8 @@ created:              # UTC, e.g. 2026-08-19T1340Z
 
 ## Test
 
-<!-- The command run and its real output. "Should work" is not a result.
+<!-- The command run and the 1-5 output lines that decide it, not the whole dump.
+     "Should work" is not a result.
      `godkit verify` requires this when phase is `done`. -->
 
 ## Handoff

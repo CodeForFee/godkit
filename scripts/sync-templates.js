@@ -14,7 +14,7 @@ const fs = require('fs')
 const path = require('path')
 
 const ROOT = path.resolve(__dirname, '..')
-const TARGET = path.join(ROOT, 'skills', 'godkit-handoff', 'SKILL.md')
+const TARGET = path.join(ROOT, 'skills', 'godkit-handoff', 'references', 'formats.md')
 
 // marker name -> source template. Only the frontmatter travels: it is the machine-readable half,
 // and the half `godkit verify` and lib/contract.js actually parse. The skill keeps its own worked

@@ -1,13 +1,11 @@
 ---
 name: godkit
 description: >
-  The arrival protocol for a repo several AI agents share. Read .agent/ state, refresh the map if
-  stale, cut the task into seams on file boundaries, assign owners, claim your scope before
-  editing. Includes sprint mode: waves of file-disjoint seams behind a join gate. Use at the START
-  of any session that will change code, on ANY multi-step task, and on "godkit", "start", "resume",
-  "continue", "what was done", "who did what", "split this up", "delegate", "parallel",
-  "orchestrate", "hand off", "sprint", or complaints about lost context, repeated work or agents
-  stepping on each other. Do NOT use for a single-file edit that fits in one turn.
+  Arrival protocol for a repo agents share: read .agent/, refresh a stale map, cut seams on file
+  boundaries, claim scope; sprint mode runs waves of file-disjoint seams. Use at the START of any
+  session that will change code, on ANY multi-step task, on "godkit", "start", "resume", "continue",
+  "what was done", "who did what", "split this up", "delegate", "parallel", "orchestrate", "hand
+  off", "sprint", or lost context, repeated work, agents colliding. Not for a one-turn edit.
 argument-hint: "[task]"
 license: MIT
 ---
@@ -29,17 +27,17 @@ Before your first edit, every session, every project. Four states, four response
 
 | State | What you see | Do |
 |---|---|---|
-| **Empty project** | no `.agent/`, no code | `godkit init --new`. Fill `.agent/BRIEF.md`, then cut the first sprint from it. No map — there is nothing to map yet. |
+| **Empty project** | no code; `.agent/BRIEF.md` unfilled (the hook or `godkit init` scaffolds it) | Fill `.agent/BRIEF.md` yourself from the user's prompt — infer the stack, ask only when nothing hints at it and it is hard to reverse. Never hand it back to the user to fill, and do not skip it because the build is small — it is how the next agent knows what this is. Then build; cut a first sprint (`references/sprint.md`) only if the work is bigger than one turn. No map — there is nothing to map yet. |
 | **Unknown project** | no `.agent/`, code exists | `godkit init`, then build the map (**godkit-map**). One time. Do not ask permission. |
 | **Known but drifted** | `.agent/` exists, map reports STALE | Refresh the map before you trust it. A stale map is worse than none — it is confidently wrong. |
-| **Known and current** | map is current | Read board, map, newest two logs. Go. |
+| **Known and current** | map is current | Read the brief (board, map, recent logs). Go. |
 | **Mid-task** | open claims, tasks in `execute` | You are resuming. Read the owning task file and its Handoff section first. |
 
 Then, always:
 
 1. Read `.agent/BOARD.md` — who is working where, which bugs are open, which are already fixed, which decisions bind you.
 2. Read `.agent/MAP.md` for what this codebase is.
-3. Read the newest two `.agent/log/` entries, plus any whose `scope` overlaps files you will touch. `grep -l "src/auth" .agent/log/*.md` finds them.
+3. The brief lists the newest logs one line each; open only those whose `scope` overlaps files you will touch. Anything older, archived included: `godkit recall src/auth`.
 4. Read the tail of `.agent/THREAD.md` — someone may be waiting on you.
 5. **Claim your scope** on the board before you edit.
 
@@ -59,71 +57,11 @@ Skip the task file only when the whole thing genuinely fits in this turn and you
 
 ## Sprint mode
 
-More than one seam pointed at one goal is a sprint. `godkit sprint new "<goal>"` opens
-`.agent/sprints/S-NNN.md`; the CLI keeps the file and checks the tasks, you cut the waves.
-
-The loop, and it does not vary:
-
-**goal → waves of file-disjoint seams → dispatch the whole wave → join gate → next wave.**
-
-- **A wave is a set of tasks whose file scopes do not overlap.** That is the entire admission rule.
-  Task N+1 touching a file already claimed in this wave drops to the next wave — it does not run in
-  parallel and get merged hopefully. This is "one owner per file", stated at wave level.
-- **Dispatch the wave at once, not one after another.** Serialising work that could run together is
-  the largest waste in agent work, and unlike a wrong answer nothing on screen reveals it.
-- **Every wave ends at a join gate**: one agent runs the full check suite after the merge. Without
-  it you do not have a wave, you have several edits that happened to overlap in time. Each seam's
-  own exit condition proves the seam; the gate proves they still compose.
-- **Route each seam down the cost ladder above.** A sprint does not change the ladder, it runs it
-  several times at once. Cheap tier for mechanical seams, strong tier for judgment, in the same wave.
-- **`godkit sprint close` refuses** while any named task is unfinished or finished with an empty
-  `## Test`. It is the same contract `godkit verify` applies, scoped to this goal.
-
-Report one line per wave, never a narrative:
-
-`wave 2/4 · 3 tasks · verified: npm test → 41 pass · next: T-009 T-010`
+Goal bigger than one seam, or the brief says NEW PROJECT? Read `references/sprint.md` — waves of file-disjoint seams behind a join gate, and `godkit sprint`.
 
 ## Everything is a provider
 
-An agent is not a special kind of thing. It is a provider behind one interface:
-
-```
-scope in  →  verified result + log entry out
-```
-
-A Claude subagent, a Cursor session, a Codex run, an MCP tool, a shell command, a cron job — same contract, interchangeable. You do not orchestrate *agents*; you route a seam to whichever provider satisfies it. That makes routing mechanical instead of a vibe:
-
-**1. Which providers CAN do this seam?** Capability first — tools, permissions, repo access, context window. A provider missing one is rejected loud, never dispatched-and-hoped. A silently degraded result is worse than a refusal, because you will believe it.
-
-**2. Of those, which is cheapest?** Running the strongest model on a seam a grep could answer is the most common waste in agent work, and it is invisible: the result is correct, so nobody notices you paid 50x for it.
-
-### The cost ladder
-
-Stop at the first rung that clears the capability bar:
-
-0. **Can a command answer it?** `rg`, the test suite, `tsc --noEmit`, `git log`. Free, cannot hallucinate, and it is the verification anyway. Most "check whether X" questions die here.
-1. **Can this turn do it?** You already hold the context; a spawn pays a cold start to re-derive what you know.
-2. **Can a small or local model do it?** Mechanical edits, filling stubs, a test from a named behaviour, renames, summarizing a diff.
-3. **Does it need repo-wide reasoning?** Root cause, a refactor spanning modules, "why is this broken", cutting the seams. Strong tier, and worth it.
-4. **Does it need several at once?** Fan out cheap workers over disjoint files, join with one strong reviewer and one full test run.
-
-The expensive tier is for *judgment*, not for typing. If the seam has a known answer shape and a mechanical check, it belongs a rung lower.
-
-Who is actually available is `## Roster` on the board. No roster, no routing — you would be guessing at capabilities.
-
-## The work decomposition ladder
-
-For the work itself, stop at the first rung that holds:
-
-1. **Fits in this turn?** Do it. No decomposition, no delegation, no plan document.
-2. **Sequential in this session?** Step through it with checkpoints.
-3. **Has natural seams?** Split on the seams, each with scope, exit condition and verification. Seams split on **file boundaries**, never on abstract layers that share files.
-4. **Needs a specialist?** One scoped worker, with only the tools that scope needs.
-5. **Needs genuine parallelism?** Fan out over **disjoint file sets**, then gate on the join — one agent runs the full suite after the merge.
-6. **Needs iteration to converge?** Goal-driven loop with a hard max-rounds cap and a measurable exit. No cap means no loop.
-7. **Only then:** full multi-phase orchestration.
-
-Most work is rung 1 or 2. The ladder runs *after* you understand the task, never instead of understanding it — a clean decomposition of the wrong problem is still the wrong problem, now in four pieces.
+Deciding who or what does a seam — a command, this turn, a subagent, another tool? Read `references/routing.md`: every capability as a provider, and the six-rung decomposition ladder.
 
 ## Rules
 

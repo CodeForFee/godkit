@@ -251,3 +251,17 @@ test('uninstall --dry-run touches nothing', () => {
   })
   assert.ok(!/^removed /m.test(out), 'a dry run must not report removing anything')
 })
+
+test('an npx cache path is recognised on every platform, a real install is not', () => {
+  const { isEphemeral } = require('../lib/install')
+  const saved = process.env.GODKIT_FORCE_STABLE
+  delete process.env.GODKIT_FORCE_STABLE
+  try {
+    assert.equal(isEphemeral('C:\\Users\\me\\AppData\\Local\\npm-cache\\_npx\\b26f\\node_modules\\@codeforfee\\godkit'), true)
+    assert.equal(isEphemeral('/home/me/.npm/_npx/b26f/node_modules/@codeforfee/godkit'), true)
+    assert.equal(isEphemeral('/usr/lib/node_modules/@codeforfee/godkit'), false)
+    assert.equal(isEphemeral('C:\\Users\\me\\.godkit\\1.1.0'), false)
+  } finally {
+    if (saved !== undefined) process.env.GODKIT_FORCE_STABLE = saved
+  }
+})

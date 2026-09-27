@@ -280,17 +280,78 @@ test('--version answers, and agrees with the manifest', () => {
   assert.equal(cli(dir, '-v').trim(), require('../package.json').version)
 })
 
-test('init --new writes a brief instead of pointing at a map that cannot exist', () => {
-  const dir = repo()
-  const out = cli(dir, 'init', '--new')
+test('init on a folder with no code is greenfield without being told --new', () => {
+  const dir = repo(false)
+  fs.rmSync(path.join(dir, 'code.js'))
+  const out = cli(dir, 'init')
+  assert.match(out, /new project/)
   assert.match(out, /\.agent\/BRIEF\.md/)
   const brief = read(dir, '.agent/BRIEF.md')
   assert.match(brief, /## Non-goals/)  // the one section that stops invented scope on an empty repo
   assert.doesNotMatch(out, /godkit-map/)
 
-  // And doctor must not call an empty repo's missing map a fault.
+  // And doctor must not call an empty repo's missing map a fault...
   commitAll(dir)
   assert.match(cli(dir, 'doctor'), /map\s+greenfield/)
+
+  // ...until the first wave lands code: from then on the missing map is a real gap.
+  fs.writeFileSync(path.join(dir, 'app.js'), 'module.exports = 1\n')
+  assert.match(cli(dir, 'doctor'), /map\s+MISSING — code exists now/)
+})
+
+test('init --new still forces greenfield on a folder that has code', () => {
+  const dir = repo()
+  cli(dir, 'init', '--new')
+  assert.ok(fs.existsSync(path.join(dir, '.agent', 'BRIEF.md')))
+})
+
+test('init copies every skill into the project, and a re-run never replaces a user directory', () => {
+  const dir = repo()
+  const names = fs.readdirSync(path.join(ROOT, 'skills'))
+  fs.mkdirSync(path.join(dir, '.claude', 'skills', 'godkit-test'), { recursive: true })
+  fs.writeFileSync(path.join(dir, '.claude', 'skills', 'godkit-test', 'SKILL.md'), 'mine\n')
+
+  const out = cli(dir, 'init')
+  for (const base of ['.claude/skills', '.agents/skills']) {
+    for (const n of names) {
+      if (base === '.claude/skills' && n === 'godkit-test') continue
+      assert.ok(fs.existsSync(path.join(dir, base, n, 'SKILL.md')), base + '/' + n + ' missing')
+    }
+  }
+  assert.match(out, /skipped \.claude\/skills\/godkit-test/)
+  assert.equal(read(dir, '.claude/skills/godkit-test/SKILL.md'), 'mine\n', 'the user directory survived')
+
+  // A re-run refreshes godkit's own copies in place.
+  fs.writeFileSync(path.join(dir, '.agents', 'skills', 'godkit', 'SKILL.md'), 'stale\n')
+  cli(dir, 'init')
+  assert.notEqual(read(dir, '.agents/skills/godkit/SKILL.md'), 'stale\n')
+  assert.equal(read(dir, '.claude/skills/godkit-test/SKILL.md'), 'mine\n')
+})
+
+test('recall finds a line that clockout archived off the board', () => {
+  const dir = repo()
+  cli(dir, 'init')
+  const board = path.join(dir, '.agent', 'BOARD.md')
+  const bugs = Array.from({ length: 14 }, (_, i) => '- [x] B-' + String(i + 1).padStart(3, '0') + ' fixed thing ' + (i + 1))
+  fs.writeFileSync(board, read(dir, '.agent/BOARD.md').replace('## Bugs\n', '## Bugs\n\n' + bugs.join('\n') + '\n- [ ] B-015 still open\n'))
+
+  const before = read(dir, '.agent/BOARD.md')
+  const moved = require('../lib/memory').archive(dir)
+  assert.equal(moved.board, 4, 'the oldest four fixed bugs moved; the newest ten stay')
+  const after = read(dir, '.agent/BOARD.md')
+  assert.match(after, /B-015 still open/, 'open work is never archived')
+  assert.match(after, /B-014 fixed/, 'the highest id stays on the board, so ids stay monotonic')
+  assert.doesNotMatch(after, /B-001 fixed/)
+
+  const archived = fs.readdirSync(path.join(dir, '.agent', 'archive')).map((f) => read(dir, '.agent/archive/' + f)).join('')
+  for (const line of before.split('\n')) {
+    if (line.trim()) assert.ok(after.includes(line) || archived.includes(line), 'lost: ' + line)
+  }
+  assert.equal(require('../lib/memory').archive(dir).board, 0, 'a second run moves nothing')
+
+  const out = cli(dir, 'recall', 'B-001')
+  assert.match(out, /archive\/BOARD-\d{4}-\d{2}\.md:\d+ {2}- \[x\] B-001 fixed thing 1/)
+  assert.ok(Buffer.byteLength(cli(dir, 'recall', 'fixed')) <= 2048 + 64, 'recall stays bounded')
 })
 
 test('a plain init still points at the map, and writes no brief', () => {
@@ -386,4 +447,38 @@ test('doctor counts unproven tasks without counting log findings', () => {
 
   const out = execFileSync(process.execPath, [CLI, 'doctor'], { cwd: dir, encoding: 'utf8' })
   assert.match(out, /tasks {8}1 \(1 unproven/)
+})
+
+test('output meant for a person is plain when NO_COLOR is set or nobody is looking', () => {
+  const dir = repo()
+  for (const env of [{ NO_COLOR: '1' }, {}]) {
+    const out = execFileSync(process.execPath, [CLI, 'help'], { cwd: dir, encoding: 'utf8', env: { ...process.env, GODKIT_FANCY: '', ...env } })
+    assert.doesNotMatch(out, /\x1b\[/, 'escape codes reached a pipe')
+    assert.match(out, /recall <file\|words>/)
+  }
+  const fancy = execFileSync(process.execPath, [CLI, 'help'], { cwd: dir, encoding: 'utf8', env: { ...process.env, GODKIT_FANCY: '1', GODKIT_ASCII: '' } })
+  assert.match(fancy, /\x1b\[/)
+  assert.match(fancy, /╭──┴──╮/, 'the logo renders for a person')
+})
+
+test('run from an npx cache, init re-runs from a stable copy and points hooks there', () => {
+  const dir = repo()
+  const home = fs.realpathSync.native(fs.mkdtempSync(path.join(os.tmpdir(), 'godkit-stable-')))
+  trash.push(home)
+  const env = {
+    ...process.env,
+    GODKIT_FORCE_STABLE: '1',
+    GODKIT_HOME: path.join(home, 'godkit'),
+    CLAUDE_CONFIG_DIR: path.join(home, 'claude'),
+    CODEX_HOME: path.join(home, 'codex'),
+  }
+  execFileSync(process.execPath, [CLI, 'init'], { cwd: dir, encoding: 'utf8', env })
+  const version = require('../package.json').version
+  const stable = path.join(home, 'godkit', version)
+  assert.ok(fs.existsSync(path.join(stable, 'bin', 'godkit.js')), 'stable copy made')
+  assert.ok(!fs.existsSync(path.join(stable, 'node_modules')), 'no node_modules copied')
+  for (const file of [path.join(home, 'claude', 'settings.json'), path.join(home, 'codex', 'hooks.json')]) {
+    const text = fs.readFileSync(file, 'utf8').replace(/\\/g, '/')
+    assert.ok(text.includes(stable.replace(/\\/g, '/') + '/hooks/brief.js'), file + ' points at the stable copy')
+  }
 })

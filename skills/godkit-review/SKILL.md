@@ -1,12 +1,11 @@
 ---
 name: godkit-review
 description: >
-  Review how work was ORGANIZED, and diagnose runs that went wrong: unclaimed edits, missing
-  handoff logs, seams sharing files, delegations with no exit condition, results accepted without
-  verification, loops that never ended, agents undoing each other. Use on "review the process",
-  "why do our agents keep colliding", "why did that fail", "postmortem", "it looped forever", "it
-  said done but it wasn't", "why did we do that twice", or after any multi-agent run that produced
-  rework. Never judges code correctness — only how the work was organized.
+  Review how work was ORGANIZED and diagnose runs that went wrong: unclaimed edits, missing logs,
+  seams sharing files, unverified results, endless loops, agents undoing each other. Use on "review
+  the process", "why do our agents keep colliding", "why did that fail", "postmortem", "it looped
+  forever", "it said done but it wasn't", "why did we do that twice", or after rework. Never judges
+  code correctness.
 argument-hint: "[--diagnose]"
 license: MIT
 ---
