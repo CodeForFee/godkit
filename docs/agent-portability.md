@@ -113,7 +113,7 @@ Two checks replace guessing. `godkit doctor` prints a **last seen** line per age
 
 `gemini -p --approval-mode plan` is also wired for delegation, but the CLI on the test machine refused the login ("migrate to Antigravity"), so its flags are unchecked.
 
-Windows quoting. Antigravity (its own log shows it) and, to be safe, Cursor pass a hook command to cmd.exe so that every double quote arrives as a literal one: `node "E:/x/adapt.js"` reached node as a file name that includes the quote marks, and failed with "Cannot find module". The commands godkit writes for these two hosts therefore have no quotes: the path goes in bare, or as its 8.3 short form when it has whitespace. Claude Code and Codex keep the quoted form, which they handle. Another tool's quoted hook command in the same file fails the same way (the log named Coucou's `coucou-hook.exe`), and on Antigravity a failing hook blocks the tool call it guards.
+Windows quoting. Antigravity (its own log shows it) and, to be safe, Cursor pass a hook command to cmd.exe so that every double quote arrives as a literal one: `node "E:/x/adapt.js"` reached node as a file name that includes the quote marks, and failed with "Cannot find module". The commands godkit writes for these two hosts therefore have no quotes: the path goes in bare, or as its 8.3 short form when it has whitespace. Claude Code and Codex keep the quoted form, which they handle. Any other tool's quoted hook command in the same file fails the same way, and on Antigravity a failing hook blocks the tool call it guards.
 
 The sources are `agents/*.md` (one definition per agent) and `evals/*.json` (the tasks `godkit eval` runs). Generated subagent files carry a `godkit-generated` marker; a file without it is never replaced or removed.
 
