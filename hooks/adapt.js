@@ -62,6 +62,7 @@ function normalize(host, hostEvent, input) {
   const cursor = host === 'cursor'
   const payload = {
     hook_event_name: event,
+    godkit_host: host, // for the last-seen ledger (lib/seen.js); the scripts ignore it
     session_id: cursor ? input.conversation_id || input.session_id : input.conversationId,
     transcript_path: cursor ? input.transcript_path : input.transcriptPath,
     cwd: strip(input.cwd) || first(cursor ? input.workspace_roots : input.workspacePaths),

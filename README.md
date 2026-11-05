@@ -173,6 +173,15 @@ The pre-commit hook lists staged files that no live claim covers. It only warns;
 - run: npx -y @codeforfee/godkit verify   # non-zero when a task or log says done without evidence
 ```
 
+### Is it really automatic, in every app?
+
+```bash
+godkit doctor        # registered hooks, and "last seen" per agent and surface: proof a session ran godkit
+godkit autoinit on   # set up any git project at its first agent session (off by default: it writes files)
+```
+
+Hooks and the MCP server are registered once per machine in each agent's user-level config, so the CLI, the VS Code extension and the desktop app of the same agent read the same files. Registered is not running, though: Codex skips a hook until you approve it (CLI `/hooks`, or "Review hooks" in the Codex app) and again after any change, and a broken hook of another tool can block Antigravity. `godkit doctor` shows which agents have actually run godkit. The per-surface table is in [`docs/agent-portability.md`](docs/agent-portability.md#surfaces-cli-vs-code-extension-desktop-app).
+
 ### Subagents, delegation, rewind, eval
 
 ```bash

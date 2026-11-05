@@ -335,7 +335,7 @@ function cmdHooks(args) {
     }
     log('')
     log('`godkit hooks install` / `godkit hooks uninstall` to change that.')
-    log('Codex runs a hook only after you approve it: open Codex once and run /hooks.')
+    log('Codex runs a hook only after you approve it (and again whenever a hook changes): Codex app > Review hooks, or /hooks in the CLI.')
     return
   }
 
@@ -1018,6 +1018,33 @@ function cmdDoctor() {
   log('')
   log('  hooks:')
   cmdHooks([])
+
+  // Registered is not running: a hook can be skipped (Codex until approved) or fail. This is the
+  // proof that a session of each agent really ran us, and from which surface.
+  const seen = require('../lib/seen')
+  log('')
+  log('  last seen (a session of each agent that really ran godkit):')
+  const hints = {
+    claude: 'open a session in the CLI, VS Code or the desktop app',
+    codex: 'approve the hooks once: Codex app > Review hooks, or /hooks in the CLI',
+    cursor: 'open the Cursor agent in a project',
+    antigravity: 'start a session; a broken hook of another tool (see the Antigravity log) can block it',
+  }
+  for (const row of seen.summary()) {
+    const where = row.seen.length ? row.seen.map((s) => s.surface + ' ' + seen.ago(s.at)).join(', ') : 'never — ' + hints[row.host]
+    log('    ' + row.host.padEnd(12) + where)
+  }
+  log('  autoinit: ' + (require('../lib/lazy').getAutoInit() ? 'on (a git repo with code and no .agent/ is set up at its first session)' : 'off (`godkit autoinit on` to set projects up by themselves)'))
+}
+
+// Whether a repository with code and no .agent/ is set up at its first agent session, without
+// anyone typing init. Off by default: it writes rule files, skills and a git hook into the project.
+function cmdAutoInit(args) {
+  const lazy = require('../lib/lazy')
+  const action = args.find((a) => !a.startsWith('-')) || 'status'
+  if (action === 'on' || action === 'off') lazy.setAutoInit(action === 'on')
+  else if (action !== 'status') return log('godkit autoinit [on|off|status]')
+  log('autoinit: ' + (lazy.getAutoInit() ? 'on' : 'off') + '  (' + lazy.configPath() + (process.env.GODKIT_AUTO_INIT ? '; GODKIT_AUTO_INIT is set' : '') + ')')
 }
 
 // Search everything agents ever wrote, archive included, in a bounded answer. This is how an
@@ -1118,6 +1145,7 @@ const COMMANDS = [
   ]],
   ['MACHINE', null, [
     ['hooks [status|install|uninstall]', 'hook registrations for claude, codex, cursor, antigravity'],
+    ['autoinit [on|off]', 'set a project up at its first agent session, with no `init` typed'],
     ['mcp [install|uninstall]', 'godkit as an MCP server (no argument: run it on stdio)'],
     ['eval --host a,b [--godkit]', 'run small tasks through agent CLIs and compare pass rates'],
     ['rewind [session/n] [--yes]', 'go back to a file checkpoint (taken before agent edits)'],
@@ -1195,6 +1223,8 @@ function main() {
       return cmdRewind(args)
     case 'eval':
       return cmdEval(args)
+    case 'autoinit':
+      return cmdAutoInit(args)
     case 'check-staged':
       return cmdCheckStaged()
     case 'verify':

@@ -1399,6 +1399,8 @@ CLAUDE.md                      # chứa dòng @AGENTS.md + chỉ dẫn riêng Cl
 
 README và `docs/agent-portability.md` của godkit ghi Cursor và Antigravity **không có hook**. Docs chính thức hiện tại cho thấy **cả bốn agent đều có hook** (Antigravity ghi hỗ trợ hook ở App, CLI và IDE). Do đó phần lớn "chất lượng của Claude Code" (ép luật bằng harness) có thể tái tạo ở mọi host chỉ bằng một lớp **adapter**, không cần công nghệ mới.
 
+Cấu hình cài ở cấp người dùng nên CLI, extension VS Code và app desktop của cùng một agent đọc chung file (Claude Code: `~/.claude/settings.json` và MCP dùng chung theo docs của extension; Codex: `~/.codex/hooks.json`; Antigravity: `~/.gemini/config/hooks.json`, docs ghi App, CLI và IDE). **Nhưng đã đăng ký chưa có nghĩa là đang chạy**: Codex bỏ qua hook cho tới khi bạn duyệt (theo hash của hook, nên mỗi lần hook đổi lại phải duyệt), và hook lỗi của tool khác có thể chặn Antigravity. Vì vậy godkit ghi lại "lần cuối thấy" theo agent và bề mặt (`godkit doctor`, `lib/seen.js`) thay vì đoán từ file cấu hình; bảng đầy đủ ở `docs/agent-portability.md`, mục "Surfaces".
+
 ### 21.2 Ánh xạ sự kiện chuẩn sang từng host
 
 Bảng này là đầu vào của adapter (P0). Ô "—" nghĩa là không có tương đương trực tiếp.

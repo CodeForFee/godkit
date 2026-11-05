@@ -22,6 +22,10 @@ All notable changes to godkit. Format follows [Keep a Changelog](https://keepach
 - `godkit eval`: small tasks through each agent CLI in a fresh repo, graded by a command; `--godkit` compares with and without the protocol.
 - `init` also registers the MCP server (`--no-mcp` to skip), syncs subagent files (`--no-agents`) and installs the pre-commit (`--no-githook`). `godkit hooks status` reminds that Codex runs a hook only after `/hooks` approval.
 
+- **Last seen** in `godkit doctor`: every SessionStart hook records which agent (from its transcript folder) and, for Claude Code, which surface (cli, vscode, desktop) ran it, so "automatic" can be checked per app instead of assumed from config files.
+- `godkit autoinit on|off`: set a git repository with code up (rules, skills, `.agent/`, agent files, pre-commit) at its first agent session. Off by default.
+- `hooks status` now says a Codex hook needs approval after every change.
+
 ### Fixed
 
 - Hook commands for Cursor and Antigravity no longer contain double quotes. On Windows Antigravity turned them into literal ones, so every godkit hook failed there with "Cannot find module". Paths with whitespace use their 8.3 short form.

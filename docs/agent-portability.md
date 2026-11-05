@@ -91,6 +91,17 @@ Neither host tells a hook why a session started, so `SessionStart` always matche
 
 A tool with no hooks at all still has its always-on rule file, which is why every rule copy carries the full clock-in and clock-out checklists. On Claude Code and Codex the protocol is *enforced*; on the reduced hosts it is *enforced for the parts above* and *instructed* for the rest. The shared `.agent/` state is what makes the difference survivable — a session that forgets to log leaves a gap the next agent can see in the board.
 
+## Surfaces: CLI, VS Code extension, desktop app
+
+| Agent | CLI | VS Code extension | Desktop app | What makes it automatic | State checked on this machine |
+|---|---|---|---|---|---|
+| Claude Code | yes | `anthropic.claude-code` | Claude desktop (Code tab) | Hooks in `~/.claude/settings.json` and the user-scope MCP server are shared by all three (the extension's docs say so for settings and MCP). Windows apps need `node` on the system PATH | Desktop: the SessionStart brief arrived in this very session (`CLAUDE_CODE_ENTRYPOINT=claude-desktop`). `node` is in `C:\Program Files\nodejs`, on the system PATH. CLI and extension: same file, not run separately |
+| Codex | yes | `openai.chatgpt` | Codex app | `~/.codex/hooks.json` and `[mcp_servers.godkit]` in `~/.codex/config.toml`. **A hook is skipped until you approve it, and again whenever it changes** (trust is per hook hash): `/hooks` in the CLI, "Review hooks" in the app. The docs do not say how the VS Code extension approves | A `codex exec` run left no godkit trace: the hooks are waiting for approval. Extension: unverified |
+| Antigravity | `agy` | Antigravity IDE | Antigravity | `~/.gemini/config/hooks.json` (docs: App, CLI and IDE) and `mcp_config.json` | Our hooks failed on Windows because of quoting (fixed). Another tool's quoted hook commands in the same file still fail and block `agy`'s edits |
+| Cursor | not installed here | the Cursor agent | Cursor | `~/.cursor/hooks.json`, `mcp.json`. User-level hooks do not run in Cursor's cloud agents | The Cursor app is not installed on this machine, so nothing is verified end to end |
+
+Two checks replace guessing. `godkit doctor` prints a **last seen** line per agent and surface (the SessionStart hook leaves one line each time, so "never" means that agent has not run godkit yet, whatever the config says), and `godkit hooks status` shows what is registered. A project still needs its own setup once (`godkit init`: rules, skills, `.agent/`); `godkit autoinit on` does that at the first agent session in any git repository, and is off by default because it writes into the project.
+
 ## Subagents, delegation, checkpoints
 
 | | Claude Code | Codex | Cursor | Antigravity |
