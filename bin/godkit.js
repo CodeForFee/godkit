@@ -401,6 +401,10 @@ function cmdMcp(args) {
     return
   }
   const dryRun = args.includes('--dry-run')
+  // Codex asks before each MCP tool call and refuses when nobody is there to answer. Letting godkit's
+  // own tools through is a change to Codex's safety setting, so only an explicit flag does it.
+  if (!dryRun && args.includes('--codex-approve')) require('../lib/lazy').setCodexApprove(true)
+  if (!dryRun && args.includes('--no-codex-approve')) require('../lib/lazy').setCodexApprove(false)
   const results = require('../lib/hostmcp').registerMcp(action, dryRun, path.join(ROOT, 'bin', 'godkit.js'))
   for (const r of results) {
     if (r.error) log('  ' + r.tool.padEnd(12) + 'skipped — ' + r.error)
@@ -481,6 +485,36 @@ function cmdEval(args) {
     log('  report: ' + path.relative(process.cwd(), file))
   }
   if (results.some((r) => !r.pass)) process.exitCode = 1
+}
+
+// Named subagents (Claude-style files), run as a separate agent process with enforced permissions.
+function cmdAgent(args) {
+  const sub = require('../lib/subagent')
+  const words = []
+  const opt = {}
+  for (let i = 0; i < args.length; i++) {
+    if (['--host', '--model', '--timeout'].includes(args[i])) opt[args[i].slice(2)] = args[++i]
+    else if (!args[i].startsWith('--')) words.push(args[i])
+  }
+  const [action = 'list', ...rest] = words
+  const root = projectRoot(process.cwd())
+  if (action === 'list') {
+    for (const a of sub.listAgents(root)) log('  ' + a.name.padEnd(20) + (sub.classify(a.def).write ? (sub.classify(a.def).isolated ? 'isolated ' : 'may write') : 'read-only') + '  ' + a.scope.padEnd(8) + a.description.slice(0, 80))
+    log('')
+    log('godkit agent run <name> "<task>" [--host codex|claude] [--model m] [--timeout sec]   ·   godkit agent model <host> [model]')
+    return
+  }
+  if (action === 'model') {
+    const [host, model] = rest
+    if (!host) return log('godkit agent model <host> [model]   (no model: clear it)')
+    require('../lib/lazy').setModel(host, model)
+    return log('default model for ' + host + ': ' + (model || 'host default'))
+  }
+  if (action !== 'run' || rest.length < 2) return log('godkit agent run <name> "<task>" [--host codex|claude] [--model m] [--timeout sec]')
+  const [name, ...task] = rest
+  const r = sub.runAgent({ name, task: task.join(' '), host: opt.host, model: opt.model, cwd: process.cwd(), timeoutMs: opt.timeout ? Number(opt.timeout) * 1000 : undefined })
+  log(r.text)
+  if (!r.ok) process.exitCode = 1
 }
 
 // File checkpoints (taken by the checkpoint hook before an edit) and going back to one.
@@ -1149,6 +1183,7 @@ const COMMANDS = [
     ['mcp [install|uninstall]', 'godkit as an MCP server (no argument: run it on stdio)'],
     ['eval --host a,b [--godkit]', 'run small tasks through agent CLIs and compare pass rates'],
     ['rewind [session/n] [--yes]', 'go back to a file checkpoint (taken before agent edits)'],
+    ['agent [list|run <name> "<task>"|model]', 'run a named subagent as its own process, permissions enforced'],
     ['delegate <host> "<task>" [--write]', 'hand a task to another agent CLI, headless, read-only by default'],
     ['agents [sync|clean|status]', 'subagent files for claude (.claude/agents) and codex (.codex/agents)'],
     ['githook [install|uninstall]','pre-commit: files outside every claim (GODKIT_STRICT=1 blocks)'],
@@ -1221,6 +1256,8 @@ function main() {
       return cmdDelegate(args)
     case 'rewind':
       return cmdRewind(args)
+    case 'agent':
+      return cmdAgent(args)
     case 'eval':
       return cmdEval(args)
     case 'autoinit':
