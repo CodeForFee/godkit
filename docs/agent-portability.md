@@ -91,6 +91,21 @@ Neither host tells a hook why a session started, so `SessionStart` always matche
 
 A tool with no hooks at all still has its always-on rule file, which is why every rule copy carries the full clock-in and clock-out checklists. On Claude Code and Codex the protocol is *enforced*; on the reduced hosts it is *enforced for the parts above* and *instructed* for the rest. The shared `.agent/` state is what makes the difference survivable — a session that forgets to log leaves a gap the next agent can see in the board.
 
+## Subagents, delegation, checkpoints
+
+| | Claude Code | Codex | Cursor | Antigravity |
+|---|---|---|---|---|
+| Subagent files generated (`godkit agents`) | `.claude/agents/<name>.md` | `.codex/agents/<name>.toml` | not generated: format unverified | not generated: format unverified |
+| `godkit delegate` target | `claude -p` (read-only: `dontAsk` + Read/Grep/Glob) | `codex exec --sandbox read-only` | no headless CLI on the test machine | `agy --print --mode plan` |
+| Checked against the real CLI | yes | flags accepted; the account rejected its model | n/a | yes |
+| Checkpoint hook (`PreToolUse` on edits) | yes | yes | no: no `PreToolUse` on every tool (see above) | yes |
+
+`gemini -p --approval-mode plan` is also wired for delegation, but the CLI on the test machine refused the login ("migrate to Antigravity"), so its flags are unchecked.
+
+Windows quoting. Antigravity (its own log shows it) and, to be safe, Cursor pass a hook command to cmd.exe so that every double quote arrives as a literal one: `node "E:/x/adapt.js"` reached node as a file name that includes the quote marks, and failed with "Cannot find module". The commands godkit writes for these two hosts therefore have no quotes: the path goes in bare, or as its 8.3 short form when it has whitespace. Claude Code and Codex keep the quoted form, which they handle. Another tool's quoted hook command in the same file fails the same way (the log named Coucou's `coucou-hook.exe`), and on Antigravity a failing hook blocks the tool call it guards.
+
+The sources are `agents/*.md` (one definition per agent) and `evals/*.json` (the tasks `godkit eval` runs). Generated subagent files carry a `godkit-generated` marker; a file without it is never replaced or removed.
+
 ## Install paths
 
 ```bash

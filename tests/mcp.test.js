@@ -45,7 +45,7 @@ test('a notification gets no reply; an unknown method gets a JSON-RPC error; jun
 
 test('every tool is listed with a schema the model can follow', () => {
   const tools = respond({ jsonrpc: '2.0', id: 6, method: 'tools/list' }).result.tools
-  assert.deepEqual(tools.map((t) => t.name).sort(), ['godkit_brief', 'godkit_claim', 'godkit_log', 'godkit_map_query', 'godkit_recall', 'godkit_release', 'godkit_verify'])
+  assert.deepEqual(tools.map((t) => t.name).sort(), ['godkit_brief', 'godkit_claim', 'godkit_delegate', 'godkit_log', 'godkit_map_query', 'godkit_recall', 'godkit_release', 'godkit_verify'])
   for (const t of tools) {
     assert.equal(t.inputSchema.type, 'object')
     assert.ok(t.description.length > 30, t.name + ' needs a description the model can choose by')

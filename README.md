@@ -161,7 +161,7 @@ All four tools have hooks. Claude Code and Codex get the full set; Cursor and An
 ### MCP server and pre-commit
 
 ```bash
-godkit mcp install      # register with Claude Code, Codex, Cursor, Antigravity (those that are there)
+godkit mcp install      # register with Claude Code, Codex, Cursor, Antigravity (those that are there; init does it too)
 godkit githook install  # pre-commit in this repo (`godkit init` does it too, only if none exists)
 ```
 
@@ -172,6 +172,21 @@ The pre-commit hook lists staged files that no live claim covers. It only warns;
 ```yaml
 - run: npx -y @codeforfee/godkit verify   # non-zero when a task or log says done without evidence
 ```
+
+### Subagents, delegation, rewind, eval
+
+```bash
+godkit agents sync                       # subagent files for Claude (.claude/agents) and Codex (.codex/agents); init does it
+godkit delegate claude "review lib/x.js" # another agent CLI, headless, read-only unless --write
+godkit rewind                            # file checkpoints taken before agent edits; go back with --yes
+godkit eval --host claude,agy --godkit   # the same small tasks through each CLI; pass/fail and seconds
+```
+
+- **Subagents.** The two agents the map skill spawns live once in `agents/*.md`; `godkit agents` writes the Claude form and the Codex form (`.toml` with `developer_instructions`). A file that is not marked as generated is never replaced or removed. Cursor and Antigravity are not generated: their definition format is not documented where it could be checked.
+- **Delegation** (`godkit delegate`, MCP tool `godkit_delegate`). For hosts with no subagent, or when a second model should look at the work. Read-only is enforced by the target CLI (`claude` with `dontAsk` and read tools only, `codex --sandbox read-only`, `gemini --approval-mode plan`, `agy --mode plan`), not by asking. The task travels on stdin, the answer is capped at 6KB, and a delegated agent cannot delegate again. Checked on this machine: `claude` and `agy` answer; `codex` receives the task and its flags are accepted, but its configured model is rejected by the account; `gemini` refuses the login, so its flags are unchecked.
+- **Checkpoints** (`hooks/checkpoint.js`, `godkit rewind`). Before an agent edits, the working tree is saved as a git commit under `refs/godkit/checkpoints/<session>/<n>`, built from a copy of the index: the branch, index and working tree are untouched, nothing shows in `git log`. At most one every 15 seconds, the last 50 per session. A rewind lists what it would restore and does nothing without `--yes`; it takes a safety checkpoint first, so it can be undone. Files created since are listed and left alone. Gitignored files are not part of a checkpoint. `GODKIT_CHECKPOINT=off` disables it.
+- **Plan gate.** An agent that claimed through the MCP tool and owns a task whose phase is still `plan` is denied edits to that task's scope until the task moves to `execute`. It binds only the owner, only inside that scope.
+- **Eval** (`evals/*.json`). Each task is a small repo, a prompt and a command that exits 0 only when the work is right; each run gets a fresh git repo. It measures pass/fail and seconds, nothing else. `--godkit` runs `init` in the task repo first, to compare an agent with and without the protocol.
 
 <details>
 <summary><b>Hooks — what each one does, and why none of them can break your session</b></summary>
@@ -195,6 +210,7 @@ Cursor and Antigravity speak their own hook dialects. `hooks/adapt.js` translate
 | `lazy-activate.js` | `SessionStart` | resolves the active `godkit-lazy` mode and injects its ruleset |
 | `lazy-subagent.js` | `SubagentStart` | injects the same ruleset into spawned subagents |
 | `guard.js` | `PreToolUse` | denies force push, `reset --hard`, `clean -f`, `rm -r` on a root or home folder, a download piped into a shell, writes to `.git/` `.env` credentials and shell startup files, and edits inside a live claim held by another session. `GODKIT_GUARD=off` turns it off |
+| `checkpoint.js` | `PreToolUse` (edits) | saves a file checkpoint before the agent edits, at most one per 15 seconds; see `godkit rewind` |
 | `lazy-mode-tracker.js` | `UserPromptSubmit` | tracks `/godkit-lazy` mode switches for the session |
 | `work-track.js` | `PreToolUse`, `PostToolUse`, `SessionEnd` | records whether *this* session changed project files |
 | `clockout.js` | `Stop` | blocks the turn if this session changed files and wrote no log |

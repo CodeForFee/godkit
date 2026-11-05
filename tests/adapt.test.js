@@ -164,6 +164,32 @@ test('cursor registration keeps a hook that is not ours, is idempotent, and unin
   assert.equal(JSON.stringify(theirs).includes('adapt.js'), false, 'the input object is never mutated')
 })
 
+test('the command written for Cursor and Antigravity has no double quotes, which Antigravity on Windows turns into literal ones', () => {
+  for (const kind of ['cursor', 'antigravity']) {
+    const settings = install.applyHooks({}, { kind, hooksDir: path.join(ROOT, 'hooks') }).settings
+    const commands = install.ourHandlers(settings, kind).map((h) => h.command)
+    assert.ok(commands.length > 0)
+    for (const c of commands) {
+      assert.doesNotMatch(c, /"/, kind + ': ' + c)
+      assert.match(c, /^node \S+adapt\.js (cursor|antigravity) \S+$/)
+    }
+  }
+  assert.equal(install.bareCommandPath('/a/b/adapt.js'), '/a/b/adapt.js')
+})
+
+test('a hooks folder with a space in its path still gets a bare command on Windows (the 8.3 short form)', { skip: process.platform !== 'win32' }, () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'with space-'))
+  try {
+    const file = path.join(dir, 'adapt.js')
+    fs.writeFileSync(file, '')
+    const command = install.bareCommandPath(file)
+    assert.doesNotMatch(command, /\s|"/)
+    assert.ok(fs.existsSync(command), 'the short path names the same file')
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true })
+  }
+})
+
 test('cursor registration into an empty file sets the version Cursor requires', () => {
   assert.equal(install.applyHooks({}, ours).settings.version, 1)
 })

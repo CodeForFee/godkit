@@ -1041,7 +1041,7 @@ Cả ba host còn lại đều có hook, nhưng khác tên, hình dạng I/O và
 
 Ghi chú tương thích: Cursor còn nạp được hook của Claude Code (docs có trang riêng "Third Party Hooks"; tương thích `CLAUDE_PROJECT_DIR`, exit 2; chi tiết file nào được đọc: chưa xác minh). Codex coi matcher luôn là regex, nên godkit dùng matcher (`Bash`, `startup|resume|clear|compact`) mang cùng nghĩa theo cả hai cách đọc.
 
-Godkit hiện có 8 script hook (xem mục 17) cộng `hooks/adapt.js`, đăng ký từ một danh sách `HOOKS` ở `lib/install.js` rồi sinh `hooks/godkit-hooks.json` bằng `scripts/sync-hooks.js` (CI kiểm drift). Hook của godkit "không bao giờ ném lỗi, luôn exit 0". Cursor và Antigravity có adapter (P0) và guard (P1). Còn thiếu: `PreToolUse` cho mọi tool của Cursor, và `onFailure`/`failClosed` cho hook chính sách.
+Godkit hiện có 8 script hook (xem mục 17) cộng `hooks/adapt.js`, đăng ký từ một danh sách `HOOKS` ở `lib/install.js` rồi sinh `hooks/godkit-hooks.json` bằng `scripts/sync-hooks.js` (CI kiểm drift). Hook của godkit "không bao giờ ném lỗi, luôn exit 0". Cursor và Antigravity có adapter (P0) và guard (P1). Còn thiếu: `PreToolUse` cho mọi tool của Cursor, và `onFailure`/`failClosed` cho hook chính sách. **Lưu ý Windows**: Antigravity (log của chính nó cho thấy) biến mỗi dấu `"` trong lệnh hook thành dấu thật nên `node "E:/x/adapt.js"` hỏng; lệnh cho Cursor và Antigravity do godkit ghi không có dấu `"` (đường dẫn có khoảng trắng dùng dạng 8.3). Hook lỗi trên Antigravity chặn luôn tool call nó canh.
 
 ---
 
@@ -1427,16 +1427,16 @@ Ký hiệu: ✔ có và đã đối chiếu docs; ◐ có một phần; ? chưa 
 | Lớp ép luật ngoài model (hook) | ✔ 33 event | ✔ 14 | ✔ 21 | ✔ 6 | Cả 4 host (Cursor, Antigravity là bộ con) | P1 (`PreToolUse`) |
 | Chặn trước tool | ✔ | ✔ | ✔ | ✔ | Không | P1 guard |
 | Quyền theo rule + mode | ✔ | ◐ sandbox/approval | ? | ? | Guard cho lệnh nguy hiểm, file nhạy cảm, claim của phiên khác (`hooks/guard.js`); chưa có rule/mode tuỳ biến | rule `deny/ask/allow` riêng của godkit (P2) |
-| Plan mode (chặn sửa tới khi duyệt) | ✔ | ? | ? | ? | Phase trong task (chữ) | Cổng phase Plan: cần biết task nào của phiên nào, chưa làm |
+| Plan mode (chặn sửa tới khi duyệt) | ✔ | ? | ? | ? | Cổng phase Plan trong guard: chặn sửa scope của task còn ở `plan` do chính phiên đó sở hữu (claim có thẻ) | Chỉ với claim qua `godkit_claim`; claim viết tay không có danh tính |
 | Chỉ dẫn repo | ✔ CLAUDE.md | ✔ AGENTS.md | ✔ rules | ✔ rules | Sinh từ một nguồn | — |
 | Memory agent tự ghi | ✔ | ? | ? | ? | `.agent/` chung (không chỉ mục giới hạn) | P2 |
 | Nạp lại sau compaction | ✔ | ✔ | — | ◐ | Claude + Codex | P0 |
-| Subagent cô lập | ✔ | ✔ TOML | ◐ | ? | `agents/*.md` | P2 |
+| Subagent cô lập | ✔ | ✔ TOML | ◐ | ? | `agents/*.md` sinh `.claude/agents` + `.codex/agents` (`godkit agents`); `godkit delegate` chạy CLI khác headless, read-only do chính CLI ép | Cursor, Antigravity: chưa có định dạng file đã kiểm; `delegate` Codex bị lỗi model của tài khoản, Gemini bị từ chối đăng nhập |
 | Bơm luật vào subagent | ✔ | ✔ | — | — | Claude + Codex | P0 (workaround) |
 | Skills | ✔ | ✔ | — | ✔ | 16 skill, link theo host | P1 (qua MCP prompts) |
 | MCP | ✔ | ✔ | ✔ | ✔ | `godkit mcp`: 7 tool, 3 resource, skills làm prompt; `godkit mcp install` | Chưa tự chạy trong `init` |
 | Worktree / cô lập ghi | ✔ | ? | ? | ? | Claim có thẻ phiên + guard chặn sửa file trong claim của phiên khác | Claim viết tay (không thẻ) chỉ cảnh báo |
-| Checkpoint/rewind file | ✔ | ? | ? | ? | Không | P3 |
+| Checkpoint/rewind file | ✔ | ? | ? | ? | `hooks/checkpoint.js` + `godkit rewind` (git ref ẩn, không đụng index/nhánh) cho Claude, Codex, Antigravity | Cursor: không có `PreToolUse` mọi tool |
 | Plugin/extension | ✔ | ✔ | ◐ | ◐ | 3 manifest | — |
 | Đo chất lượng tương đương | — | — | — | — | `godkit verify` (kiểm "xong") | P3 `eval` |
 
@@ -1469,13 +1469,13 @@ Mỗi mục kèm cách kiểm đã đạt. Không mục nào làm trong phiên v
 - `godkit init` cài `pre-commit` (file staged phải nằm trong claim và có log của phiên) và CI chạy `godkit verify`. Bắt được mọi agent kể cả agent không có hook hay MCP.
 - **Kiểm đạt**: commit một file ngoài claim thì bị từ chối.
 
-**P2. Subagent cho mọi host**: sinh định nghĩa từ `agents/*.md` sang `.claude/agents/*.md` và `.codex/agents/*.toml`; host nào không có thì `godkit delegate` chạy agent headless (tên lệnh từng công cụ cần xác minh theo bản) trong context riêng và chỉ trả summary. Vì Codex không có sandbox read-only riêng cho subagent, "reviewer chỉ-đọc" ở Codex phải do hook guard ép. **Kiểm đạt**: subagent reviewer thử ghi file bị từ chối ở cả host có và host không có subagent gốc.
+**P2. Subagent cho mọi host**. **Đã làm 05/11/2026**: `lib/agents.js` + `godkit agents sync|clean|status` (init tự chạy) sinh `.claude/agents/*.md` và `.codex/agents/*.toml` từ `agents/*.md`, có marker, không đè file lạ. `lib/delegate.js` + `godkit delegate` + tool MCP `godkit_delegate`: Claude (`-p`, `dontAsk` + Read/Grep/Glob), Codex (`exec --sandbox read-only`), Gemini (`-p --approval-mode plan`), Antigravity (`agy --print --mode plan`); task đi qua stdin, trả lời tối đa 6KB, không lồng. Đã gọi thật: `claude`, `agy` trả lời; `codex` nhận đúng cờ nhưng tài khoản từ chối model đã cấu hình; `gemini` bị từ chối đăng nhập nên cờ chưa kiểm. **Chưa làm**: file subagent cho Cursor và Antigravity (định dạng chưa xác minh).
 
-**P2. Biên dịch cấu hình một nguồn**: mở rộng mẫu `sync-rules.js`/`sync-hooks.js` sang cấu hình MCP (`.mcp.json`, `[mcp_servers]` của Codex, file MCP của Cursor và Antigravity) và subagent. **Kiểm đạt**: `npm run check` thất bại khi một bản sinh bị sửa tay.
+**P2. Biên dịch cấu hình một nguồn**. **Làm một phần**: hook (đã có), rules (đã có), subagent (mới), MCP: `godkit mcp install` ghi cấu hình cho 4 host từ một nguồn và `init` tự gọi. Chưa có `npm run check` kiểm file MCP/subagent đã sinh ở các project (chỉ kiểm file trong repo godkit).
 
-**P3. Checkpoint dùng chung bằng git ẩn**: `PostToolUse` sau mỗi lần sửa chụp `git stash create` và `git update-ref refs/godkit/checkpoints/<session>`; `godkit rewind` để khôi phục. **Kiểm đạt**: sửa ba lần rồi rewind về lần một đưa file về đúng nội dung, không động tới nhánh đang làm.
+**P3. Checkpoint dùng chung bằng git ẩn**. **Đã làm 05/11/2026**: `lib/checkpoint.js`, `hooks/checkpoint.js` (PreToolUse trên tool sửa file, debounce 15 giây, giữ 50 bản mỗi phiên), `godkit rewind` (xem trước, `--yes` mới khôi phục, tự tạo checkpoint an toàn trước). Giới hạn: file tạo sau checkpoint chỉ được liệt kê chứ không xoá; file bị gitignore không nằm trong checkpoint; Cursor chưa có.
 
-**P3. `godkit eval`**: bộ task nhỏ trên chính repo, chạy headless qua từng agent, chấm bằng lệnh kiểm (test pass, `godkit verify`), so tỉ lệ đạt, số lượt, token. Cả bốn host đưa `transcript_path` vào hook nên số liệu chuẩn hoá được. Không đo thì không chứng minh được "tương đương". **Kiểm đạt**: chạy cùng bộ task trên ≥2 host và ra báo cáo so sánh lặp lại được.
+**P3. `godkit eval`**. **Đã làm 05/11/2026**: `lib/evalrun.js`, `evals/*.json` (3 task: sửa lỗi lệch một, thêm hàm theo spec, "đổi config mà không đụng `.env`"), `godkit eval --host a,b [--godkit] [--runs n]`. Mỗi lần chạy dùng repo git mới, agent chạy headless có quyền ghi, một lệnh kiểm quyết định đạt/không; chỉ đo đạt/trượt và số giây (CLI chưa in token theo dạng đáng parse). Chạy thật trên máy này: `claude` 3/3 (trung bình 38 giây mỗi task). `agy` 0/3, nhưng **không phải do model**: hook của Coucou (`coucou-hook.exe`, lệnh có dấu `"`) lỗi và chặn mọi lần agy sửa file; `codex` bị tài khoản từ chối model đã cấu hình; `gemini` bị từ chối đăng nhập. Nên chưa có phép so sánh "tương đương" thật giữa các host; cần sửa ba điều kiện môi trường đó rồi chạy lại.
 
 ### 21.5 Không nên làm
 

@@ -174,6 +174,39 @@ test('a stale claim blocks nobody', () => {
   fs.rmSync(d, { recursive: true, force: true })
 })
 
+function withTask(d, name, frontmatter) {
+  fs.mkdirSync(path.join(d, '.agent', 'tasks'), { recursive: true })
+  fs.writeFileSync(path.join(d, '.agent', 'tasks', name), '---\n' + frontmatter + '\n---\n\n## Plan\n')
+}
+
+test('plan mode: files in the scope of your own task are not editable while it is in phase plan', () => {
+  const d = repo(BOARD('| claude-opus-5 (aaaa1111) | lib/* | refactor | ' + NOW + ' | wip |'))
+  withTask(d, 'T-001-refactor.md', 'id: T-001\nowner: claude-opus-5\nscope: lib/*\nphase: plan')
+  const edit = (session, file) => guard({ cwd: d, session_id: session, tool_name: 'Edit', tool_input: { file_path: path.join(d, file) } })
+
+  const blocked = JSON.parse(edit('aaaa1111-mine', 'lib/x.js'))
+  assert.equal(blocked.hookSpecificOutput.permissionDecision, 'deny')
+  assert.match(blocked.hookSpecificOutput.permissionDecisionReason, /T-001.*phase plan.*phase: execute/s)
+
+  assert.equal(edit('aaaa1111-mine', 'docs/readme.md').trim(), '', 'outside the task scope')
+  assert.equal(edit('aaaa1111-mine', '.agent/tasks/T-001-refactor.md').trim(), '', 'writing the plan itself is allowed')
+
+  withTask(d, 'T-001-refactor.md', 'id: T-001\nowner: claude-opus-5\nscope: lib/*\nphase: execute')
+  assert.equal(edit('aaaa1111-mine', 'lib/x.js').trim(), '', 'execute unlocks it')
+  fs.rmSync(d, { recursive: true, force: true })
+})
+
+test('plan mode binds only the session that owns the task', () => {
+  const d = repo(BOARD('| claude-opus-5 (aaaa1111) | lib/* | refactor | ' + NOW + ' | wip |\n| codex-5.6 (bbbb2222) | docs/ | docs | ' + NOW + ' | wip |'))
+  withTask(d, 'T-001-refactor.md', 'id: T-001\nowner: claude-opus-5\nscope: lib/*\nphase: plan')
+  withTask(d, 'T-002-old.md', 'id: T-002\nowner: codex-5.6\nscope: other/*\nphase: plan')
+  const edit = (session, file) => guard({ cwd: d, session_id: session, tool_name: 'Write', tool_input: { file_path: path.join(d, file) } })
+  assert.equal(edit('bbbb2222-codex', 'lib/x.js').trim() !== '', true, 'blocked, but by the claim, not by the plan')
+  assert.equal(edit('bbbb2222-codex', 'docs/a.md').trim(), '', 'codex plan task has another scope')
+  assert.equal(edit('cccc3333-nobody', 'unrelated.js').trim(), '', 'a session with no tagged claim has no task')
+  fs.rmSync(d, { recursive: true, force: true })
+})
+
 test('input it cannot read is ignored, never an error', () => {
   const out = execFileSync(process.execPath, [path.join(ROOT, 'hooks', 'guard.js')], { input: 'not json', encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'], env: { ...process.env, CLAUDE_CONFIG_DIR: STATE } })
   assert.equal(out.trim(), '')

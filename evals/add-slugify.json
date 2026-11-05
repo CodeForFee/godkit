@@ -1,0 +1,10 @@
+{
+  "id": "add-slugify",
+  "title": "Add a small function to a spec",
+  "prompt": "Add and export slugify(text) in util.js. It lowercases, trims, turns every run of non-alphanumeric characters into one dash, and leaves no leading or trailing dash. Example: 'Hello, World!' becomes 'hello-world'. Do not change test.js.",
+  "files": {
+    "util.js": "module.exports = {}\n",
+    "test.js": "const assert = require('assert')\nconst { slugify } = require('./util')\nassert.strictEqual(slugify('Hello, World!'), 'hello-world')\nassert.strictEqual(slugify('  A   b  '), 'a-b')\nassert.strictEqual(slugify('--x--'), 'x')\nassert.strictEqual(slugify(''), '')\nassert.strictEqual(slugify('Ab1 2c'), 'ab1-2c')\nconsole.log('ok')\n"
+  },
+  "check": "node test.js && git diff --quiet HEAD -- test.js"
+}

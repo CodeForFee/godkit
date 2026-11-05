@@ -400,7 +400,7 @@ test('hooks install then uninstall round-trips in an isolated settings file', ()
 
   run('install')
   const file = path.join(home, 'settings.json')
-  assert.match(run('status'), /11 of 11 godkit hooks registered/)
+  assert.match(run('status'), /12 of 12 godkit hooks registered/)
 
   run('uninstall')
   assert.equal(JSON.stringify(JSON.parse(fs.readFileSync(file, 'utf8')).hooks || {}), '{}')
@@ -468,6 +468,7 @@ test('run from an npx cache, init re-runs from a stable copy and points hooks th
   const env = {
     ...process.env,
     GODKIT_FORCE_STABLE: '1',
+    GODKIT_NO_CLAUDE_CLI: '1', // init now registers the MCP server; never through the real claude CLI from a test
     GODKIT_HOME: path.join(home, 'godkit'),
     CLAUDE_CONFIG_DIR: path.join(home, 'claude'),
     CODEX_HOME: path.join(home, 'codex'),

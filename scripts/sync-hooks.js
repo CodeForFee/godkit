@@ -23,6 +23,7 @@ const STATUS = {
   'lazy-subagent.js': 'Loading godkit-lazy mode',
   'lazy-mode-tracker.js': 'Tracking godkit-lazy mode',
   'guard.js': 'Checking guard rules',
+  'checkpoint.js': 'Saving a file checkpoint',
   'work-track.js': 'Tracking session work',
   'map-watch.js': 'Checking map freshness',
   'clockout.js': 'Checking handoff log',

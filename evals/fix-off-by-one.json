@@ -1,0 +1,10 @@
+{
+  "id": "fix-off-by-one",
+  "title": "Fix a one-character bug without touching the test",
+  "prompt": "sum([1, 2, 3]) returns 5 instead of 6. Find the bug in sum.js and fix it. Do not change test.js.",
+  "files": {
+    "sum.js": "function sum(items) {\n  let total = 0\n  for (let i = 1; i < items.length; i++) total += items[i]\n  return total\n}\nmodule.exports = { sum }\n",
+    "test.js": "const assert = require('assert')\nconst { sum } = require('./sum')\nassert.strictEqual(sum([1, 2, 3]), 6)\nassert.strictEqual(sum([]), 0)\nassert.strictEqual(sum([5]), 5)\nconsole.log('ok')\n"
+  },
+  "check": "node test.js && git diff --quiet HEAD -- test.js"
+}

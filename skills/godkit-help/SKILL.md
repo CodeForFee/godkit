@@ -123,7 +123,7 @@ The rules block carries a "Which skill, when" table, so every host picks the rig
 the user naming it. Where hooks are partial or absent, the rule file is the enforcement — that is why
 it says the same thing. Every rule file is generated from one source, so they cannot drift.
 
-What runs by itself where hooks run: the guard (force push, `reset --hard`, `rm -r` on a root, writes to `.env` and `.git/`, edits inside another session's claim), the session brief (≤3KB however long the history), scaffolding
+What runs by itself where hooks run: a file checkpoint before edits (undo with `godkit rewind`), the guard (force push, `reset --hard`, `rm -r` on a root, writes to `.env` and `.git/`, edits inside another session's claim), the session brief (≤3KB however long the history), scaffolding
 `.agent/` in an empty folder or an opted-in clone, and after a verified clock-out, archiving
 finished board items, refreshing `.agent/SKILLS.md` and linking new project skills.
 

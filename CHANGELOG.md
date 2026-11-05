@@ -15,9 +15,16 @@ All notable changes to godkit. Format follows [Keep a Changelog](https://keepach
 - `lib/board.js`: the claims table as code. A claim is refused when a live claim by another agent overlaps, and carries the caller's session tag. Claims older than 24h are stale.
 - **Pre-commit** (`godkit githook`, also run by `init`): warns about staged files outside every live claim; `GODKIT_STRICT=1` blocks. Fails open; never replaces another hook.
 - Antigravity now gets `PreToolUse`, so a shell-only change counts as work there.
+- **Plan gate** in the guard: an agent that claimed through the MCP tool and owns a task still in phase `plan` cannot edit that task's scope until it moves to `execute`.
+- `godkit agents` (and `init`): subagent files for Claude (`.claude/agents`) and Codex (`.codex/agents`) from `agents/*.md`; never replaces a file that is not marked generated.
+- `godkit delegate` / MCP `godkit_delegate`: hand a task to `claude`, `codex`, `gemini` or `agy` headless, read-only unless `--write`, enforced by that CLI; no nested delegation.
+- **Checkpoints**: `hooks/checkpoint.js` saves the working tree as a hidden git ref before edits (index, branch and tree untouched); `godkit rewind` previews and restores, with a safety checkpoint first.
+- `godkit eval`: small tasks through each agent CLI in a fresh repo, graded by a command; `--godkit` compares with and without the protocol.
+- `init` also registers the MCP server (`--no-mcp` to skip), syncs subagent files (`--no-agents`) and installs the pre-commit (`--no-githook`). `godkit hooks status` reminds that Codex runs a hook only after `/hooks` approval.
 
 ### Fixed
 
+- Hook commands for Cursor and Antigravity no longer contain double quotes. On Windows Antigravity turned them into literal ones, so every godkit hook failed there with "Cannot find module". Paths with whitespace use their 8.3 short form.
 - Docs said Cursor and Antigravity have no hooks; both do.
 
 ## [1.1.0] — 2026-09-27
