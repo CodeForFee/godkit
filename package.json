@@ -41,6 +41,7 @@
     "hooks/",
     "templates/",
     "commands/",
+    "evals/",
     "scripts/uninstall.js",
     "AGENTS.md",
     "CHANGELOG.md",

@@ -247,7 +247,7 @@ test('uninstall --dry-run touches nothing', () => {
   const out = execFileSync(process.execPath, [path.join(ROOT, 'scripts', 'uninstall.js'), '--dry-run'], {
     encoding: 'utf8',
     stdio: ['ignore', 'pipe', 'pipe'],
-    env: { ...process.env, CLAUDE_CONFIG_DIR: tmpdir('godkit-unin-'), CODEX_HOME: tmpdir('godkit-unin-') },
+    env: { ...process.env, CLAUDE_CONFIG_DIR: tmpdir('godkit-unin-'), CODEX_HOME: tmpdir('godkit-unin-'), CURSOR_HOME: tmpdir('godkit-unin-'), GEMINI_HOME: tmpdir('godkit-unin-') },
   })
   assert.ok(!/^removed /m.test(out), 'a dry run must not report removing anything')
 })

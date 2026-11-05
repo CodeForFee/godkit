@@ -116,14 +116,14 @@ line, or use `npx -y @codeforfee/godkit <cmd>`. Run from npx, `init` copies the 
 |---|---|---|---|
 | Claude Code | `.claude/skills/` | `CLAUDE.md` | `~/.claude/settings.json` |
 | Codex | `.agents/skills/` | `AGENTS.md` | `~/.codex/hooks.json` |
-| Cursor | read `.agents/skills/<name>/SKILL.md` on demand | `.cursor/rules/godkit.mdc` | not supported |
-| Antigravity | read `.agents/skills/<name>/SKILL.md` on demand | `AGENTS.md`, `.agents/rules/godkit.md` | not supported |
+| Cursor | read `.agents/skills/<name>/SKILL.md` on demand | `.cursor/rules/godkit.mdc` | `~/.cursor/hooks.json` (subset) |
+| Antigravity | read `.agents/skills/<name>/SKILL.md` on demand | `AGENTS.md`, `.agents/rules/godkit.md` | `~/.gemini/config/hooks.json` (subset) |
 
 The rules block carries a "Which skill, when" table, so every host picks the right skill without
-the user naming it. Where hooks are not supported, the rule file is the enforcement — that is why
+the user naming it. Where hooks are partial or absent, the rule file is the enforcement — that is why
 it says the same thing. Every rule file is generated from one source, so they cannot drift.
 
-What runs by itself where hooks run: the session brief (≤3KB however long the history), scaffolding
+What runs by itself where hooks run: a file checkpoint before edits (undo with `godkit rewind`), the guard (force push, `reset --hard`, `rm -r` on a root, writes to `.env` and `.git/`, edits inside another session's claim), the session brief (≤3KB however long the history), scaffolding
 `.agent/` in an empty folder or an opted-in clone, and after a verified clock-out, archiving
 finished board items, refreshing `.agent/SKILLS.md` and linking new project skills.
 

@@ -13,7 +13,7 @@ You are not the only agent in this repo. Someone worked here before you and some
 ## Every session
 
 1. **Arrive.** The session brief (or `.agent/BOARD.md`, `MAP.md`, newest `log/`) gives claims, open bugs and binding decisions. Older history: `godkit recall <file|words>` — never read the archive by hand.
-2. **Claim** your scope on the board (file globs, task, UTC, `wip`) before the first edit. Overlaps an open claim? Do not edit: take another seam, or mark a claim over 24h `stale` and say so in your log.
+2. **Claim** your scope on the board (file globs, task, UTC, `wip`) before the first edit. With the godkit MCP tools (`godkit_claim`, `_release`, `_log`) use them: they refuse an overlap and tag your session. Overlaps an open claim? Do not edit: take another seam, or mark a claim over 24h `stale` and say so in your log.
 3. **Sign** with your model id (`claude-opus-5`, `codex-5.6-terra`), never the tool name. Unsure of it? Say so; do not guess.
 4. **Out-of-scope bug?** Add `B-NNN` to the board and keep going. Messages to other agents: append to `.agent/THREAD.md`.
 5. **Clock out.** `.agent/log/<UTC>-<model>[-<session8>].md`: real paths, the command you ran and its deciding output. Release the claim; a fixed bug stays `[x]` with its root-cause location. Commit `.agent/` with the code.
@@ -48,7 +48,7 @@ Choose by situation and load a skill only when its row applies. No skill tool in
 
 **Code.** Stop at the first rung that holds: needed at all? → already in this repo? → stdlib? → native platform feature? → installed dependency? → one line? → only then the minimum that works. The ladder runs *after* you understand the problem: trace the real flow first, and fix a bug where every caller routes through, not only on the path the ticket names. No abstraction nobody asked for. Mark a deliberate shortcut with a `godkit:` comment naming its ceiling.
 
-**Splitting.** Fits this turn → do it. Otherwise split on **file boundaries**, each seam with scope, exit condition and verification. Route each seam to the cheapest provider that can do it — a command before a model, a small model before a strong one. Never accept a delegated result without running its check.
+**Splitting.** Fits this turn → do it. Otherwise split on **file boundaries**, each seam with scope, exit condition and verification. Route each seam to the cheapest provider that can do it — a command before a model, a small model before a strong one. Never accept a delegated result without running its check. Big read, a review, or a change to try in isolation? `godkit_agent` (MCP) runs `godkit-explorer`, `-reviewer`, `-planner` or `-implementer` as a separate process with enforced permissions; only a short report comes back.
 
 ## Token discipline
 

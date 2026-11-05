@@ -16,7 +16,7 @@ const fs = require('fs')
 const os = require('os')
 const path = require('path')
 
-const { applyHooks, readSettings, removeOne, settingsTargets, writeSettings } = require('../lib/install')
+const { allTargets, applyHooks, readSettings, removeOne, writeSettings } = require('../lib/install')
 const { runtimeStateRoot } = require('../lib/session')
 
 const ROOT = path.resolve(__dirname, '..')
@@ -63,7 +63,7 @@ function removeSkills() {
 }
 
 function removeHooks() {
-  for (const [, file] of settingsTargets()) {
+  for (const [, file, kind] of allTargets()) {
     if (!fs.existsSync(file)) continue
 
     let record
@@ -75,7 +75,7 @@ function removeHooks() {
       continue
     }
 
-    const result = applyHooks(record.settings, { uninstall: true })
+    const result = applyHooks(record.settings, { uninstall: true, kind })
     if (!result.removed) continue
     writeSettings(file, result.settings, record, DRY)
     console.log((DRY ? 'would remove ' : 'removed ') + result.removed + ' hook entries from ' + file)

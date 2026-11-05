@@ -93,42 +93,28 @@ function skillPairs(spec, names) {
 // nothing to add to. Skills are no longer part of it: `init` puts them in the project.
 function machineReady() {
   const lib = require('../lib/install')
-  for (const [, file] of lib.settingsTargets()) {
+  for (const [, file, kind] of lib.allTargets()) {
     let record
     try {
       record = lib.readSettings(file)
     } catch {
       return true // unreadable settings are cmdHooks' problem to report, not init's to overwrite
     }
-    if (countOurHooks(record.settings) < lib.HOOKS.length) return false
-    if (hooksPointElsewhere(record.settings)) return false // an older copy's path: re-point
+    if (lib.ourHandlers(record.settings, kind).length < lib.expectedCount(kind)) return false
+    if (hooksPointElsewhere(record.settings, kind)) return false // an older copy's path: re-point
   }
   return true
 }
 
-function eachOurHandler(settings, fn) {
-  const lib = require('../lib/install')
-  for (const groups of Object.values((settings && settings.hooks) || {})) {
-    for (const group of groups || []) {
-      for (const handler of (group && group.hooks) || []) if (lib.isOurHandler(handler)) fn(handler)
-    }
-  }
-}
-
-function countOurHooks(settings) {
-  let found = 0
-  eachOurHandler(settings, () => found++)
-  return found
+function countOurHooks(settings, kind) {
+  return require('../lib/install').ourHandlers(settings, kind || 'claude').length
 }
 
 // True when a registered godkit hook runs a script from a different copy than this one.
-function hooksPointElsewhere(settings) {
+function hooksPointElsewhere(settings, kind) {
   const here = path.join(ROOT, 'hooks').replace(/\\/g, '/')
-  let elsewhere = false
-  eachOurHandler(settings, (h) => {
-    if (!h.command.replace(/\\/g, '/').includes(here)) elsewhere = true
-  })
-  return elsewhere
+  return countOurHooks(settings, kind) > 0 &&
+    require('../lib/install').ourHandlers(settings, kind || 'claude').some((h) => !h.command.replace(/\\/g, '/').includes(here))
 }
 
 // The per-project skill copies: every skill, into the two paths the hosts read. Committed with the
@@ -208,10 +194,35 @@ function cmdInit(args) {
 
   const skills = args.includes('--no-skills') ? null : installProjectSkills(root)
 
+  // The subagents the map skill spawns, for hosts that read them from the project.
+  let agentRows = null
+  if (!args.includes('--no-agents')) {
+    try {
+      agentRows = require('../lib/agents').syncAgents(root, 'sync', false)
+    } catch {
+      /* a broken agent source must not stop init */
+    }
+  }
+
+  // A pre-commit hook that only warns, and only when none exists yet. Never replaces anyone's.
+  let preCommit = null
+  if (!args.includes('--no-githook')) {
+    try {
+      preCommit = require('../lib/hostmcp').githook('install', root, path.join(ROOT, 'bin', 'godkit.js'), false)
+    } catch {
+      /* not a git repo, or no permission: the hook is a nicety */
+    }
+  }
+
   // The machine half, in the same command: hooks registered once per machine, and re-pointed when
   // a newer copy runs. `init` is re-run freely, so a machine already set up is left alone.
   let machine = null
   if (!args.includes('--no-install') && !machineReady()) machine = registerHooks('install', false)
+  // The MCP server is registered the same way: once per machine, re-pointed when a newer copy runs.
+  let mcp = null
+  const hostmcp = require('../lib/hostmcp')
+  const bin = path.join(ROOT, 'bin', 'godkit.js')
+  if (!args.includes('--no-install') && !args.includes('--no-mcp') && !hostmcp.mcpReady(bin)) mcp = hostmcp.registerMcp('install', false, bin)
 
   const ui = require('../lib/ui').create()
   if (!ui.on) {
@@ -222,7 +233,11 @@ function cmdInit(args) {
     for (const r of refused) log('  ! ' + r)
     if (skills) log('  skills: ' + skills.names.length + ' -> .claude/skills .agents/skills')
     for (const r of (skills && skills.refused) || []) log('  ! skipped ' + r)
+    const made = (agentRows || []).filter((r) => r.how === 'created' || r.how === 'updated')
+    if (made.length) log('  agents: ' + made.length + ' file(s) -> .claude/agents .codex/agents')
+    if (preCommit && preCommit.ok && preCommit.changed) log('  pre-commit: warns about staged files outside every claim (GODKIT_STRICT=1 blocks)')
     for (const m of machine || []) log('  hooks ' + m.tool + ': ' + m.added + ' registered (' + m.file + ')')
+    for (const m of mcp || []) if (m.changed) log('  mcp ' + m.tool + ': godkit registered (' + m.file + ')')
     log('')
     if (greenfield) {
       log('Next: open your agent and describe what to build. It fills .agent/BRIEF.md from your')
@@ -303,28 +318,24 @@ function cmdHooks(args) {
   const lib = require('../lib/install')
 
   if (action === 'status') {
-    for (const [tool, file] of lib.settingsTargets()) {
+    for (const [tool, file, kind] of lib.allTargets()) {
       if (!fs.existsSync(file)) {
-        log('  ' + tool.padEnd(8) + 'no settings file  (' + file + ')')
+        log('  ' + tool.padEnd(12) + 'no settings file  (' + file + ')')
         continue
       }
       let record
       try {
         record = lib.readSettings(file)
       } catch (err) {
-        log('  ' + tool.padEnd(8) + 'UNREADABLE — ' + err.message)
+        log('  ' + tool.padEnd(12) + 'UNREADABLE — ' + err.message)
         continue
       }
-      let found = 0
-      for (const groups of Object.values((record.settings.hooks) || {})) {
-        for (const group of groups || []) {
-          for (const handler of (group && group.hooks) || []) if (lib.isOurHandler(handler)) found++
-        }
-      }
-      log('  ' + tool.padEnd(8) + found + ' of ' + lib.HOOKS.length + ' godkit hooks registered  (' + file + ')')
+      const found = lib.ourHandlers(record.settings, kind).length
+      log('  ' + tool.padEnd(12) + found + ' of ' + lib.expectedCount(kind) + ' godkit hooks registered  (' + file + ')')
     }
     log('')
     log('`godkit hooks install` / `godkit hooks uninstall` to change that.')
+    log('Codex runs a hook only after you approve it (and again whenever a hook changes): Codex app > Review hooks, or /hooks in the CLI.')
     return
   }
 
@@ -334,8 +345,8 @@ function cmdHooks(args) {
   }
 
   for (const r of registerHooks(action, dryRun)) {
-    if (r.error) log('  ' + r.tool.padEnd(8) + 'skipped — ' + r.error)
-    else log('  ' + r.tool.padEnd(8) + (dryRun ? 'would ' : '') + action + ': ' +
+    if (r.error) log('  ' + r.tool.padEnd(12) + 'skipped — ' + r.error)
+    else log('  ' + r.tool.padEnd(12) + (dryRun ? 'would ' : '') + action + ': ' +
         r.added + ' registered, ' + r.removed + ' replaced  (' + r.file + ')')
   }
 }
@@ -350,7 +361,7 @@ function legacyTargets() {
 function registerHooks(action, dryRun) {
   const lib = require('../lib/install')
   const results = []
-  for (const [tool, file] of lib.settingsTargets()) {
+  for (const [tool, file, kind] of lib.allTargets()) {
     if (action === 'uninstall' && !fs.existsSync(file)) continue
     let record
     try {
@@ -359,7 +370,11 @@ function registerHooks(action, dryRun) {
       results.push({ tool, file, error: err.message })
       continue
     }
-    const result = lib.applyHooks(record.settings, { uninstall: action === 'uninstall', hooksDir: path.join(ROOT, 'hooks') })
+    const result = lib.applyHooks(record.settings, { uninstall: action === 'uninstall', hooksDir: path.join(ROOT, 'hooks'), kind })
+    if (result.skipped) {
+      results.push({ tool, file, error: result.skipped })
+      continue
+    }
     lib.writeSettings(file, result.settings, record, dryRun)
     results.push({ tool, file, added: result.added, removed: result.removed })
   }
@@ -374,6 +389,215 @@ function registerHooks(action, dryRun) {
     }
   }
   return results
+}
+
+// godkit as an MCP server. No argument: run it on stdio (what a host launches). install/uninstall:
+// register it with the hosts that are present, the same way `hooks install` does.
+function cmdMcp(args) {
+  const action = args.find((a) => !a.startsWith('-'))
+  if (!action) return require('../lib/mcp').serve(process.stdin, process.stdout)
+  if (action !== 'install' && action !== 'uninstall') {
+    log('godkit mcp [install|uninstall] [--dry-run]   (no argument: run the server on stdio)')
+    return
+  }
+  const dryRun = args.includes('--dry-run')
+  // Codex asks before each MCP tool call and refuses when nobody is there to answer. Letting godkit's
+  // own tools through is a change to Codex's safety setting, so only an explicit flag does it.
+  if (!dryRun && args.includes('--codex-approve')) require('../lib/lazy').setCodexApprove(true)
+  if (!dryRun && args.includes('--no-codex-approve')) require('../lib/lazy').setCodexApprove(false)
+  const results = require('../lib/hostmcp').registerMcp(action, dryRun, path.join(ROOT, 'bin', 'godkit.js'))
+  for (const r of results) {
+    if (r.error) log('  ' + r.tool.padEnd(12) + 'skipped — ' + r.error)
+    else log('  ' + r.tool.padEnd(12) + (dryRun ? 'would ' : '') + action + (r.changed ? '' : ': already so') + '  (' + r.file + ')')
+  }
+}
+
+// What the git pre-commit hook runs: staged files that no live claim covers.
+function cmdCheckStaged() {
+  try {
+    checkStaged()
+  } catch (err) {
+    // A commit check that crashes must not stop a commit; only a strict finding does.
+    process.stderr.write('godkit check-staged: ' + (err && err.message) + ' (ignored)\n')
+  }
+}
+
+function checkStaged() {
+  const { execFileSync } = require('child_process')
+  const root = projectRoot(process.cwd())
+  const p = paths(root)
+  if (!fs.existsSync(p.board)) return
+  let staged
+  try {
+    staged = execFileSync('git', ['diff', '--cached', '--name-only', '-z'], { cwd: process.cwd(), encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] })
+  } catch {
+    return
+  }
+  const board = require('../lib/board')
+  const text = fs.readFileSync(p.board, 'utf8')
+  const strict = process.env.GODKIT_STRICT === '1' || require('../lib/paths').git(['config', '--get', 'godkit.strict'], process.cwd()) === 'true'
+  // No live claim anywhere means nobody is working under the protocol right now; say nothing
+  // unless the repo asked to be strict.
+  if (!strict && !board.readClaims(text).some((r) => board.isOpen(r))) return
+  const loose = board.unclaimed(text, staged.split('\0').filter(Boolean))
+  if (!loose.length) return
+  process.stderr.write(
+    'godkit: ' + loose.length + ' staged file' + (loose.length === 1 ? ' is' : 's are') + ' outside every live claim on .agent/BOARD.md:\n  ' +
+      loose.slice(0, 10).join('\n  ') + (loose.length > 10 ? '\n  ... and ' + (loose.length - 10) + ' more' : '') +
+      '\nClaim them (godkit_claim, or a row on the board) before committing' + (strict ? '.\n' : '. Set GODKIT_STRICT=1 to make this block.\n'),
+  )
+  if (strict) process.exitCode = 1
+}
+
+// Does this agent do the same small tasks as well as that one? Each task runs in a fresh repo.
+function cmdEval(args) {
+  const ev = require('../lib/evalrun')
+  const flag = (name) => {
+    const i = args.indexOf(name)
+    return i >= 0 ? args[i + 1] : undefined
+  }
+  const hosts = (flag('--host') || '').split(',').filter(Boolean)
+  const tasks = ev.loadTasks()
+  if (args.includes('--list') || !hosts.length) {
+    for (const t of tasks) log('  ' + t.id.padEnd(22) + t.title)
+    log('')
+    log('godkit eval --host claude,codex,agy [--task id,id] [--runs n] [--godkit] [--timeout sec] [--keep]')
+    return
+  }
+  const started = new Date()
+  const { results, summary } = ev.runAll({
+    hosts,
+    only: flag('--task') ? flag('--task').split(',') : undefined,
+    runs: Number(flag('--runs')) || 1,
+    godkit: args.includes('--godkit'),
+    timeoutSec: Number(flag('--timeout')) || 600,
+    keep: args.includes('--keep'),
+    onResult: (r) => log('  ' + (r.pass ? 'PASS' : 'FAIL') + '  ' + r.host.padEnd(8) + r.id.padEnd(22) + String(Math.round(r.ms / 1000)).padStart(4) + 's' + (r.note ? '  ' + r.note : '')),
+  })
+  log('')
+  for (const [host, s] of Object.entries(summary)) log('  ' + host.padEnd(8) + s.passed + '/' + s.total + ' passed, ' + Math.round(s.ms / s.total / 1000) + 's per task')
+  const p = paths(projectRoot(process.cwd()))
+  if (fs.existsSync(p.dir)) {
+    const dir = path.join(p.dir, 'evals')
+    fs.mkdirSync(dir, { recursive: true })
+    const file = path.join(dir, started.toISOString().slice(0, 16).replace(/[-:]/g, '') + 'Z-' + hosts.join('+') + '.json')
+    fs.writeFileSync(file, JSON.stringify({ started: started.toISOString(), godkit: args.includes('--godkit'), results, summary }, null, 2) + '\n')
+    log('  report: ' + path.relative(process.cwd(), file))
+  }
+  if (results.some((r) => !r.pass)) process.exitCode = 1
+}
+
+// Named subagents (Claude-style files), run as a separate agent process with enforced permissions.
+function cmdAgent(args) {
+  const sub = require('../lib/subagent')
+  const words = []
+  const opt = {}
+  for (let i = 0; i < args.length; i++) {
+    if (['--host', '--model', '--timeout'].includes(args[i])) opt[args[i].slice(2)] = args[++i]
+    else if (!args[i].startsWith('--')) words.push(args[i])
+  }
+  const [action = 'list', ...rest] = words
+  const root = projectRoot(process.cwd())
+  if (action === 'list') {
+    for (const a of sub.listAgents(root)) log('  ' + a.name.padEnd(20) + (sub.classify(a.def).write ? (sub.classify(a.def).isolated ? 'isolated ' : 'may write') : 'read-only') + '  ' + a.scope.padEnd(8) + a.description.slice(0, 80))
+    log('')
+    log('godkit agent run <name> "<task>" [--host codex|claude] [--model m] [--timeout sec]   ·   godkit agent model <host> [model]')
+    return
+  }
+  if (action === 'model') {
+    const [host, model] = rest
+    if (!host) return log('godkit agent model <host> [model]   (no model: clear it)')
+    require('../lib/lazy').setModel(host, model)
+    return log('default model for ' + host + ': ' + (model || 'host default'))
+  }
+  if (action !== 'run' || rest.length < 2) return log('godkit agent run <name> "<task>" [--host codex|claude] [--model m] [--timeout sec]')
+  const [name, ...task] = rest
+  const r = sub.runAgent({ name, task: task.join(' '), host: opt.host, model: opt.model, cwd: process.cwd(), timeoutMs: opt.timeout ? Number(opt.timeout) * 1000 : undefined })
+  log(r.text)
+  if (!r.ok) process.exitCode = 1
+}
+
+// File checkpoints (taken by the checkpoint hook before an edit) and going back to one.
+function cmdRewind(args) {
+  const ck = require('../lib/checkpoint')
+  const cwd = process.cwd()
+  const spec = args.find((a) => !a.startsWith('-'))
+  if (!spec) {
+    const all = ck.list(cwd)
+    if (!all.length) return log('no checkpoints yet — the checkpoint hook takes one before an agent edits')
+    for (const e of all.slice(-30)) log('  ' + (e.slug + '/' + e.n).padEnd(24) + new Date(e.at).toISOString().slice(0, 16).replace('T', ' ') + 'Z  ' + e.subject)
+    log('')
+    log('godkit rewind <session/n | session | last> [--yes]')
+    return
+  }
+  const entry = ck.resolve(cwd, spec)
+  if (!entry) {
+    log('no checkpoint "' + spec + '" — `godkit rewind` lists them')
+    process.exitCode = 1
+    return
+  }
+  if (!args.includes('--yes')) {
+    const p = ck.plan(cwd, entry)
+    log('Going back to ' + entry.slug + '/' + entry.n + ' would restore ' + p.restore.length + ' file(s):')
+    for (const f of p.restore.slice(0, 20)) log('  ' + f)
+    if (p.created.length) log('and leave ' + p.created.length + ' file(s) created since (not deleted): ' + p.created.slice(0, 10).join(', '))
+    log('Run again with --yes to do it. A safety checkpoint of the present is taken first.')
+    return
+  }
+  const r = ck.rewind(cwd, entry)
+  log('Restored ' + r.restored.length + ' file(s) to ' + entry.slug + '/' + entry.n + '. Undo with: godkit rewind ' + (r.safety ? r.safety.slice(ck.NS.length + 1).replace(/\/0*/, '/') : 'last') + ' --yes')
+  if (r.created.length) log('Left in place (created since): ' + r.created.slice(0, 10).join(', '))
+}
+
+// Another agent CLI, headless, in its own context. Read-only unless --write.
+function cmdDelegate(args) {
+  const d = require('../lib/delegate')
+  const words = []
+  let write = false
+  let timeout = 300
+  for (let i = 0; i < args.length; i++) {
+    if (args[i] === '--write') write = true
+    else if (args[i] === '--timeout') timeout = Number(args[++i]) || timeout
+    else if (!args[i].startsWith('--')) words.push(args[i])
+  }
+  const [host, ...task] = words
+  if (!host || !task.length) {
+    for (const h of d.available()) log('  ' + h.name.padEnd(8) + (h.found ? 'on PATH' : 'not found'))
+    log('')
+    log('godkit delegate <claude|codex|gemini|agy> "<task>" [--write] [--timeout <seconds>]')
+    return
+  }
+  const r = d.delegate({ host, task: task.join(' '), write, timeoutMs: timeout * 1000 })
+  log(r.text)
+  if (!r.ok) process.exitCode = 1
+}
+
+// The subagents godkit-map needs, in the form each host reads (.claude/agents, .codex/agents).
+function cmdAgents(args) {
+  const action = args.find((a) => !a.startsWith('-')) || 'status'
+  if (!['sync', 'clean', 'status'].includes(action)) {
+    log('godkit agents [sync|clean|status] [--dry-run]')
+    return
+  }
+  const rows = require('../lib/agents').syncAgents(projectRoot(process.cwd()), action, args.includes('--dry-run'))
+  for (const r of rows) log('  ' + r.host.padEnd(8) + r.how.padEnd(10) + path.relative(process.cwd(), r.file) + (r.reason ? '  (' + r.reason + ')' : ''))
+  if (rows.some((r) => r.how === 'refused')) process.exitCode = 1
+}
+
+function cmdGitHook(args) {
+  const action = args.find((a) => !a.startsWith('-')) || 'status'
+  if (!['install', 'uninstall', 'status'].includes(action)) {
+    log('godkit githook [install|uninstall|status]')
+    return
+  }
+  const r = require('../lib/hostmcp').githook(action, process.cwd(), path.join(ROOT, 'bin', 'godkit.js'), args.includes('--dry-run'))
+  if (!r.ok) {
+    log('  pre-commit  skipped — ' + r.reason)
+    process.exitCode = 1
+    return
+  }
+  const state = action === 'status' ? (r.installed ? 'installed' : r.foreign ? 'someone else\'s hook is there' : 'not installed') : action + (r.changed ? '' : ': already so')
+  log('  pre-commit  ' + state + '  (' + r.file + ')')
 }
 
 // The deterministic half of building the map: walk, categorize, resolve imports, group into
@@ -828,6 +1052,33 @@ function cmdDoctor() {
   log('')
   log('  hooks:')
   cmdHooks([])
+
+  // Registered is not running: a hook can be skipped (Codex until approved) or fail. This is the
+  // proof that a session of each agent really ran us, and from which surface.
+  const seen = require('../lib/seen')
+  log('')
+  log('  last seen (a session of each agent that really ran godkit):')
+  const hints = {
+    claude: 'open a session in the CLI, VS Code or the desktop app',
+    codex: 'approve the hooks once: Codex app > Review hooks, or /hooks in the CLI',
+    cursor: 'open the Cursor agent in a project',
+    antigravity: 'start a session; a broken hook of another tool (see the Antigravity log) can block it',
+  }
+  for (const row of seen.summary()) {
+    const where = row.seen.length ? row.seen.map((s) => s.surface + ' ' + seen.ago(s.at)).join(', ') : 'never — ' + hints[row.host]
+    log('    ' + row.host.padEnd(12) + where)
+  }
+  log('  autoinit: ' + (require('../lib/lazy').getAutoInit() ? 'on (a git repo with code and no .agent/ is set up at its first session)' : 'off (`godkit autoinit on` to set projects up by themselves)'))
+}
+
+// Whether a repository with code and no .agent/ is set up at its first agent session, without
+// anyone typing init. Off by default: it writes rule files, skills and a git hook into the project.
+function cmdAutoInit(args) {
+  const lazy = require('../lib/lazy')
+  const action = args.find((a) => !a.startsWith('-')) || 'status'
+  if (action === 'on' || action === 'off') lazy.setAutoInit(action === 'on')
+  else if (action !== 'status') return log('godkit autoinit [on|off|status]')
+  log('autoinit: ' + (lazy.getAutoInit() ? 'on' : 'off') + '  (' + lazy.configPath() + (process.env.GODKIT_AUTO_INIT ? '; GODKIT_AUTO_INIT is set' : '') + ')')
 }
 
 // Search everything agents ever wrote, archive included, in a bounded answer. This is how an
@@ -927,7 +1178,15 @@ const COMMANDS = [
     ['refactor [--all]', 'which code files churn and get blamed most'],
   ]],
   ['MACHINE', null, [
-    ['hooks [status|install|uninstall]', 'hook registrations for claude and codex'],
+    ['hooks [status|install|uninstall]', 'hook registrations for claude, codex, cursor, antigravity'],
+    ['autoinit [on|off]', 'set a project up at its first agent session, with no `init` typed'],
+    ['mcp [install|uninstall]', 'godkit as an MCP server (no argument: run it on stdio)'],
+    ['eval --host a,b [--godkit]', 'run small tasks through agent CLIs and compare pass rates'],
+    ['rewind [session/n] [--yes]', 'go back to a file checkpoint (taken before agent edits)'],
+    ['agent [list|run <name> "<task>"|model]', 'run a named subagent as its own process, permissions enforced'],
+    ['delegate <host> "<task>" [--write]', 'hand a task to another agent CLI, headless, read-only by default'],
+    ['agents [sync|clean|status]', 'subagent files for claude (.claude/agents) and codex (.codex/agents)'],
+    ['githook [install|uninstall]','pre-commit: files outside every claim (GODKIT_STRICT=1 blocks)'],
     ['install [tool...]', 'skills into ~/ for every project (init already covers this one)'],
     ['uninstall [tool|--project]', 'remove skills godkit placed; never touches .agent/'],
     ['--version', 'the installed version'],
@@ -950,7 +1209,8 @@ function help(stream) {
 // init, install and hooks write paths meant to outlive this process. Run from npx, this process
 // lives in a cache npm prunes at will — so those three re-run from the stable copy instead.
 function fromStableHome(cmd, args) {
-  if (!['init', 'install', 'hooks'].includes(cmd)) return false
+  if (!['init', 'install', 'hooks', 'mcp'].includes(cmd)) return false
+  if (cmd === 'mcp' && !args.includes('install')) return false // serving must not re-exec
   const stable = require('../lib/install').stableRoot(version())
   if (path.resolve(stable) === ROOT) return false
   const { execFileSync } = require('child_process')
@@ -986,6 +1246,24 @@ function main() {
       return cmdHooks(args)
     case 'recall':
       return cmdRecall(args)
+    case 'mcp':
+      return cmdMcp(args)
+    case 'githook':
+      return cmdGitHook(args)
+    case 'agents':
+      return cmdAgents(args)
+    case 'delegate':
+      return cmdDelegate(args)
+    case 'rewind':
+      return cmdRewind(args)
+    case 'agent':
+      return cmdAgent(args)
+    case 'eval':
+      return cmdEval(args)
+    case 'autoinit':
+      return cmdAutoInit(args)
+    case 'check-staged':
+      return cmdCheckStaged()
     case 'verify':
       return cmdVerify(args)
     case 'doctor':

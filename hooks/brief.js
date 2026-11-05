@@ -185,6 +185,7 @@ function main() {
   const { findAgentContext, fitBytes, logEntries, paths } = require('../lib/paths')
   const { readHookInput } = require('../lib/session')
   const payload = readHookInput('brief')
+  require('../lib/seen').record(payload) // evidence for `godkit doctor` that this agent really runs us
   const cwd = typeof payload.cwd === 'string' && payload.cwd ? payload.cwd : process.cwd()
   let context = findAgentContext(cwd)
 
@@ -199,6 +200,24 @@ function main() {
       /* fall through to the hint below */
     }
     context = findAgentContext(cwd)
+  }
+
+  // Opt-in (`godkit autoinit on`): a git repository with code and no .agent/ gets the whole project
+  // setup at the first session, so nobody has to type `init` or ask an agent to. Never the home folder.
+  if (!context.agentDir && require('../lib/lazy').getAutoInit() && require('../lib/paths').gitRoot(cwd)) {
+    const root = context.stateRoot
+    if (path.resolve(root) !== path.resolve(require('os').homedir())) {
+      try {
+        require('child_process').execFileSync(
+          process.execPath,
+          [path.join(ROOT, 'bin', 'godkit.js'), 'init', root, '--no-install', '--no-mcp'],
+          { stdio: 'ignore', timeout: 20000 }, // not --quiet: that scaffolds .agent/ only, no rules or skills
+        )
+      } catch {
+        /* the hint below still tells the agent what to run */
+      }
+      context = findAgentContext(cwd)
+    }
   }
 
   if (!context.agentDir) {

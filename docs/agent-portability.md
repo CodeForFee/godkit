@@ -11,7 +11,7 @@ Godkit targets four tools. They agree on almost nothing, so the package keeps **
 | **Project-local skills** | `<project>/.claude/skills/<name>/` | not supported | `<project>/.agents/skills/<name>/` — *unverified against a live Codex* | not supported |
 | **Always-on rules** | `CLAUDE.md` | `.cursor/rules/godkit.mdc` | `AGENTS.md` | `.agents/rules/godkit.md` |
 | **Rules frontmatter** | none | `alwaysApply: true` | none | none |
-| **Hooks** | yes | no | yes, same JSON | no |
+| **Hooks** | yes | yes, via `hooks/adapt.js` (subset) | yes, same JSON | yes, via `hooks/adapt.js` (subset) |
 | **Plugin manifest** | `.claude-plugin/plugin.json` | — | `.codex-plugin/plugin.json` | `gemini-extension.json` |
 | **Invocation** | `/godkit` | ask in prose | `$godkit` | `/godkit` |
 | **Slash commands** | auto-discovered from `commands/` | — | auto-discovered from `commands/` | auto-discovered from `commands/` |
@@ -76,9 +76,48 @@ and not the other.
 group registered for an event, so `brief.js` and `lazy-activate.js` are independent groups in
 `hooks/godkit-hooks.json`, not one script doing both jobs.
 
-**Cursor and Antigravity have no hook support at all.** Their enforcement is the always-on rule file — which is exactly why every rule copy carries the full clock-in and clock-out checklists rather than a pointer to them. A tool that cannot be made to do something must at least be told.
+**Cursor and Antigravity have hooks, in their own dialects.** Cursor reads `~/.cursor/hooks.json` (`{version, hooks: {event: [{command, timeout}]}}`, camelCase events, answers `additional_context` / `followup_message`). Antigravity reads `~/.gemini/config/hooks.json` (named entries per hook, PascalCase events, answers `injectSteps` / `decision`). `hooks/adapt.js <host> <event>` sits between: it turns the host's input into the Claude shape our scripts read, runs the `HOOKS` rows for that event, and turns the output back. The registered events are the ones that need no permission verdict:
 
-That asymmetry is worth stating plainly: on Claude Code the protocol is *enforced*; everywhere else it is *instructed*. The shared `.agent/` state is what makes the difference survivable — a Cursor session that forgets to log leaves a gap the next agent can see in the board.
+| Host | Events | Not registered |
+|---|---|---|
+| Cursor | `sessionStart`, `postToolUse`, `beforeShellExecution` (guard only), `stop`, `sessionEnd` | `preToolUse`, `subagentStart` (cannot inject context), compaction (`preCompact` only observes) |
+| Antigravity | `SessionStart`, `PreToolUse`, `PostToolUse`, `Stop` | `PreInvocation`, `PostInvocation` |
+
+**PreToolUse is where the two hosts differ.** Both require a permission verdict from it. Antigravity documents `allow` as "delegating to the next hook or default policy", so a neutral answer is safe and it gets the whole set: the guard (deny only, otherwise `allow`) and `work-track`'s before-snapshot, which is what lets a change made only by a shell command count as work. Cursor documents no neutral answer (empty output is ambiguous, and what `allow` does to its approval prompt is not stated), so godkit registers only `beforeShellExecution`, with Cursor's matcher set to a regex that every command the guard can deny matches (`SHELL_TRIGGER` in `lib/guard.js`, asserted by a test). Ordinary commands never reach the hook. A command that matches and passes is answered `ask`, which can only add a prompt. On Cursor, then, the before-snapshot is not taken and a shell-only change goes unseen; direct edits (Cursor `Write`/`Delete`) count.
+
+The guard is the same `hooks/guard.js` for every host (Claude and Codex register it from `HOOKS`; Antigravity and Cursor through `hooks/adapt.js`). Identity-free rules (`lib/guard.js`) are denied everywhere. The claim rule needs to know who is editing: a claim tagged with a session (`claude-opus-5 (9fe96f63)`, made through the `godkit_claim` tool) blocks every other session; an untagged claim, written by hand, only earns a one-time note, because a false deny on an agent's own files costs more than the collision.
+
+Neither host tells a hook why a session started, so `SessionStart` always matches as `startup`, and neither exposes compaction, so there is no re-injection after one. Antigravity's tool names beyond the two its docs use are unverified; unknown names pass through unmapped.
+
+A tool with no hooks at all still has its always-on rule file, which is why every rule copy carries the full clock-in and clock-out checklists. On Claude Code and Codex the protocol is *enforced*; on the reduced hosts it is *enforced for the parts above* and *instructed* for the rest. The shared `.agent/` state is what makes the difference survivable — a session that forgets to log leaves a gap the next agent can see in the board.
+
+## Surfaces: CLI, VS Code extension, desktop app
+
+| Agent | CLI | VS Code extension | Desktop app | What makes it automatic | State checked on this machine |
+|---|---|---|---|---|---|
+| Claude Code | yes | `anthropic.claude-code` | Claude desktop (Code tab) | Hooks in `~/.claude/settings.json` and the user-scope MCP server are shared by all three (the extension's docs say so for settings and MCP). Windows apps need `node` on the system PATH | Desktop: the SessionStart brief arrived in this very session (`CLAUDE_CODE_ENTRYPOINT=claude-desktop`). `node` is in `C:\Program Files\nodejs`, on the system PATH. CLI and extension: same file, not run separately |
+| Codex | yes | `openai.chatgpt` | Codex app | `~/.codex/hooks.json` and `[mcp_servers.godkit]` in `~/.codex/config.toml`. **A hook is skipped until you approve it, and again whenever it changes** (trust is per hook hash): `/hooks` in the CLI, "Review hooks" in the app. The docs do not say how the VS Code extension approves | A `codex exec` run left no godkit trace: the hooks are waiting for approval. Extension: unverified |
+| Antigravity | `agy` | Antigravity IDE | Antigravity | `~/.gemini/config/hooks.json` (docs: App, CLI and IDE) and `mcp_config.json` | Our hooks failed on Windows because of quoting (fixed). Another tool's quoted hook commands in the same file still fail and block `agy`'s edits |
+| Cursor | not installed here | the Cursor agent | Cursor | `~/.cursor/hooks.json`, `mcp.json`. User-level hooks do not run in Cursor's cloud agents | The Cursor app is not installed on this machine, so nothing is verified end to end |
+
+Two checks replace guessing. `godkit doctor` prints a **last seen** line per agent and surface (the SessionStart hook leaves one line each time, so "never" means that agent has not run godkit yet, whatever the config says), and `godkit hooks status` shows what is registered. A project still needs its own setup once (`godkit init`: rules, skills, `.agent/`); `godkit autoinit on` does that at the first agent session in any git repository, and is off by default because it writes into the project.
+
+## Subagents, delegation, checkpoints
+
+| | Claude Code | Codex | Cursor | Antigravity |
+|---|---|---|---|---|
+| Subagent files generated (`godkit agents`) | `.claude/agents/<name>.md` | `.codex/agents/<name>.toml` | not generated: format unverified | not generated: format unverified |
+| `godkit delegate` target | `claude -p` (read-only: `dontAsk` + Read/Grep/Glob) | `codex exec --sandbox read-only` | no headless CLI on the test machine | `agy --print --mode plan` |
+| Checked against the real CLI | yes | flags accepted; the account rejected its model | n/a | yes |
+| Checkpoint hook (`PreToolUse` on edits) | yes | yes | no: no `PreToolUse` on every tool (see above) | yes |
+
+`gemini -p --approval-mode plan` is also wired for delegation, but the CLI on the test machine refused the login ("migrate to Antigravity"), so its flags are unchecked.
+
+Windows quoting. Antigravity (its own log shows it) and, to be safe, Cursor pass a hook command to cmd.exe so that every double quote arrives as a literal one: `node "E:/x/adapt.js"` reached node as a file name that includes the quote marks, and failed with "Cannot find module". The commands godkit writes for these two hosts therefore have no quotes: the path goes in bare, or as its 8.3 short form when it has whitespace. Claude Code and Codex keep the quoted form, which they handle. Any other tool's quoted hook command in the same file fails the same way, and on Antigravity a failing hook blocks the tool call it guards.
+
+**Claude's subagent harness on Codex.** Codex's own subagents inherit the parent's sandbox and approval and cannot override them per agent, so "a reviewer that cannot write" is only a request. `godkit_agent` / `godkit agent run` gets the enforcement a different way: each run is its own `codex exec` with its own `--sandbox`. Verified on this machine's Codex with `-m gpt-5.6-terra` (its configured default, `gpt-6.1-sol`, is rejected by the account; `godkit agent model codex gpt-5.6-terra` fixes it for godkit's children only): a read-only run could not create a file even with a prompt that asked for one, a write run could, and an isolated run changed its own worktree only. Calling `godkit_agent` from a Codex session needs Codex to let the MCP tool run: Codex asks first and, with no one to ask (`codex exec`), refuses ("MCP tool call requires approval"). Setting `default_tools_approval_mode = "approve"` for the godkit server fixes that and was checked end to end (a Codex session called `godkit_agent`, which started a child Codex, whose read-only report came back); it weakens Codex's own prompt, so godkit writes it only after `godkit mcp install --codex-approve`.
+
+The sources are `agents/*.md` (one definition per agent) and `evals/*.json` (the tasks `godkit eval` runs). Generated subagent files carry a `godkit-generated` marker; a file without it is never replaced or removed.
 
 ## Install paths
 

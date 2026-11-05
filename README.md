@@ -151,12 +151,52 @@ Everything outside those markers is yours and is never touched, so an existing `
 |:--|:--|:--|:--:|
 | **Claude Code** | `.claude/skills/` | `CLAUDE.md` | ✅ `~/.claude/settings.json` |
 | **Codex** | `.agents/skills/` | `AGENTS.md` | ✅ `~/.codex/hooks.json` |
-| **Cursor** | reads `.agents/skills/<name>/SKILL.md` on demand | `.cursor/rules/godkit.mdc` | — |
-| **Antigravity** | reads `.agents/skills/<name>/SKILL.md` on demand | `AGENTS.md`, `.agents/rules/godkit.md` | — |
+| **Cursor** | reads `.agents/skills/<name>/SKILL.md` on demand | `.cursor/rules/godkit.mdc` | ✅ `~/.cursor/hooks.json` (subset) |
+| **Antigravity** | reads `.agents/skills/<name>/SKILL.md` on demand | `AGENTS.md`, `.agents/rules/godkit.md` | ✅ `~/.gemini/config/hooks.json` (subset) |
 
-Where a tool has no hook support, the always-on rule file *is* the enforcement. That is why they all say the same thing. On Claude Code the protocol is **enforced**; everywhere else it is **instructed**, and the shared `.agent/` state is what makes that difference survivable.
+All four tools have hooks. Claude Code and Codex get the full set; Cursor and Antigravity get a subset through `hooks/adapt.js`: the session brief, edit tracking and the clock-out check. Antigravity also gets `PreToolUse` (the guard, and the before-snapshot that sees a change made only by a shell command). Cursor gets the guard on `beforeShellExecution` only, filtered to dangerous-looking commands, so a change made only by a shell command is not tracked there. Where a tool has no hook at all, the always-on rule file *is* the enforcement, which is why every rule file says the same thing. The shared `.agent/` state is what makes the *enforced* versus *instructed* gap survivable.
 
 [`docs/agent-portability.md`](docs/agent-portability.md) has the per-tool detail: exact paths, what each host reads, and what it ignores.
+
+### MCP server and pre-commit
+
+```bash
+godkit mcp install      # register with Claude Code, Codex, Cursor, Antigravity (those that are there; init does it too)
+godkit githook install  # pre-commit in this repo (`godkit init` does it too, only if none exists)
+```
+
+All four tools speak MCP, so `godkit mcp` gives them the same protocol as tools with checked input instead of a Markdown table to hand-edit: `godkit_brief`, `godkit_claim`, `godkit_release`, `godkit_log`, `godkit_recall`, `godkit_map_query`, `godkit_verify`. The board, map and thread are resources, the skills are prompts. It works where hooks do not run (Cursor's cloud agents). `godkit_claim` refuses a scope that overlaps a live claim by another agent and tags the claim with the caller's session, which is what lets the guard hook tell whose files are whose. A claim older than 24 hours is stale and blocks nobody.
+
+The pre-commit hook lists staged files that no live claim covers. It only warns; `GODKIT_STRICT=1` or `git config godkit.strict true` makes it block. It says nothing while nobody holds a claim, fails open if godkit or node is gone, and never replaces a pre-commit hook that is not its own. In CI, the same protocol check is one line:
+
+```yaml
+- run: npx -y @codeforfee/godkit verify   # non-zero when a task or log says done without evidence
+```
+
+### Is it really automatic, in every app?
+
+```bash
+godkit doctor        # registered hooks, and "last seen" per agent and surface: proof a session ran godkit
+godkit autoinit on   # set up any git project at its first agent session (off by default: it writes files)
+```
+
+Hooks and the MCP server are registered once per machine in each agent's user-level config, so the CLI, the VS Code extension and the desktop app of the same agent read the same files. Registered is not running, though: Codex skips a hook until you approve it (CLI `/hooks`, or "Review hooks" in the Codex app) and again after any change, and a broken hook of another tool can block Antigravity. `godkit doctor` shows which agents have actually run godkit. The per-surface table is in [`docs/agent-portability.md`](docs/agent-portability.md#surfaces-cli-vs-code-extension-desktop-app).
+
+### Subagents, delegation, rewind, eval
+
+```bash
+godkit agents sync                       # subagent files for Claude (.claude/agents) and Codex (.codex/agents); init does it
+godkit delegate claude "review lib/x.js" # another agent CLI, headless, read-only unless --write
+godkit rewind                            # file checkpoints taken before agent edits; go back with --yes
+godkit eval --host claude,agy --godkit   # the same small tasks through each CLI; pass/fail and seconds
+```
+
+- **Subagents.** The two agents the map skill spawns live once in `agents/*.md`; `godkit agents` writes the Claude form and the Codex form (`.toml` with `developer_instructions`). A file that is not marked as generated is never replaced or removed. Cursor and Antigravity are not generated: their definition format is not documented where it could be checked.
+- **Named subagents** (`godkit agent run <name> "<task>"`, MCP tool `godkit_agent`). Claude Code's subagent harness for hosts whose own is thinner, Codex above all. The files are the same markdown files Claude reads (`.claude/agents`, `.agent/agents`, `~/.claude/agents`, and four that godkit ships: `godkit-explorer`, `godkit-planner`, `godkit-reviewer`, `godkit-implementer`). Running one starts a **separate agent process** (`codex exec` or `claude -p`) and enforces what the file allows: tools and `permissionMode` decide the sandbox (read-only unless the file lists `Edit`/`Write`), `isolation: worktree` runs it in a git worktree on its own branch (removed if untouched, otherwise committed for you to `git merge`), `skills` are preloaded into its prompt, `memory` reads the same `agent-memory` folders Claude uses, only a 6KB report comes back with fake system text defused, nesting stops at 3 and 20 run at once. Not reproduced: per-agent hooks and MCP servers, fork, resume, background runs. Checked on real Codex: a read-only agent could not create a file even when told to, a write agent could, and an isolated agent fixed a bug in its worktree while the caller's file stayed as it was. `godkit agent model codex gpt-5.6-terra` sets the model godkit's Codex children use when your Codex default is one your account rejects.
+- **Delegation** (`godkit delegate`, MCP tool `godkit_delegate`). For hosts with no subagent, or when a second model should look at the work. Read-only is enforced by the target CLI (`claude` with `dontAsk` and read tools only, `codex --sandbox read-only`, `gemini --approval-mode plan`, `agy --mode plan`), not by asking. The task travels on stdin, the answer is capped at 6KB, and a delegated agent cannot delegate again. Checked on this machine: `claude` and `agy` answer; `codex` receives the task and its flags are accepted, but its configured model is rejected by the account; `gemini` refuses the login, so its flags are unchecked.
+- **Checkpoints** (`hooks/checkpoint.js`, `godkit rewind`). Before an agent edits, the working tree is saved as a git commit under `refs/godkit/checkpoints/<session>/<n>`, built from a copy of the index: the branch, index and working tree are untouched, nothing shows in `git log`. At most one every 15 seconds, the last 50 per session. A rewind lists what it would restore and does nothing without `--yes`; it takes a safety checkpoint first, so it can be undone. Files created since are listed and left alone. Gitignored files are not part of a checkpoint. `GODKIT_CHECKPOINT=off` disables it.
+- **Plan gate.** An agent that claimed through the MCP tool and owns a task whose phase is still `plan` is denied edits to that task's scope until the task moves to `execute`. It binds only the owner, only inside that scope.
+- **Eval** (`evals/*.json`). Each task is a small repo, a prompt and a command that exits 0 only when the work is right; each run gets a fresh git repo. It measures pass/fail and seconds, nothing else. `--godkit` runs `init` in the task repo first, to compare an agent with and without the protocol.
 
 <details>
 <summary><b>Hooks — what each one does, and why none of them can break your session</b></summary>
@@ -170,13 +210,17 @@ godkit hooks uninstall
 godkit hooks install --dry-run
 ```
 
-(`$CLAUDE_CONFIG_DIR` and `$CODEX_HOME` are honoured if set.)
+(`$CLAUDE_CONFIG_DIR`, `$CODEX_HOME`, `$CURSOR_HOME` and `$GEMINI_HOME` are honoured if set. Cursor and Antigravity are registered only when `~/.cursor` / `~/.gemini/antigravity` exist or you point those variables at a folder; their hook files are merged one handler at a time, so another tool's hooks in the same file are left alone.)
+
+Cursor and Antigravity speak their own hook dialects. `hooks/adapt.js` translates their input into the shape the scripts below read, runs the scripts for that event, and translates the answer back (`additional_context` for Cursor, `injectSteps` for Antigravity; `followup_message` or `decision: "continue"` to ask for the log, at most three times in a row). Cursor events: `sessionStart`, `postToolUse`, `stop`, `sessionEnd`. Antigravity events: `SessionStart`, `PostToolUse`, `Stop`.
 
 | Hook | Event | Does |
 |:--|:--|:--|
 | `brief.js` | `SessionStart` | injects the board, map freshness, newest log entries, and this project's skills |
 | `lazy-activate.js` | `SessionStart` | resolves the active `godkit-lazy` mode and injects its ruleset |
 | `lazy-subagent.js` | `SubagentStart` | injects the same ruleset into spawned subagents |
+| `guard.js` | `PreToolUse` | denies force push, `reset --hard`, `clean -f`, `rm -r` on a root or home folder, a download piped into a shell, writes to `.git/` `.env` credentials and shell startup files, and edits inside a live claim held by another session. `GODKIT_GUARD=off` turns it off |
+| `checkpoint.js` | `PreToolUse` (edits) | saves a file checkpoint before the agent edits, at most one per 15 seconds; see `godkit rewind` |
 | `lazy-mode-tracker.js` | `UserPromptSubmit` | tracks `/godkit-lazy` mode switches for the session |
 | `work-track.js` | `PreToolUse`, `PostToolUse`, `SessionEnd` | records whether *this* session changed project files |
 | `clockout.js` | `Stop` | blocks the turn if this session changed files and wrote no log |

@@ -50,6 +50,28 @@
     ],
     "PreToolUse": [
       {
+        "matcher": "Bash|Edit|Write|MultiEdit|NotebookEdit|apply_patch",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/guard.js\"",
+            "timeout": 10,
+            "statusMessage": "Checking guard rules"
+          }
+        ]
+      },
+      {
+        "matcher": "Edit|Write|MultiEdit|NotebookEdit|apply_patch",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/checkpoint.js\"",
+            "timeout": 20,
+            "statusMessage": "Saving a file checkpoint"
+          }
+        ]
+      },
+      {
         "matcher": "Bash",
         "hooks": [
           {
