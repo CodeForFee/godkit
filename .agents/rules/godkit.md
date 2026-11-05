@@ -7,7 +7,7 @@ You are not the only agent in this repo. Someone worked here before you and some
 ## Every session
 
 1. **Arrive.** The session brief (or `.agent/BOARD.md`, `MAP.md`, newest `log/`) gives claims, open bugs and binding decisions. Older history: `godkit recall <file|words>` — never read the archive by hand.
-2. **Claim** your scope on the board (file globs, task, UTC, `wip`) before the first edit. Overlaps an open claim? Do not edit: take another seam, or mark a claim over 24h `stale` and say so in your log.
+2. **Claim** your scope on the board (file globs, task, UTC, `wip`) before the first edit. With the godkit MCP tools (`godkit_claim`, `godkit_release`, `godkit_log`), use them: they refuse an overlap and tag the claim with your session, so no one else can edit your files. Overlaps an open claim? Do not edit: take another seam, or mark a claim over 24h `stale` and say so in your log.
 3. **Sign** with your model id (`claude-opus-5`, `codex-5.6-terra`), never the tool name. Unsure of it? Say so; do not guess.
 4. **Out-of-scope bug?** Add `B-NNN` to the board and keep going. Messages to other agents: append to `.agent/THREAD.md`.
 5. **Clock out.** `.agent/log/<UTC>-<model>[-<session8>].md`: real paths, the command you ran and its deciding output. Release the claim; a fixed bug stays `[x]` with its root-cause location. Commit `.agent/` with the code.

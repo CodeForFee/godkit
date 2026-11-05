@@ -93,42 +93,28 @@ function skillPairs(spec, names) {
 // nothing to add to. Skills are no longer part of it: `init` puts them in the project.
 function machineReady() {
   const lib = require('../lib/install')
-  for (const [, file] of lib.settingsTargets()) {
+  for (const [, file, kind] of lib.allTargets()) {
     let record
     try {
       record = lib.readSettings(file)
     } catch {
       return true // unreadable settings are cmdHooks' problem to report, not init's to overwrite
     }
-    if (countOurHooks(record.settings) < lib.HOOKS.length) return false
-    if (hooksPointElsewhere(record.settings)) return false // an older copy's path: re-point
+    if (lib.ourHandlers(record.settings, kind).length < lib.expectedCount(kind)) return false
+    if (hooksPointElsewhere(record.settings, kind)) return false // an older copy's path: re-point
   }
   return true
 }
 
-function eachOurHandler(settings, fn) {
-  const lib = require('../lib/install')
-  for (const groups of Object.values((settings && settings.hooks) || {})) {
-    for (const group of groups || []) {
-      for (const handler of (group && group.hooks) || []) if (lib.isOurHandler(handler)) fn(handler)
-    }
-  }
-}
-
-function countOurHooks(settings) {
-  let found = 0
-  eachOurHandler(settings, () => found++)
-  return found
+function countOurHooks(settings, kind) {
+  return require('../lib/install').ourHandlers(settings, kind || 'claude').length
 }
 
 // True when a registered godkit hook runs a script from a different copy than this one.
-function hooksPointElsewhere(settings) {
+function hooksPointElsewhere(settings, kind) {
   const here = path.join(ROOT, 'hooks').replace(/\\/g, '/')
-  let elsewhere = false
-  eachOurHandler(settings, (h) => {
-    if (!h.command.replace(/\\/g, '/').includes(here)) elsewhere = true
-  })
-  return elsewhere
+  return countOurHooks(settings, kind) > 0 &&
+    require('../lib/install').ourHandlers(settings, kind || 'claude').some((h) => !h.command.replace(/\\/g, '/').includes(here))
 }
 
 // The per-project skill copies: every skill, into the two paths the hosts read. Committed with the
@@ -208,6 +194,16 @@ function cmdInit(args) {
 
   const skills = args.includes('--no-skills') ? null : installProjectSkills(root)
 
+  // A pre-commit hook that only warns, and only when none exists yet. Never replaces anyone's.
+  let preCommit = null
+  if (!args.includes('--no-githook')) {
+    try {
+      preCommit = require('../lib/hostmcp').githook('install', root, path.join(ROOT, 'bin', 'godkit.js'), false)
+    } catch {
+      /* not a git repo, or no permission: the hook is a nicety */
+    }
+  }
+
   // The machine half, in the same command: hooks registered once per machine, and re-pointed when
   // a newer copy runs. `init` is re-run freely, so a machine already set up is left alone.
   let machine = null
@@ -222,6 +218,7 @@ function cmdInit(args) {
     for (const r of refused) log('  ! ' + r)
     if (skills) log('  skills: ' + skills.names.length + ' -> .claude/skills .agents/skills')
     for (const r of (skills && skills.refused) || []) log('  ! skipped ' + r)
+    if (preCommit && preCommit.ok && preCommit.changed) log('  pre-commit: warns about staged files outside every claim (GODKIT_STRICT=1 blocks)')
     for (const m of machine || []) log('  hooks ' + m.tool + ': ' + m.added + ' registered (' + m.file + ')')
     log('')
     if (greenfield) {
@@ -303,25 +300,20 @@ function cmdHooks(args) {
   const lib = require('../lib/install')
 
   if (action === 'status') {
-    for (const [tool, file] of lib.settingsTargets()) {
+    for (const [tool, file, kind] of lib.allTargets()) {
       if (!fs.existsSync(file)) {
-        log('  ' + tool.padEnd(8) + 'no settings file  (' + file + ')')
+        log('  ' + tool.padEnd(12) + 'no settings file  (' + file + ')')
         continue
       }
       let record
       try {
         record = lib.readSettings(file)
       } catch (err) {
-        log('  ' + tool.padEnd(8) + 'UNREADABLE — ' + err.message)
+        log('  ' + tool.padEnd(12) + 'UNREADABLE — ' + err.message)
         continue
       }
-      let found = 0
-      for (const groups of Object.values((record.settings.hooks) || {})) {
-        for (const group of groups || []) {
-          for (const handler of (group && group.hooks) || []) if (lib.isOurHandler(handler)) found++
-        }
-      }
-      log('  ' + tool.padEnd(8) + found + ' of ' + lib.HOOKS.length + ' godkit hooks registered  (' + file + ')')
+      const found = lib.ourHandlers(record.settings, kind).length
+      log('  ' + tool.padEnd(12) + found + ' of ' + lib.expectedCount(kind) + ' godkit hooks registered  (' + file + ')')
     }
     log('')
     log('`godkit hooks install` / `godkit hooks uninstall` to change that.')
@@ -334,8 +326,8 @@ function cmdHooks(args) {
   }
 
   for (const r of registerHooks(action, dryRun)) {
-    if (r.error) log('  ' + r.tool.padEnd(8) + 'skipped — ' + r.error)
-    else log('  ' + r.tool.padEnd(8) + (dryRun ? 'would ' : '') + action + ': ' +
+    if (r.error) log('  ' + r.tool.padEnd(12) + 'skipped — ' + r.error)
+    else log('  ' + r.tool.padEnd(12) + (dryRun ? 'would ' : '') + action + ': ' +
         r.added + ' registered, ' + r.removed + ' replaced  (' + r.file + ')')
   }
 }
@@ -350,7 +342,7 @@ function legacyTargets() {
 function registerHooks(action, dryRun) {
   const lib = require('../lib/install')
   const results = []
-  for (const [tool, file] of lib.settingsTargets()) {
+  for (const [tool, file, kind] of lib.allTargets()) {
     if (action === 'uninstall' && !fs.existsSync(file)) continue
     let record
     try {
@@ -359,7 +351,11 @@ function registerHooks(action, dryRun) {
       results.push({ tool, file, error: err.message })
       continue
     }
-    const result = lib.applyHooks(record.settings, { uninstall: action === 'uninstall', hooksDir: path.join(ROOT, 'hooks') })
+    const result = lib.applyHooks(record.settings, { uninstall: action === 'uninstall', hooksDir: path.join(ROOT, 'hooks'), kind })
+    if (result.skipped) {
+      results.push({ tool, file, error: result.skipped })
+      continue
+    }
     lib.writeSettings(file, result.settings, record, dryRun)
     results.push({ tool, file, added: result.added, removed: result.removed })
   }
@@ -374,6 +370,76 @@ function registerHooks(action, dryRun) {
     }
   }
   return results
+}
+
+// godkit as an MCP server. No argument: run it on stdio (what a host launches). install/uninstall:
+// register it with the hosts that are present, the same way `hooks install` does.
+function cmdMcp(args) {
+  const action = args.find((a) => !a.startsWith('-'))
+  if (!action) return require('../lib/mcp').serve(process.stdin, process.stdout)
+  if (action !== 'install' && action !== 'uninstall') {
+    log('godkit mcp [install|uninstall] [--dry-run]   (no argument: run the server on stdio)')
+    return
+  }
+  const dryRun = args.includes('--dry-run')
+  const results = require('../lib/hostmcp').registerMcp(action, dryRun, path.join(ROOT, 'bin', 'godkit.js'))
+  for (const r of results) {
+    if (r.error) log('  ' + r.tool.padEnd(12) + 'skipped — ' + r.error)
+    else log('  ' + r.tool.padEnd(12) + (dryRun ? 'would ' : '') + action + (r.changed ? '' : ': already so') + '  (' + r.file + ')')
+  }
+}
+
+// What the git pre-commit hook runs: staged files that no live claim covers.
+function cmdCheckStaged() {
+  try {
+    checkStaged()
+  } catch (err) {
+    // A commit check that crashes must not stop a commit; only a strict finding does.
+    process.stderr.write('godkit check-staged: ' + (err && err.message) + ' (ignored)\n')
+  }
+}
+
+function checkStaged() {
+  const { execFileSync } = require('child_process')
+  const root = projectRoot(process.cwd())
+  const p = paths(root)
+  if (!fs.existsSync(p.board)) return
+  let staged
+  try {
+    staged = execFileSync('git', ['diff', '--cached', '--name-only', '-z'], { cwd: process.cwd(), encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] })
+  } catch {
+    return
+  }
+  const board = require('../lib/board')
+  const text = fs.readFileSync(p.board, 'utf8')
+  const strict = process.env.GODKIT_STRICT === '1' || require('../lib/paths').git(['config', '--get', 'godkit.strict'], process.cwd()) === 'true'
+  // No live claim anywhere means nobody is working under the protocol right now; say nothing
+  // unless the repo asked to be strict.
+  if (!strict && !board.readClaims(text).some((r) => board.isOpen(r))) return
+  const loose = board.unclaimed(text, staged.split('\0').filter(Boolean))
+  if (!loose.length) return
+  process.stderr.write(
+    'godkit: ' + loose.length + ' staged file' + (loose.length === 1 ? ' is' : 's are') + ' outside every live claim on .agent/BOARD.md:\n  ' +
+      loose.slice(0, 10).join('\n  ') + (loose.length > 10 ? '\n  ... and ' + (loose.length - 10) + ' more' : '') +
+      '\nClaim them (godkit_claim, or a row on the board) before committing' + (strict ? '.\n' : '. Set GODKIT_STRICT=1 to make this block.\n'),
+  )
+  if (strict) process.exitCode = 1
+}
+
+function cmdGitHook(args) {
+  const action = args.find((a) => !a.startsWith('-')) || 'status'
+  if (!['install', 'uninstall', 'status'].includes(action)) {
+    log('godkit githook [install|uninstall|status]')
+    return
+  }
+  const r = require('../lib/hostmcp').githook(action, process.cwd(), path.join(ROOT, 'bin', 'godkit.js'), args.includes('--dry-run'))
+  if (!r.ok) {
+    log('  pre-commit  skipped — ' + r.reason)
+    process.exitCode = 1
+    return
+  }
+  const state = action === 'status' ? (r.installed ? 'installed' : r.foreign ? 'someone else\'s hook is there' : 'not installed') : action + (r.changed ? '' : ': already so')
+  log('  pre-commit  ' + state + '  (' + r.file + ')')
 }
 
 // The deterministic half of building the map: walk, categorize, resolve imports, group into
@@ -927,7 +993,9 @@ const COMMANDS = [
     ['refactor [--all]', 'which code files churn and get blamed most'],
   ]],
   ['MACHINE', null, [
-    ['hooks [status|install|uninstall]', 'hook registrations for claude and codex'],
+    ['hooks [status|install|uninstall]', 'hook registrations for claude, codex, cursor, antigravity'],
+    ['mcp [install|uninstall]', 'godkit as an MCP server (no argument: run it on stdio)'],
+    ['githook [install|uninstall]', 'pre-commit: files outside every claim (GODKIT_STRICT=1 blocks)'],
     ['install [tool...]', 'skills into ~/ for every project (init already covers this one)'],
     ['uninstall [tool|--project]', 'remove skills godkit placed; never touches .agent/'],
     ['--version', 'the installed version'],
@@ -950,7 +1018,8 @@ function help(stream) {
 // init, install and hooks write paths meant to outlive this process. Run from npx, this process
 // lives in a cache npm prunes at will — so those three re-run from the stable copy instead.
 function fromStableHome(cmd, args) {
-  if (!['init', 'install', 'hooks'].includes(cmd)) return false
+  if (!['init', 'install', 'hooks', 'mcp'].includes(cmd)) return false
+  if (cmd === 'mcp' && !args.includes('install')) return false // serving must not re-exec
   const stable = require('../lib/install').stableRoot(version())
   if (path.resolve(stable) === ROOT) return false
   const { execFileSync } = require('child_process')
@@ -986,6 +1055,12 @@ function main() {
       return cmdHooks(args)
     case 'recall':
       return cmdRecall(args)
+    case 'mcp':
+      return cmdMcp(args)
+    case 'githook':
+      return cmdGitHook(args)
+    case 'check-staged':
+      return cmdCheckStaged()
     case 'verify':
       return cmdVerify(args)
     case 'doctor':

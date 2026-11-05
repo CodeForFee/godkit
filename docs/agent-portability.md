@@ -11,7 +11,7 @@ Godkit targets four tools. They agree on almost nothing, so the package keeps **
 | **Project-local skills** | `<project>/.claude/skills/<name>/` | not supported | `<project>/.agents/skills/<name>/` — *unverified against a live Codex* | not supported |
 | **Always-on rules** | `CLAUDE.md` | `.cursor/rules/godkit.mdc` | `AGENTS.md` | `.agents/rules/godkit.md` |
 | **Rules frontmatter** | none | `alwaysApply: true` | none | none |
-| **Hooks** | yes | no | yes, same JSON | no |
+| **Hooks** | yes | yes, via `hooks/adapt.js` (subset) | yes, same JSON | yes, via `hooks/adapt.js` (subset) |
 | **Plugin manifest** | `.claude-plugin/plugin.json` | — | `.codex-plugin/plugin.json` | `gemini-extension.json` |
 | **Invocation** | `/godkit` | ask in prose | `$godkit` | `/godkit` |
 | **Slash commands** | auto-discovered from `commands/` | — | auto-discovered from `commands/` | auto-discovered from `commands/` |
@@ -76,9 +76,20 @@ and not the other.
 group registered for an event, so `brief.js` and `lazy-activate.js` are independent groups in
 `hooks/godkit-hooks.json`, not one script doing both jobs.
 
-**Cursor and Antigravity have no hook support at all.** Their enforcement is the always-on rule file — which is exactly why every rule copy carries the full clock-in and clock-out checklists rather than a pointer to them. A tool that cannot be made to do something must at least be told.
+**Cursor and Antigravity have hooks, in their own dialects.** Cursor reads `~/.cursor/hooks.json` (`{version, hooks: {event: [{command, timeout}]}}`, camelCase events, answers `additional_context` / `followup_message`). Antigravity reads `~/.gemini/config/hooks.json` (named entries per hook, PascalCase events, answers `injectSteps` / `decision`). `hooks/adapt.js <host> <event>` sits between: it turns the host's input into the Claude shape our scripts read, runs the `HOOKS` rows for that event, and turns the output back. The registered events are the ones that need no permission verdict:
 
-That asymmetry is worth stating plainly: on Claude Code the protocol is *enforced*; everywhere else it is *instructed*. The shared `.agent/` state is what makes the difference survivable — a Cursor session that forgets to log leaves a gap the next agent can see in the board.
+| Host | Events | Not registered |
+|---|---|---|
+| Cursor | `sessionStart`, `postToolUse`, `beforeShellExecution` (guard only), `stop`, `sessionEnd` | `preToolUse`, `subagentStart` (cannot inject context), compaction (`preCompact` only observes) |
+| Antigravity | `SessionStart`, `PreToolUse`, `PostToolUse`, `Stop` | `PreInvocation`, `PostInvocation` |
+
+**PreToolUse is where the two hosts differ.** Both require a permission verdict from it. Antigravity documents `allow` as "delegating to the next hook or default policy", so a neutral answer is safe and it gets the whole set: the guard (deny only, otherwise `allow`) and `work-track`'s before-snapshot, which is what lets a change made only by a shell command count as work. Cursor documents no neutral answer (empty output is ambiguous, and what `allow` does to its approval prompt is not stated), so godkit registers only `beforeShellExecution`, with Cursor's matcher set to a regex that every command the guard can deny matches (`SHELL_TRIGGER` in `lib/guard.js`, asserted by a test). Ordinary commands never reach the hook. A command that matches and passes is answered `ask`, which can only add a prompt. On Cursor, then, the before-snapshot is not taken and a shell-only change goes unseen; direct edits (Cursor `Write`/`Delete`) count.
+
+The guard is the same `hooks/guard.js` for every host (Claude and Codex register it from `HOOKS`; Antigravity and Cursor through `hooks/adapt.js`). Identity-free rules (`lib/guard.js`) are denied everywhere. The claim rule needs to know who is editing: a claim tagged with a session (`claude-opus-5 (9fe96f63)`, made through the `godkit_claim` tool) blocks every other session; an untagged claim, written by hand, only earns a one-time note, because a false deny on an agent's own files costs more than the collision.
+
+Neither host tells a hook why a session started, so `SessionStart` always matches as `startup`, and neither exposes compaction, so there is no re-injection after one. Antigravity's tool names beyond the two its docs use are unverified; unknown names pass through unmapped.
+
+A tool with no hooks at all still has its always-on rule file, which is why every rule copy carries the full clock-in and clock-out checklists. On Claude Code and Codex the protocol is *enforced*; on the reduced hosts it is *enforced for the parts above* and *instructed* for the rest. The shared `.agent/` state is what makes the difference survivable — a session that forgets to log leaves a gap the next agent can see in the board.
 
 ## Install paths
 

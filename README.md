@@ -151,12 +151,27 @@ Everything outside those markers is yours and is never touched, so an existing `
 |:--|:--|:--|:--:|
 | **Claude Code** | `.claude/skills/` | `CLAUDE.md` | ✅ `~/.claude/settings.json` |
 | **Codex** | `.agents/skills/` | `AGENTS.md` | ✅ `~/.codex/hooks.json` |
-| **Cursor** | reads `.agents/skills/<name>/SKILL.md` on demand | `.cursor/rules/godkit.mdc` | — |
-| **Antigravity** | reads `.agents/skills/<name>/SKILL.md` on demand | `AGENTS.md`, `.agents/rules/godkit.md` | — |
+| **Cursor** | reads `.agents/skills/<name>/SKILL.md` on demand | `.cursor/rules/godkit.mdc` | ✅ `~/.cursor/hooks.json` (subset) |
+| **Antigravity** | reads `.agents/skills/<name>/SKILL.md` on demand | `AGENTS.md`, `.agents/rules/godkit.md` | ✅ `~/.gemini/config/hooks.json` (subset) |
 
-Where a tool has no hook support, the always-on rule file *is* the enforcement. That is why they all say the same thing. On Claude Code the protocol is **enforced**; everywhere else it is **instructed**, and the shared `.agent/` state is what makes that difference survivable.
+All four tools have hooks. Claude Code and Codex get the full set; Cursor and Antigravity get a subset through `hooks/adapt.js`: the session brief, edit tracking and the clock-out check. Antigravity also gets `PreToolUse` (the guard, and the before-snapshot that sees a change made only by a shell command). Cursor gets the guard on `beforeShellExecution` only, filtered to dangerous-looking commands, so a change made only by a shell command is not tracked there. Where a tool has no hook at all, the always-on rule file *is* the enforcement, which is why every rule file says the same thing. The shared `.agent/` state is what makes the *enforced* versus *instructed* gap survivable.
 
 [`docs/agent-portability.md`](docs/agent-portability.md) has the per-tool detail: exact paths, what each host reads, and what it ignores.
+
+### MCP server and pre-commit
+
+```bash
+godkit mcp install      # register with Claude Code, Codex, Cursor, Antigravity (those that are there)
+godkit githook install  # pre-commit in this repo (`godkit init` does it too, only if none exists)
+```
+
+All four tools speak MCP, so `godkit mcp` gives them the same protocol as tools with checked input instead of a Markdown table to hand-edit: `godkit_brief`, `godkit_claim`, `godkit_release`, `godkit_log`, `godkit_recall`, `godkit_map_query`, `godkit_verify`. The board, map and thread are resources, the skills are prompts. It works where hooks do not run (Cursor's cloud agents). `godkit_claim` refuses a scope that overlaps a live claim by another agent and tags the claim with the caller's session, which is what lets the guard hook tell whose files are whose. A claim older than 24 hours is stale and blocks nobody.
+
+The pre-commit hook lists staged files that no live claim covers. It only warns; `GODKIT_STRICT=1` or `git config godkit.strict true` makes it block. It says nothing while nobody holds a claim, fails open if godkit or node is gone, and never replaces a pre-commit hook that is not its own. In CI, the same protocol check is one line:
+
+```yaml
+- run: npx -y @codeforfee/godkit verify   # non-zero when a task or log says done without evidence
+```
 
 <details>
 <summary><b>Hooks — what each one does, and why none of them can break your session</b></summary>
@@ -170,13 +185,16 @@ godkit hooks uninstall
 godkit hooks install --dry-run
 ```
 
-(`$CLAUDE_CONFIG_DIR` and `$CODEX_HOME` are honoured if set.)
+(`$CLAUDE_CONFIG_DIR`, `$CODEX_HOME`, `$CURSOR_HOME` and `$GEMINI_HOME` are honoured if set. Cursor and Antigravity are registered only when `~/.cursor` / `~/.gemini/antigravity` exist or you point those variables at a folder; their hook files are merged one handler at a time, so another tool's hooks in the same file are left alone.)
+
+Cursor and Antigravity speak their own hook dialects. `hooks/adapt.js` translates their input into the shape the scripts below read, runs the scripts for that event, and translates the answer back (`additional_context` for Cursor, `injectSteps` for Antigravity; `followup_message` or `decision: "continue"` to ask for the log, at most three times in a row). Cursor events: `sessionStart`, `postToolUse`, `stop`, `sessionEnd`. Antigravity events: `SessionStart`, `PostToolUse`, `Stop`.
 
 | Hook | Event | Does |
 |:--|:--|:--|
 | `brief.js` | `SessionStart` | injects the board, map freshness, newest log entries, and this project's skills |
 | `lazy-activate.js` | `SessionStart` | resolves the active `godkit-lazy` mode and injects its ruleset |
 | `lazy-subagent.js` | `SubagentStart` | injects the same ruleset into spawned subagents |
+| `guard.js` | `PreToolUse` | denies force push, `reset --hard`, `clean -f`, `rm -r` on a root or home folder, a download piped into a shell, writes to `.git/` `.env` credentials and shell startup files, and edits inside a live claim held by another session. `GODKIT_GUARD=off` turns it off |
 | `lazy-mode-tracker.js` | `UserPromptSubmit` | tracks `/godkit-lazy` mode switches for the session |
 | `work-track.js` | `PreToolUse`, `PostToolUse`, `SessionEnd` | records whether *this* session changed project files |
 | `clockout.js` | `Stop` | blocks the turn if this session changed files and wrote no log |

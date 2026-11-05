@@ -385,7 +385,7 @@ test('the hooks subcommand reports without changing anything', () => {
   const out = execFileSync(process.execPath, [CLI, 'hooks', 'status'], {
     cwd: dir,
     encoding: 'utf8',
-    env: { ...process.env, CLAUDE_CONFIG_DIR: home, CODEX_HOME: home },
+    env: { ...process.env, CLAUDE_CONFIG_DIR: home, CODEX_HOME: home, CURSOR_HOME: path.join(home, 'cursor'), GEMINI_HOME: path.join(home, 'gemini') },
   })
   assert.match(out, /no settings file/)
 })
@@ -394,13 +394,13 @@ test('hooks install then uninstall round-trips in an isolated settings file', ()
   const dir = repo()
   const home = fs.realpathSync.native(fs.mkdtempSync(path.join(os.tmpdir(), 'godkit-home-')))
   trash.push(home)
-  const env = { ...process.env, CLAUDE_CONFIG_DIR: home, CODEX_HOME: path.join(home, 'codex') }
+  const env = { ...process.env, CLAUDE_CONFIG_DIR: home, CODEX_HOME: path.join(home, 'codex'), CURSOR_HOME: path.join(home, 'cursor'), GEMINI_HOME: path.join(home, 'gemini') }
   const run = (...args) =>
     execFileSync(process.execPath, [CLI, 'hooks', ...args], { cwd: dir, encoding: 'utf8', env })
 
   run('install')
   const file = path.join(home, 'settings.json')
-  assert.match(run('status'), /10 of 10 godkit hooks registered/)
+  assert.match(run('status'), /11 of 11 godkit hooks registered/)
 
   run('uninstall')
   assert.equal(JSON.stringify(JSON.parse(fs.readFileSync(file, 'utf8')).hooks || {}), '{}')
@@ -471,6 +471,8 @@ test('run from an npx cache, init re-runs from a stable copy and points hooks th
     GODKIT_HOME: path.join(home, 'godkit'),
     CLAUDE_CONFIG_DIR: path.join(home, 'claude'),
     CODEX_HOME: path.join(home, 'codex'),
+    CURSOR_HOME: path.join(home, 'cursor'),
+    GEMINI_HOME: path.join(home, 'gemini'),
   }
   execFileSync(process.execPath, [CLI, 'init'], { cwd: dir, encoding: 'utf8', env })
   const version = require('../package.json').version

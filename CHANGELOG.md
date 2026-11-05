@@ -2,6 +2,24 @@
 
 All notable changes to godkit. Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow [semver](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- Hooks for **Cursor** (`~/.cursor/hooks.json`) and **Antigravity** (`~/.gemini/config/hooks.json`) through `hooks/adapt.js`, which translates each host's hook dialect to the one the scripts read and back. Subset: session brief, edit tracking, clock-out check. No `PreToolUse` yet, so shell-only changes are not tracked on these hosts.
+- `godkit hooks install|status|uninstall` and `uninstall` cover both; they are registered only when the host is installed or `$CURSOR_HOME` / `$GEMINI_HOME` points at a folder, merged one handler at a time, and a `.bak` is kept.
+- The clock-out request is made at most three times in a row on these hosts, whatever the host's own loop limit.
+
+- **Guard** (`hooks/guard.js`, `lib/guard.js`): denies force push, `reset --hard`, `clean -f`, `rm -r` on a root/home/parent path, a download piped into a shell, writes to `.git/`, `.env`, credentials and shell startup files, and edits inside a live claim tagged with another session. Registered for Claude Code and Codex (`PreToolUse`), Antigravity (`PreToolUse`) and Cursor (`beforeShellExecution`, filtered by command text; a match that passes is answered `ask`). `GODKIT_GUARD=off` disables it.
+- **MCP server** (`godkit mcp`): `godkit_brief`, `godkit_claim`, `godkit_release`, `godkit_log`, `godkit_recall`, `godkit_map_query`, `godkit_verify`; board, map, thread as resources; skills as prompts. `godkit mcp install` registers it with Claude Code, Codex, Cursor and Antigravity.
+- `lib/board.js`: the claims table as code. A claim is refused when a live claim by another agent overlaps, and carries the caller's session tag. Claims older than 24h are stale.
+- **Pre-commit** (`godkit githook`, also run by `init`): warns about staged files outside every live claim; `GODKIT_STRICT=1` blocks. Fails open; never replaces another hook.
+- Antigravity now gets `PreToolUse`, so a shell-only change counts as work there.
+
+### Fixed
+
+- Docs said Cursor and Antigravity have no hooks; both do.
+
 ## [1.1.0] — 2026-09-27
 
 Install once, then just prompt: the agent picks its own skills, and every session costs less.
