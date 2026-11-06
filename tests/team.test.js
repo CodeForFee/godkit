@@ -65,6 +65,10 @@ test('verdicts are read from the member\'s first lines; anything unclear does no
   assert.equal(team.verdict(r('ran the tests\nlooks fine'), 'PASS', 'FAIL'), null)
   assert.equal(team.verdict(r('CHANGES\nCritical a.js:3'), 'APPROVE', 'CHANGES'), false)
   assert.equal(team.verdict(r('APPROVE — clean'), 'APPROVE', 'CHANGES'), true)
+  // From a real Codex tester: the verdict is PASS; "0 fail" below it is output, not a verdict.
+  assert.equal(team.verdict(r('PASS\n\n`node --test test/math.test.js test/text.test.js` → 3 pass, 0 fail.'), 'PASS', 'FAIL'), true)
+  assert.equal(team.verdict(r('**FAIL** — 1 of 3 tests pass'), 'PASS', 'FAIL'), false)
+  assert.equal(team.verdict(r('All 3 pass, nothing to FAIL here'), 'PASS', 'FAIL'), null, 'a verdict word in the middle of a sentence is not the verdict')
 })
 
 // --- the team file and the skills -------------------------------------------------------------------
@@ -179,7 +183,7 @@ test('a whole team: plan, two implementers at the same time, a failed test sent 
   const events = []
   const r = team.run({ goal: 'add one.txt and two.txt', cwd: d, host: 'fake', hosts: require(HOSTS), hostsModule: HOSTS, onEvent: (l) => events.push(l) })
 
-  assert.equal(r.ok, true, r.text + '\n' + events.join('\n'))
+  assert.equal(r.ok, true, events.join('\n') + '\n\n' + r.steps.map((s) => '--- ' + s.role + ' ' + s.label + '\n' + s.text).join('\n'))
   assert.equal(r.rounds, 1, 'the first test failed (no fixed.txt), one fix round made it pass')
   assert.deepEqual(r.steps.map((s) => s.role + ':' + s.label), ['plan:goal', 'code:S1', 'code:S2', 'test:round 0', 'code:fix-1', 'test:round 1', 'review:round 1'])
 

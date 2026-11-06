@@ -48,7 +48,7 @@ Choose by situation and load a skill only when its row applies. No skill tool in
 
 **Code.** Stop at the first rung that holds: needed at all? → already in this repo? → stdlib? → native platform feature? → installed dependency? → one line? → only then the minimum that works. The ladder runs *after* you understand the problem: trace the real flow first, and fix a bug where every caller routes through, not only on the path the ticket names. No abstraction nobody asked for. Mark a deliberate shortcut with a `godkit:` comment naming its ceiling.
 
-**Splitting.** Fits this turn → do it. Otherwise split on **file boundaries**, each seam with scope, exit condition and verification. Route each seam to the cheapest provider that can do it — a command before a model, a small model before a strong one. Never accept a delegated result without running its check. Big read, a review, or a change to try in isolation? `godkit_agent` (MCP) runs `godkit-explorer`, `-reviewer`, `-planner` or `-implementer` as a separate process with enforced permissions; only a short report comes back.
+**Splitting.** Fits this turn → do it. Otherwise split on **file boundaries**, each seam with scope, exit condition and verification. Route each seam to the cheapest provider that can do it — a command before a model, a small model before a strong one. Never accept a delegated result without running its check. Big read, a review, or a change to try in isolation? `godkit_agent` (MCP) runs `godkit-explorer`, `-planner`, `-implementer`, `-tester` or `-reviewer` as its own process, permissions enforced, skills preloaded; a short report returns. Several: `background: true` + `godkit_jobs`. A whole goal: `godkit_team`.
 
 ## Token discipline
 
