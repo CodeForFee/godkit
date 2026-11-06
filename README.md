@@ -29,7 +29,7 @@ npx @codeforfee/godkit init
 
 <br>
 
-**[Quick start](#quick-start)** · **[Why](#why)** · **[How it works](#how-it-works)** · **[Agents](#agents-and-surfaces)** · **[Safety](#safety-guard-plan-gate-pre-commit-checkpoints)** · **[MCP](#mcp-server)** · **[Subagents](#subagents-and-delegation)** · **[CLI](#cli-reference)** · **[Troubleshooting](#troubleshooting)**
+**[Quick start](#quick-start)** · **[Why](#why)** · **[How it works](#how-it-works)** · **[Agents](#agents-and-surfaces)** · **[Safety](#safety-guard-plan-gate-pre-commit-checkpoints)** · **[MCP](#mcp-server)** · **[Subagents](#subagents-and-delegation)** · **[Teams](#agent-teams)** · **[CLI](#cli-reference)** · **[Troubleshooting](#troubleshooting)**
 
 </div>
 
@@ -188,7 +188,7 @@ You still run `godkit init` per project: the plugin carries the skills and hooks
 | **Hooks** | full set · 12 | full set · 12 | adapted · 5 | adapted · 4 |
 | **Hook file** | `~/.claude/settings.json` | `~/.codex/hooks.json` | `~/.cursor/hooks.json` | `~/.gemini/config/hooks.json` |
 | **Guard** | every tool | every tool | shell commands | every tool |
-| **MCP** | 9 tools | 9 tools | 9 tools | 9 tools |
+| **MCP** | 11 tools | 11 tools | 11 tools | 11 tools |
 | **Subagent files** | `.claude/agents/` | `.codex/agents/` | via `godkit agent run` | via `godkit agent run` |
 
 Claude Code and Codex read the same hook JSON. Cursor and Antigravity speak their own hook dialects;
@@ -329,8 +329,10 @@ godkit mcp                          # run the server on stdio
 | `godkit_recall` | search all history for a file or words |
 | `godkit_map_query` | look up the project map |
 | `godkit_verify` | check that every "done" has evidence |
-| `godkit_agent` | run a named subagent with its permissions enforced |
+| `godkit_agent` | run a named subagent with its permissions enforced; `background` to start several at once |
 | `godkit_delegate` | hand a task to another agent CLI |
+| `godkit_team` | run a team of agents on a goal, in the background |
+| `godkit_jobs` | status and results of background members and teams |
 
 The board, map and thread are also MCP resources, and the skills are MCP prompts. The server is
 written against the standard library, like the rest of godkit.
@@ -351,14 +353,14 @@ godkit agent model codex gpt-5.6-terra   # the model godkit's Codex children use
 
 This is Claude Code's subagent harness for agents whose own is thinner, Codex above all. The files
 are the same markdown files Claude reads (`.claude/agents/`, `.agent/agents/`, `~/.claude/agents/`),
-plus four godkit ships: `godkit-explorer`, `godkit-planner`, `godkit-reviewer`,
-`godkit-implementer`. Running one starts a **separate agent process** (`codex exec` or `claude -p`)
+plus five godkit ships: `godkit-explorer`, `godkit-planner`, `godkit-implementer`,
+`godkit-tester`, `godkit-reviewer`. Running one starts a **separate agent process** (`codex exec` or `claude -p`)
 and enforces what the file says:
 
 - `tools` and `permissionMode` decide the sandbox: read-only unless the file lists `Edit` or `Write`;
 - `isolation: worktree` runs it in a git worktree on its own branch, removed if untouched, otherwise
   committed for you to `git merge`;
-- `skills` are preloaded into its prompt, and `memory` reads the same `agent-memory` folders Claude uses;
+- `skills` are preloaded into its prompt in full, and `memory` reads the same `agent-memory` folders Claude uses;
 - only a 6 KB report comes back, with any fake system text in it defused;
 - nesting stops at 3 deep (`GODKIT_AGENT_MAX_DEPTH`) and 20 at once (`GODKIT_AGENT_MAX_CONCURRENT`).
 
@@ -383,6 +385,50 @@ Read-only is enforced by the target CLI, not by asking: `claude` with `dontAsk` 
 `codex --sandbox read-only`, `gemini --approval-mode plan`, `agy --mode plan`. The task travels on
 stdin, the answer is capped at 6 KB, and a delegated agent cannot delegate again. The model comes
 from `GODKIT_<HOST>_MODEL` (for example `GODKIT_CODEX_MODEL`) or from `godkit agent model`.
+
+## Agent teams
+
+One subagent at a time is not a team. `godkit team` is: a leader that runs a graph of roles, with
+the members of a wave working **at the same time**, on any host. Codex, Antigravity and Cursor get
+the same team Claude Code does, because every member is a godkit subagent process.
+
+```bash
+godkit team                                  # the team graph and who fills each role
+godkit team run "add rate limiting to the API"
+godkit team run "..." --background           # returns a job id; godkit agent wait <id>
+```
+
+```
+goal ─► plan ─► wave 1: code S1 · code S2 · code S3 (in parallel) ─► wave 2 ... ─► test ─► review ─► branch
+                                       ▲                                              │
+                                       └───────── FAIL or CHANGES, at most `rounds` ──┘
+```
+
+| Role | Agent | Skills it preloads |
+|:--|:--|:--|
+| plan | `godkit-planner` | godkit-plan, godkit-map, godkit-lazy, godkit-doubt, godkit-handoff, godkit-git |
+| code | `godkit-implementer` | godkit-execute, godkit-lazy, godkit-test, godkit-output-enforcement, godkit-git, godkit-handoff |
+| test | `godkit-tester` | godkit-test, godkit-execute, godkit-lazy, godkit-output-enforcement |
+| review | `godkit-reviewer` | godkit-review, godkit-test, godkit-doubt, godkit-refactor, godkit-lazy |
+
+- **The plan** comes back as seams, each with the files it owns. Seams whose files do not overlap
+  form a wave and run in parallel (up to `parallel`, default 4), each implementer in its own git
+  worktree; a seam that shares a file, or names another in `after`, waits for a later wave.
+- **Merging** happens as members finish, into a team branch `godkit/team-<id>`. A merge conflict is
+  reported and that member's branch kept. Nothing lands in your branch: you review the team branch
+  and `git merge` it.
+- **Test, then review.** A FAIL or CHANGES goes back to an implementer with the report, at most
+  `rounds` times (default 2). The run ends with PASS and APPROVE, or stops and says why.
+- **Skills, automatically.** Each member preloads its role's skills in full. A goal about UI adds
+  `godkit-frontend` to plan, code and review, and every project skill `godkit evolve` rates
+  *trusted* is added to every member.
+- **Your own team:** copy [`teams/default.md`](teams/default.md) to `.agent/team.md` and change the
+  agents per role (any agent `godkit agent list` shows), add `<role>-skills`, `parallel` or `rounds`.
+
+From an agent, over MCP: `godkit_team` starts a team and returns a job id; `godkit_jobs` collects it.
+A leader that wants to run members itself starts them with `godkit_agent` and `background: true`,
+several in a row, then waits for all of them with `godkit_jobs`. Background jobs are detached
+processes with a status file in `~/.godkit/jobs/`, so the MCP server never blocks on a member.
 
 ### Eval
 
@@ -586,7 +632,9 @@ narrows which ones.
 | `godkit githook [install\|uninstall]` | the pre-commit hook |
 | `godkit autoinit [on\|off]` | set a project up at its first agent session |
 | `godkit agents [sync\|clean\|status]` | subagent files for Claude and Codex |
-| `godkit agent [list \| run <name> "<task>" \| model]` | run a named subagent as its own process |
+| `godkit team [show \| run "<goal>"] [--background]` | a team of agents: plan, code in parallel, test, review |
+| `godkit agent [list \| run <name> "<task>" \| model] [--background]` | run a named subagent as its own process |
+| `godkit agent jobs` · `godkit agent wait <id...>` | members and teams started in the background |
 | `godkit delegate <host> "<task>" [--write]` | hand a task to another agent CLI, read-only by default |
 | `godkit rewind [session/n] [--yes]` | go back to a checkpoint taken before an edit |
 | `godkit eval --host a,b [--godkit]` | run small tasks through agent CLIs and compare |

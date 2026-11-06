@@ -4,6 +4,7 @@ description: Read-only search of the codebase. Finds where something lives, how 
 tools: Read, Grep, Glob, Bash
 permissionMode: default
 effort: low
+skills: godkit-map, godkit-lazy
 ---
 You answer one question about this codebase, using only what you read in it.
 

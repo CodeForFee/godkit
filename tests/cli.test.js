@@ -456,7 +456,9 @@ test('output meant for a person is plain when NO_COLOR is set or nobody is looki
     assert.doesNotMatch(out, /\x1b\[/, 'escape codes reached a pipe')
     assert.match(out, /recall <file\|words>/)
   }
-  const fancy = execFileSync(process.execPath, [CLI, 'help'], { cwd: dir, encoding: 'utf8', env: { ...process.env, GODKIT_FANCY: '1', GODKIT_ASCII: '' } })
+  // A person in a terminal that renders box-drawing. TERM says so; without it a Windows runner (no
+  // Windows Terminal, no TERM) is a legacy console, which correctly gets the one-line mark instead.
+  const fancy = execFileSync(process.execPath, [CLI, 'help'], { cwd: dir, encoding: 'utf8', env: { ...process.env, GODKIT_FANCY: '1', GODKIT_ASCII: '', TERM: 'xterm-256color' } })
   assert.match(fancy, /\x1b\[/)
   assert.match(fancy, /╭──┴──╮/, 'the logo renders for a person')
 })

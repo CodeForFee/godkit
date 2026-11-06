@@ -4,37 +4,7 @@ All notable changes to godkit. Format follows [Keep a Changelog](https://keepach
 
 ## [Unreleased]
 
-### Added
-
-- Hooks for **Cursor** (`~/.cursor/hooks.json`) and **Antigravity** (`~/.gemini/config/hooks.json`) through `hooks/adapt.js`, which translates each host's hook dialect to the one the scripts read and back. Subset: session brief, edit tracking, clock-out check. No `PreToolUse` yet, so shell-only changes are not tracked on these hosts.
-- `godkit hooks install|status|uninstall` and `uninstall` cover both; they are registered only when the host is installed or `$CURSOR_HOME` / `$GEMINI_HOME` points at a folder, merged one handler at a time, and a `.bak` is kept.
-- The clock-out request is made at most three times in a row on these hosts, whatever the host's own loop limit.
-
-- **Guard** (`hooks/guard.js`, `lib/guard.js`): denies force push, `reset --hard`, `clean -f`, `rm -r` on a root/home/parent path, a download piped into a shell, writes to `.git/`, `.env`, credentials and shell startup files, and edits inside a live claim tagged with another session. Registered for Claude Code and Codex (`PreToolUse`), Antigravity (`PreToolUse`) and Cursor (`beforeShellExecution`, filtered by command text; a match that passes is answered `ask`). `GODKIT_GUARD=off` disables it.
-- **MCP server** (`godkit mcp`): `godkit_brief`, `godkit_claim`, `godkit_release`, `godkit_log`, `godkit_recall`, `godkit_map_query`, `godkit_verify`; board, map, thread as resources; skills as prompts. `godkit mcp install` registers it with Claude Code, Codex, Cursor and Antigravity.
-- `lib/board.js`: the claims table as code. A claim is refused when a live claim by another agent overlaps, and carries the caller's session tag. Claims older than 24h are stale.
-- **Pre-commit** (`godkit githook`, also run by `init`): warns about staged files outside every live claim; `GODKIT_STRICT=1` blocks. Fails open; never replaces another hook.
-- Antigravity now gets `PreToolUse`, so a shell-only change counts as work there.
-- **Plan gate** in the guard: an agent that claimed through the MCP tool and owns a task still in phase `plan` cannot edit that task's scope until it moves to `execute`.
-- **Named subagents**: `lib/subagent.js`, `godkit agent list|run|model`, MCP `godkit_agent`, and four shipped agents (explorer, planner, reviewer: read-only; implementer: isolated worktree). A separate `codex exec` or `claude -p` per run, permissions enforced by that CLI, skills preloaded, memory, report defused, nesting and concurrency limits. `delegate` takes the model, effort and tools and reads Codex's own last-message file.
-- `godkit mcp install --codex-approve` (opt-in, off by default): lets godkit's own MCP tools run in Codex without a prompt (`default_tools_approval_mode = "approve"` for the godkit server only; `godkit_delegate` keeps asking). Without it Codex asks before every MCP call and refuses when nobody is there. Also sets `tool_timeout_sec = 900` so a subagent run is not cut off.
-- `godkit agents` (and `init`): subagent files for Claude (`.claude/agents`) and Codex (`.codex/agents`) from `agents/*.md`; never replaces a file that is not marked generated.
-- `godkit delegate` / MCP `godkit_delegate`: hand a task to `claude`, `codex`, `gemini` or `agy` headless, read-only unless `--write`, enforced by that CLI; no nested delegation.
-- **Checkpoints**: `hooks/checkpoint.js` saves the working tree as a hidden git ref before edits (index, branch and tree untouched); `godkit rewind` previews and restores, with a safety checkpoint first.
-- `godkit eval`: small tasks through each agent CLI in a fresh repo, graded by a command; `--godkit` compares with and without the protocol.
-- `init` also registers the MCP server (`--no-mcp` to skip), syncs subagent files (`--no-agents`) and installs the pre-commit (`--no-githook`). `godkit hooks status` reminds that Codex runs a hook only after `/hooks` approval.
-
-- **Last seen** in `godkit doctor`: every SessionStart hook records which agent (from its transcript folder) and, for Claude Code, which surface (cli, vscode, desktop) ran it, so "automatic" can be checked per app instead of assumed from config files.
-- `godkit autoinit on|off`: set a git repository with code up (rules, skills, `.agent/`, agent files, pre-commit) at its first agent session. Off by default.
-- `hooks status` now says a Codex hook needs approval after every change.
-
-### Fixed
-
-- Hook commands for Cursor and Antigravity no longer contain double quotes. On Windows Antigravity turned them into literal ones, so every godkit hook failed there with "Cannot find module". Paths with whitespace use their 8.3 short form.
-- `delegate`/`eval` treat `agy`'s `AGY_ERROR` (API 503) and `jetski: no output produced` (headless permission denied) as failures, and `agy` accepts `--model`. Before, both counted as a success with no output.
-- Docs said Cursor and Antigravity have no hooks; both do.
-
-## [1.1.0] — 2026-09-27
+## [1.1.0] — 2026-11-06
 
 Install once, then just prompt: the agent picks its own skills, and every session costs less.
 
@@ -61,6 +31,41 @@ Install once, then just prompt: the agent picks its own skills, and every sessio
 - `godkit-lazy` no longer re-injects its 6KB skill every session and subagent; its ladders live in the rules block, and the hook adds one line.
 - Skill descriptions, loaded every session, are 30% shorter with every trigger phrase kept. `godkit` and `godkit-handoff` move sprint mode, provider routing, file formats and the memory guide into `references/`, loaded on demand; a test fails if any rule line from before the move is missing.
 - The rules add token discipline for input and output: filter long output, delegate by pointer, answer first, one line per log item.
+
+### Added
+
+- Hooks for **Cursor** (`~/.cursor/hooks.json`) and **Antigravity** (`~/.gemini/config/hooks.json`) through `hooks/adapt.js`, which translates each host's hook dialect to the one the scripts read and back. Subset: session brief, edit tracking, clock-out check. No `PreToolUse` yet, so shell-only changes are not tracked on these hosts.
+- `godkit hooks install|status|uninstall` and `uninstall` cover both; they are registered only when the host is installed or `$CURSOR_HOME` / `$GEMINI_HOME` points at a folder, merged one handler at a time, and a `.bak` is kept.
+- The clock-out request is made at most three times in a row on these hosts, whatever the host's own loop limit.
+
+- **Guard** (`hooks/guard.js`, `lib/guard.js`): denies force push, `reset --hard`, `clean -f`, `rm -r` on a root/home/parent path, a download piped into a shell, writes to `.git/`, `.env`, credentials and shell startup files, and edits inside a live claim tagged with another session. Registered for Claude Code and Codex (`PreToolUse`), Antigravity (`PreToolUse`) and Cursor (`beforeShellExecution`, filtered by command text; a match that passes is answered `ask`). `GODKIT_GUARD=off` disables it.
+- **MCP server** (`godkit mcp`): `godkit_brief`, `godkit_claim`, `godkit_release`, `godkit_log`, `godkit_recall`, `godkit_map_query`, `godkit_verify`; board, map, thread as resources; skills as prompts. `godkit mcp install` registers it with Claude Code, Codex, Cursor and Antigravity.
+- `lib/board.js`: the claims table as code. A claim is refused when a live claim by another agent overlaps, and carries the caller's session tag. Claims older than 24h are stale.
+- **Pre-commit** (`godkit githook`, also run by `init`): warns about staged files outside every live claim; `GODKIT_STRICT=1` blocks. Fails open; never replaces another hook.
+- Antigravity now gets `PreToolUse`, so a shell-only change counts as work there.
+- **Plan gate** in the guard: an agent that claimed through the MCP tool and owns a task still in phase `plan` cannot edit that task's scope until it moves to `execute`.
+- **Named subagents**: `lib/subagent.js`, `godkit agent list|run|model`, MCP `godkit_agent`, and four shipped agents (explorer, planner, reviewer: read-only; implementer: isolated worktree). A separate `codex exec` or `claude -p` per run, permissions enforced by that CLI, skills preloaded, memory, report defused, nesting and concurrency limits. `delegate` takes the model, effort and tools and reads Codex's own last-message file.
+- `godkit mcp install --codex-approve` (opt-in, off by default): lets godkit's own MCP tools run in Codex without a prompt (`default_tools_approval_mode = "approve"` for the godkit server only; `godkit_delegate` keeps asking). Without it Codex asks before every MCP call and refuses when nobody is there. Also sets `tool_timeout_sec = 900` so a subagent run is not cut off.
+- `godkit agents` (and `init`): subagent files for Claude (`.claude/agents`) and Codex (`.codex/agents`) from `agents/*.md`; never replaces a file that is not marked generated.
+- `godkit delegate` / MCP `godkit_delegate`: hand a task to `claude`, `codex`, `gemini` or `agy` headless, read-only unless `--write`, enforced by that CLI; no nested delegation.
+- **Checkpoints**: `hooks/checkpoint.js` saves the working tree as a hidden git ref before edits (index, branch and tree untouched); `godkit rewind` previews and restores, with a safety checkpoint first.
+- `godkit eval`: small tasks through each agent CLI in a fresh repo, graded by a command; `--godkit` compares with and without the protocol.
+- `init` also registers the MCP server (`--no-mcp` to skip), syncs subagent files (`--no-agents`) and installs the pre-commit (`--no-githook`). `godkit hooks status` reminds that Codex runs a hook only after `/hooks` approval.
+
+- **Last seen** in `godkit doctor`: every SessionStart hook records which agent (from its transcript folder) and, for Claude Code, which surface (cli, vscode, desktop) ran it, so "automatic" can be checked per app instead of assumed from config files.
+- `godkit autoinit on|off`: set a git repository with code up (rules, skills, `.agent/`, agent files, pre-commit) at its first agent session. Off by default.
+- `hooks status` now says a Codex hook needs approval after every change.
+
+- **Agent teams** (`godkit team run "<goal>"`, MCP `godkit_team`): a leader runs the graph in `teams/default.md` (or the project's `.agent/team.md`): a planner cuts the goal into file-disjoint seams, implementers build each wave in parallel in their own worktrees, merged into a team branch as they finish, a tester proves it, a reviewer checks it, and a FAIL or CHANGES goes back to the implementers (at most `rounds` times). The result is a branch to review and merge. Works on any host: every member is a godkit subagent process.
+- **Background members** (`godkit agent run ... --background`, `godkit agent jobs`, `godkit agent wait`, MCP `godkit_agent` with `background: true` and `godkit_jobs`): detached processes with a status file in `~/.godkit/jobs`, so a leader starts a wave at once and the MCP server never blocks.
+- **Skills per role**: the shipped agents preload every godkit skill that fits their role, in full, and a new `godkit-tester` proves a change PASS or FAIL. A team adds `godkit-frontend` for UI goals and the project's trusted skills to every member.
+
+### Fixed
+
+- Hook commands for Cursor and Antigravity no longer contain double quotes. On Windows Antigravity turned them into literal ones, so every godkit hook failed there with "Cannot find module". Paths with whitespace use their 8.3 short form.
+- `delegate`/`eval` treat `agy`'s `AGY_ERROR` (API 503) and `jetski: no output produced` (headless permission denied) as failures, and `agy` accepts `--model`. Before, both counted as a success with no output.
+- Docs said Cursor and Antigravity have no hooks; both do.
+- A worktree whose changes could not be committed is kept and flagged, never handed back as a branch that has them.
 
 ## [1.0.0] — 2026-09-05
 
@@ -120,4 +125,6 @@ First public release.
 - `init` writes into a marked block and preserves everything outside it; an ambiguous hand-edited marker is refused rather than guessed at.
 - Generated skills do not link under the default `audit_only` mode, and `--force` overrides the mode but never a safety block.
 
+[Unreleased]: https://github.com/CodeForFee/godkit/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/CodeForFee/godkit/releases/tag/v1.1.0
 [1.0.0]: https://github.com/CodeForFee/godkit/releases/tag/v1.0.0
