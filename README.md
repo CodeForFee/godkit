@@ -7,10 +7,11 @@
 
 # Godkit
 
-### One shared harness for every AI agent
+### One memory for every coding agent
 
-Claude Code, Cursor, Codex and Antigravity all point at the same repo.<br>
-Give them the same memory, the same board, and the same rules.
+Claude Code, Codex, Cursor and Antigravity open the same repo.<br>
+Godkit gives them one committed memory, hooks that make them read it,<br>
+a guard that runs before their commands, and subagents whose permissions hold.
 
 <br>
 
@@ -28,7 +29,7 @@ npx @codeforfee/godkit init
 
 <br>
 
-**[Why](#why)** · **[How it works](#how-it-works)** · **[Install](#install)** · **[Sprints](#sprints)** · **[CLI](#cli)** · **[Skills](#skills)** · **[The map](#the-project-map)** · **[Verify](#verify--is-done-actually-done)**
+**[Quick start](#quick-start)** · **[Why](#why)** · **[How it works](#how-it-works)** · **[Agents](#agents-and-surfaces)** · **[Safety](#safety-guard-plan-gate-pre-commit-checkpoints)** · **[MCP](#mcp-server)** · **[Subagents](#subagents-and-delegation)** · **[CLI](#cli-reference)** · **[Troubleshooting](#troubleshooting)**
 
 </div>
 
@@ -36,11 +37,37 @@ npx @codeforfee/godkit init
 
 ---
 
+## Quick start
+
+```bash
+cd your-project
+npx @codeforfee/godkit init      # once per project; the first run also sets up the machine
+npx @codeforfee/godkit doctor    # what is set up, and which agents have actually run godkit
+```
+
+Then open Claude Code, Codex, Cursor or Antigravity and write your prompt as usual. There is no
+command to learn and no skill to pick: the hooks brief the agent at the start of the session, the
+rules tell it what to do, and the session cannot end without a log.
+
+| Situation | What the agent does on its own |
+|:--|:--|
+| **New project** (no code yet) | fills `.agent/BRIEF.md` from your first prompt, opens a sprint, builds wave 1, logs it |
+| **Existing project** | maps the codebase in its first session, then does your task |
+| **Fresh clone** of a godkit repo | the session hook recreates `.agent/` if it was not committed |
+| **Any task** | picks the right skill from the "Which skill, when" table in its rules |
+| **End of a session** | writes its log; the hook archives finished items and refreshes project skills |
+
+> **Codex users:** Codex runs a hook only after you approve it. Open `/hooks` in the Codex CLI (or
+> "Review hooks" in the Codex app) once after `init`, and again after an upgrade. `godkit doctor`
+> tells you when this is still pending.
+
 ## Why
 
-Every agent arrives blind. It does not know what the project is, what was already done, which file someone else is holding, or what was decided last week. So work gets redone, two agents edit the same file, and every session starts by re-reading the codebase from scratch.
+Every agent arrives blind. It does not know what the project is, what was already done, which file
+someone else is holding, or what was decided last week. So work gets redone, two agents edit the
+same file, and every session starts by re-reading the codebase.
 
-Private memory does not fix this — Cursor cannot read Claude's memory directory, and Claude cannot read Cursor's:
+Private memory does not fix this. Cursor cannot read Claude's memory, and Claude cannot read Cursor's:
 
 ```
             ✗  without godkit                        ✓  with godkit
@@ -56,57 +83,71 @@ Private memory does not fix this — Cursor cannot read Claude's memory director
     invisible to each other                        one board, one map, one log
 ```
 
-> **The only shared memory between tools is the filesystem they both open.**
+> **The only memory two tools share is the filesystem they both open.**
+
+Instructions alone are not enough either: a rule file asks, a hook makes sure. Godkit puts the same
+protocol on every agent through the strongest mechanism that agent has: hooks where it has them, an
+MCP server everywhere, a git pre-commit hook and a CI check underneath all of them.
 
 ## How it works
 
-Godkit puts one committed directory in your repo, and teaches every agent to use it.
+One committed directory in your repo:
 
 ```
 .agent/
-├── BOARD.md               roster · claims · task index · bugs · decisions — one screen
+├── BOARD.md               claims · task index · bugs · decisions, on one screen
 ├── THREAD.md              append-only conversation between agents
 ├── BRIEF.md               what this project is, before there is code to map
 ├── MAP.md                 what this codebase is (generated)
 ├── graph.json             the machine-readable map
 ├── SKILLS.md              this project's own skills (generated)
-├── skills/<name>/         procedures this project repeats, linked into host paths
+├── skills/<name>/         procedures this project repeats
 ├── sprints/S-001-*.md     a goal, and the waves of tasks under it
 ├── tasks/T-001-*.md       one per task: Plan · Execute · Review · Test · Handoff
 └── log/<UTC>-<model>.md   one per session, append-only, never edited by others
 ```
 
-Two rules, enforced everywhere:
+Two rules, on every agent:
 
 > ### Read `.agent/` before you edit. Write your log before you finish.
 
-An agent arriving at a project reads the board and the map, claims a scope, writes its tasks out as files, and leaves a log the next agent can resume from. Overlapping claims stop it before it edits. On Claude Code, a `Stop` hook blocks the turn until the log exists.
+An agent arriving at the project gets a brief (board, map freshness, the newest logs), claims a
+scope, writes its tasks out as files, and leaves a log the next agent can resume from. An edit
+inside another agent's live claim is denied before it happens. A session that changed files and
+wrote no log is not allowed to end.
 
-Append-only everywhere is deliberate: **one log file per session** means two tools writing at the same moment never conflict, and git merges them without a thought. The generated half (`graph.json`, `meta.json`, `MAP.md`) is marked `-merge` in `.gitattributes` instead — a textual merge there would inject conflict markers into JSON and leave the map unparseable, so those are resolved by regenerating, never by hand.
+**Append-only is deliberate.** One log file per session means two tools writing at the same moment
+never conflict, and git merges them without help. The generated files (`graph.json`, `meta.json`,
+`MAP.md`) are marked `-merge` in `.gitattributes` instead: a textual merge would put conflict
+markers into JSON, so they are regenerated, never merged by hand.
 
-<br>
+**Identity is a model, never a tool.** Every claim, task and log is signed with the model that made
+it: `claude-opus-5`, not `claude`; `codex-5.6-terra`, not `codex`. One tool runs many models with
+different costs and failure modes, and the next agent reading an unproven claim needs to know which
+one made it. `godkit verify` rejects a bare tool name. It checks the shape, not a list of known
+model ids, because such a list goes stale within months and then starts rejecting the truth.
 
----
+## What `init` sets up
 
-## Install
+In the project (committed, so a teammate who clones the repo has everything):
 
-```bash
-npx @codeforfee/godkit init
-```
+- `.agent/` with the board, thread and templates;
+- the rules, in a marked block in `AGENTS.md`, `CLAUDE.md`, `.cursor/rules/godkit.mdc` and
+  `.agents/rules/godkit.md`. Everything outside `<!-- godkit:start -->` … `<!-- godkit:end -->` is
+  yours and never touched; a block that was hand-edited into something ambiguous is refused, not guessed;
+- all 16 skills in `.claude/skills/` and `.agents/skills/`;
+- subagent files in `.claude/agents/` and `.codex/agents/`;
+- a pre-commit hook, only if the repo has none;
+- `-merge` lines in `.gitattributes` for the generated map files.
 
-That is the whole install, for a project with code or an empty folder — `init` tells them apart by itself. Then open Claude Code, Codex, Cursor or Antigravity and just write your prompt. Nothing else to learn, no skill to pick.
+On the machine (the first time only, then refreshed by each `init` after an upgrade):
 
-What happens without you:
+- the hooks, in each agent's user-level config, run from a stable copy in `~/.godkit/<version>/`
+  (never from npx's cache, which npm prunes);
+- the MCP server, registered with every agent that is installed.
 
-| Situation | What the agent does on its own |
-|:--|:--|
-| **New project** (no code) | fills `.agent/BRIEF.md` from your first prompt, opens a sprint, builds wave 1, logs it |
-| **Existing project** | maps the codebase in its first session, then does your task |
-| **Fresh clone** of a godkit repo | the session hook recreates `.agent/` if it is not committed |
-| **Any task** | picks the right skill from the "Which skill, when" table in the rules |
-| **End of a session** | writes its log; the hook archives finished items and refreshes project skills |
-
-`init` writes `.agent/`, the rule files, and **all 16 skills into the project** (`.claude/skills/`, `.agents/skills/`) so they are committed with it: a teammate who clones the repo has everything, with nothing installed. The first time on a machine it also registers the hooks — from a stable copy in `~/.godkit/<version>/`, never from npx's cache, which npm prunes. Re-running `init` after an upgrade refreshes the skill copies and re-points the hooks; a skill directory you wrote yourself is never replaced.
+Both halves only touch what godkit created. A skill directory you wrote yourself is never replaced,
+another tool's hooks in the same file are left alone, and `--dry-run` shows what would happen first.
 
 <details>
 <summary><b>Doing the machine half yourself, or scripting it</b></summary>
@@ -116,123 +157,243 @@ What happens without you:
 ```bash
 npm install -g @codeforfee/godkit
 
-godkit install            # place the skills once per machine
-godkit hooks install      # register the hooks (claude, codex)
-godkit init --no-install  # project only, nothing outside it
-godkit doctor             # what is set up, and whether the map is stale
+godkit install            # the skills, once per machine
+godkit hooks install      # the hooks, for every agent that is installed
+godkit mcp install        # the MCP server, likewise
+godkit init --no-install  # the project only, nothing outside it
+godkit doctor
 ```
 
-On Claude Code you can take the skills and hooks as a plugin instead, and skip `godkit install` entirely:
+On Claude Code you can take the skills and hooks as a plugin instead:
 
 ```
 /plugin marketplace add CodeForFee/godkit
 /plugin install godkit@godkit
 ```
 
-You still run `godkit init` per project — the plugin carries the skills and hooks, not your repo's `.agent/`.
+You still run `godkit init` per project: the plugin carries the skills and hooks, not your repo's `.agent/`.
 
 </details>
 
-Both sides only ever touch what they created. `install` refuses a destination it does not own — a skill directory you wrote by hand is never replaced — and `uninstall` leaves it alone and says so. Add `--dry-run` to either to see what would happen first.
+<br>
 
-In a project, `init` writes into a marked block:
+---
 
-```
-<!-- godkit:start -->
-...the rules...
-<!-- godkit:end -->
-```
+## Agents and surfaces
 
-Everything outside those markers is yours and is never touched, so an existing `CLAUDE.md` keeps whatever you had in it. If the markers have been hand-edited into something ambiguous, `init` refuses that file and tells you, rather than guessing. `init` also adds the `-merge` lines for the generated map files to your `.gitattributes`.
+| | Claude Code | Codex | Cursor | Antigravity |
+|:--|:--|:--|:--|:--|
+| **Rules** | `CLAUDE.md` | `AGENTS.md` | `.cursor/rules/godkit.mdc` | `AGENTS.md`, `.agents/rules/godkit.md` |
+| **Skills** | `.claude/skills/` | `.agents/skills/` | reads `.agents/skills/<name>/SKILL.md` | reads `.agents/skills/<name>/SKILL.md` |
+| **Hooks** | full set · 12 | full set · 12 | adapted · 5 | adapted · 4 |
+| **Hook file** | `~/.claude/settings.json` | `~/.codex/hooks.json` | `~/.cursor/hooks.json` | `~/.gemini/config/hooks.json` |
+| **Guard** | every tool | every tool | shell commands | every tool |
+| **MCP** | 9 tools | 9 tools | 9 tools | 9 tools |
+| **Subagent files** | `.claude/agents/` | `.codex/agents/` | via `godkit agent run` | via `godkit agent run` |
 
-### Compatibility
+Claude Code and Codex read the same hook JSON. Cursor and Antigravity speak their own hook dialects;
+`hooks/adapt.js` translates their input into the shape godkit's scripts read and translates the
+answer back (`additional_context` for Cursor, `injectSteps` for Antigravity; `followup_message` or
+`decision: "continue"` to ask for the log, at most three times in a row).
 
-| Tool | Skills | Always-on rules | Hooks |
-|:--|:--|:--|:--:|
-| **Claude Code** | `.claude/skills/` | `CLAUDE.md` | ✅ `~/.claude/settings.json` |
-| **Codex** | `.agents/skills/` | `AGENTS.md` | ✅ `~/.codex/hooks.json` |
-| **Cursor** | reads `.agents/skills/<name>/SKILL.md` on demand | `.cursor/rules/godkit.mdc` | ✅ `~/.cursor/hooks.json` (subset) |
-| **Antigravity** | reads `.agents/skills/<name>/SKILL.md` on demand | `AGENTS.md`, `.agents/rules/godkit.md` | ✅ `~/.gemini/config/hooks.json` (subset) |
+- **Cursor** gets `sessionStart`, `postToolUse`, `stop`, `sessionEnd`, and the guard on
+  `beforeShellExecution`, filtered to commands that look dangerous. A change made only by a shell
+  command is not tracked there.
+- **Antigravity** gets `SessionStart`, `PostToolUse`, `Stop` and `PreToolUse` (the guard, and the
+  snapshot that sees a change made by a shell command).
 
-All four tools have hooks. Claude Code and Codex get the full set; Cursor and Antigravity get a subset through `hooks/adapt.js`: the session brief, edit tracking and the clock-out check. Antigravity also gets `PreToolUse` (the guard, and the before-snapshot that sees a change made only by a shell command). Cursor gets the guard on `beforeShellExecution` only, filtered to dangerous-looking commands, so a change made only by a shell command is not tracked there. Where a tool has no hook at all, the always-on rule file *is* the enforcement, which is why every rule file says the same thing. The shared `.agent/` state is what makes the *enforced* versus *instructed* gap survivable.
+Cursor and Antigravity are registered only when `~/.cursor` or `~/.gemini/antigravity` exist, or
+when `$CURSOR_HOME` / `$GEMINI_HOME` point somewhere. `$CLAUDE_CONFIG_DIR` and `$CODEX_HOME` are
+honoured too. [`docs/agent-portability.md`](docs/agent-portability.md) has the per-tool detail.
 
-[`docs/agent-portability.md`](docs/agent-portability.md) has the per-tool detail: exact paths, what each host reads, and what it ignores.
+### CLI, VS Code extension, desktop app
 
-### MCP server and pre-commit
+Hooks and the MCP server live in each agent's **user-level** config, so the CLI, the VS Code
+extension and the desktop app of the same agent all read them. Registered is not the same as
+running, though, and `godkit doctor` shows the difference: it lists "last seen" per agent and per
+surface, which is proof that a session really ran godkit.
 
 ```bash
-godkit mcp install      # register with Claude Code, Codex, Cursor, Antigravity (those that are there; init does it too)
-godkit githook install  # pre-commit in this repo (`godkit init` does it too, only if none exists)
+godkit doctor        # hooks registered, Codex approval pending or not, last seen per agent
+godkit autoinit on   # set up any git project at its first agent session, with no `init` typed
 ```
 
-All four tools speak MCP, so `godkit mcp` gives them the same protocol as tools with checked input instead of a Markdown table to hand-edit: `godkit_brief`, `godkit_claim`, `godkit_release`, `godkit_log`, `godkit_recall`, `godkit_map_query`, `godkit_verify`. The board, map and thread are resources, the skills are prompts. It works where hooks do not run (Cursor's cloud agents). `godkit_claim` refuses a scope that overlaps a live claim by another agent and tags the claim with the caller's session, which is what lets the guard hook tell whose files are whose. A claim older than 24 hours is stale and blocks nobody.
+`autoinit` is off by default because it writes files into a project you did not choose.
+The per-surface table is in [`docs/agent-portability.md`](docs/agent-portability.md#surfaces-cli-vs-code-extension-desktop-app).
 
-The pre-commit hook lists staged files that no live claim covers. It only warns; `GODKIT_STRICT=1` or `git config godkit.strict true` makes it block. It says nothing while nobody holds a claim, fails open if godkit or node is gone, and never replaces a pre-commit hook that is not its own. In CI, the same protocol check is one line:
+## What the hooks do
+
+| Hook | Event | Does |
+|:--|:--|:--|
+| `brief.js` | `SessionStart` | injects the board, map freshness, the newest logs and this project's skills; runs again after compaction |
+| `lazy-activate.js` | `SessionStart` | resolves the `godkit-lazy` level and injects its rules |
+| `lazy-subagent.js` | `SubagentStart` | injects the same rules into spawned subagents |
+| `guard.js` | `PreToolUse` | denies dangerous commands and edits inside another agent's claim ([Safety](#safety-guard-plan-gate-pre-commit-checkpoints)) |
+| `checkpoint.js` | `PreToolUse` (edits) | saves a file checkpoint before the agent edits |
+| `work-track.js` | `PreToolUse`, `PostToolUse`, `SessionEnd` | records whether *this* session changed project files |
+| `lazy-mode-tracker.js` | `UserPromptSubmit` | tracks `/godkit-lazy` level switches |
+| `map-watch.js` | `PostToolUse` (Bash) | after a commit or merge, says whether the map went stale |
+| `clockout.js` | `Stop` | blocks the end of the turn if this session changed files and wrote no log |
+
+`clockout.js` judges the session, not the directory: a dirty file someone else left is not evidence
+about you, and a log naming a different session does not clock you out.
+
+**Hooks never throw.** Malformed input, missing git, no `.agent/`: all exit 0. A broken hook must not
+break the session it was meant to help. Installing is safe to repeat: it drops its own previous
+entries first, writes a `.bak`, matches other tools' entries one handler at a time, and writes by
+temp-and-rename against the bytes it read, so a file edited underneath it is never clobbered.
+
+```bash
+godkit hooks status              # how many are registered, and where
+godkit hooks install --dry-run
+godkit hooks uninstall
+```
+
+<br>
+
+---
+
+## Safety: guard, plan gate, pre-commit, checkpoints
+
+### Guard
+
+`hooks/guard.js` runs before a tool call and denies it outright:
+
+- `git push --force` (use `--force-with-lease`), `git reset --hard`, `git clean -f`;
+- `rm -r` on a root or home folder, and a download piped into a shell;
+- writes to `.git/`, `.env`, credential files and shell startup files;
+- an edit inside a live claim held by another session.
+
+Claims carry the session that made them, which is how the guard tells whose files are whose. A claim
+older than 24 hours is stale and blocks nobody. `GODKIT_GUARD=off` turns the guard off.
+
+### Plan gate
+
+An agent that owns a task whose phase is still `plan` is denied edits to that task's scope until the
+task moves to `execute`. It binds only the owner, only inside that scope: plan mode for agents that
+have none.
+
+### Pre-commit and CI
+
+```bash
+godkit githook install   # init does it, only when the repo has no pre-commit hook
+```
+
+The pre-commit hook lists staged files that no live claim covers. It warns by default;
+`GODKIT_STRICT=1` or `git config godkit.strict true` makes it block. It says nothing while nobody
+holds a claim, fails open when godkit or node is missing, and never replaces a hook that is not its
+own. This catches every agent, including one with no hooks and no MCP. In CI:
 
 ```yaml
 - run: npx -y @codeforfee/godkit verify   # non-zero when a task or log says done without evidence
 ```
 
-### Is it really automatic, in every app?
+### Checkpoints and rewind
+
+Before an agent edits, `hooks/checkpoint.js` saves the working tree as a commit under
+`refs/godkit/checkpoints/<session>/<n>`, built from a copy of the index. Your branch, index and
+working tree are untouched and nothing shows in `git log`. At most one every 15 seconds
+(`GODKIT_CHECKPOINT_DEBOUNCE`), the last 50 per session.
 
 ```bash
-godkit doctor        # registered hooks, and "last seen" per agent and surface: proof a session ran godkit
-godkit autoinit on   # set up any git project at its first agent session (off by default: it writes files)
+godkit rewind                 # list sessions and checkpoints
+godkit rewind <session>/<n>   # what it would restore
+godkit rewind <session>/<n> --yes
 ```
 
-Hooks and the MCP server are registered once per machine in each agent's user-level config, so the CLI, the VS Code extension and the desktop app of the same agent read the same files. Registered is not running, though: Codex skips a hook until you approve it (CLI `/hooks`, or "Review hooks" in the Codex app) and again after any change, and a broken hook of another tool can block Antigravity. `godkit doctor` shows which agents have actually run godkit. The per-surface table is in [`docs/agent-portability.md`](docs/agent-portability.md#surfaces-cli-vs-code-extension-desktop-app).
-
-### Subagents, delegation, rewind, eval
-
-```bash
-godkit agents sync                       # subagent files for Claude (.claude/agents) and Codex (.codex/agents); init does it
-godkit delegate claude "review lib/x.js" # another agent CLI, headless, read-only unless --write
-godkit rewind                            # file checkpoints taken before agent edits; go back with --yes
-godkit eval --host claude,agy --godkit   # the same small tasks through each CLI; pass/fail and seconds
-```
-
-- **Subagents.** The two agents the map skill spawns live once in `agents/*.md`; `godkit agents` writes the Claude form and the Codex form (`.toml` with `developer_instructions`). A file that is not marked as generated is never replaced or removed. Cursor and Antigravity are not generated: their definition format is not documented where it could be checked.
-- **Named subagents** (`godkit agent run <name> "<task>"`, MCP tool `godkit_agent`). Claude Code's subagent harness for hosts whose own is thinner, Codex above all. The files are the same markdown files Claude reads (`.claude/agents`, `.agent/agents`, `~/.claude/agents`, and four that godkit ships: `godkit-explorer`, `godkit-planner`, `godkit-reviewer`, `godkit-implementer`). Running one starts a **separate agent process** (`codex exec` or `claude -p`) and enforces what the file allows: tools and `permissionMode` decide the sandbox (read-only unless the file lists `Edit`/`Write`), `isolation: worktree` runs it in a git worktree on its own branch (removed if untouched, otherwise committed for you to `git merge`), `skills` are preloaded into its prompt, `memory` reads the same `agent-memory` folders Claude uses, only a 6KB report comes back with fake system text defused, nesting stops at 3 and 20 run at once. Not reproduced: per-agent hooks and MCP servers, fork, resume, background runs. Checked on real Codex: a read-only agent could not create a file even when told to, a write agent could, and an isolated agent fixed a bug in its worktree while the caller's file stayed as it was. `godkit agent model codex gpt-5.6-terra` sets the model godkit's Codex children use when your Codex default is one your account rejects.
-- **Delegation** (`godkit delegate`, MCP tool `godkit_delegate`). For hosts with no subagent, or when a second model should look at the work. Read-only is enforced by the target CLI (`claude` with `dontAsk` and read tools only, `codex --sandbox read-only`, `gemini --approval-mode plan`, `agy --mode plan`), not by asking. The task travels on stdin, the answer is capped at 6KB, and a delegated agent cannot delegate again. Checked on this machine: `claude` and `agy` answer; `codex` receives the task and its flags are accepted, but its configured model is rejected by the account; `gemini` refuses the login, so its flags are unchecked.
-- **Checkpoints** (`hooks/checkpoint.js`, `godkit rewind`). Before an agent edits, the working tree is saved as a git commit under `refs/godkit/checkpoints/<session>/<n>`, built from a copy of the index: the branch, index and working tree are untouched, nothing shows in `git log`. At most one every 15 seconds, the last 50 per session. A rewind lists what it would restore and does nothing without `--yes`; it takes a safety checkpoint first, so it can be undone. Files created since are listed and left alone. Gitignored files are not part of a checkpoint. `GODKIT_CHECKPOINT=off` disables it.
-- **Plan gate.** An agent that claimed through the MCP tool and owns a task whose phase is still `plan` is denied edits to that task's scope until the task moves to `execute`. It binds only the owner, only inside that scope.
-- **Eval** (`evals/*.json`). Each task is a small repo, a prompt and a command that exits 0 only when the work is right; each run gets a fresh git repo. It measures pass/fail and seconds, nothing else. `--godkit` runs `init` in the task repo first, to compare an agent with and without the protocol.
-
-<details>
-<summary><b>Hooks — what each one does, and why none of them can break your session</b></summary>
+A rewind does nothing without `--yes`, and takes a safety checkpoint first so it can be undone.
+Files created since are listed and left alone; gitignored files are not part of a checkpoint.
+`GODKIT_CHECKPOINT=off` turns it off.
 
 <br>
 
+---
+
+## MCP server
+
+All four agents speak MCP, so godkit gives them the protocol as tools with checked input instead of
+Markdown to hand-edit. It also works where hooks do not run (Cursor's cloud agents, for one).
+
 ```bash
-godkit hooks status       # how many are registered, and where
-godkit hooks install      # into ~/.claude/settings.json and ~/.codex/hooks.json
-godkit hooks uninstall
-godkit hooks install --dry-run
+godkit mcp install                  # every installed agent; init does it too
+godkit mcp install --codex-approve  # also let Codex call godkit's tools without asking each time
+godkit mcp                          # run the server on stdio
 ```
 
-(`$CLAUDE_CONFIG_DIR`, `$CODEX_HOME`, `$CURSOR_HOME` and `$GEMINI_HOME` are honoured if set. Cursor and Antigravity are registered only when `~/.cursor` / `~/.gemini/antigravity` exist or you point those variables at a folder; their hook files are merged one handler at a time, so another tool's hooks in the same file are left alone.)
+| Tool | Does |
+|:--|:--|
+| `godkit_brief` | the session brief: board, map freshness, newest logs |
+| `godkit_claim` | claim a scope; refuses one that overlaps another agent's live claim |
+| `godkit_release` | release your claim |
+| `godkit_log` | write this session's log |
+| `godkit_recall` | search all history for a file or words |
+| `godkit_map_query` | look up the project map |
+| `godkit_verify` | check that every "done" has evidence |
+| `godkit_agent` | run a named subagent with its permissions enforced |
+| `godkit_delegate` | hand a task to another agent CLI |
 
-Cursor and Antigravity speak their own hook dialects. `hooks/adapt.js` translates their input into the shape the scripts below read, runs the scripts for that event, and translates the answer back (`additional_context` for Cursor, `injectSteps` for Antigravity; `followup_message` or `decision: "continue"` to ask for the log, at most three times in a row). Cursor events: `sessionStart`, `postToolUse`, `stop`, `sessionEnd`. Antigravity events: `SessionStart`, `PostToolUse`, `Stop`.
+The board, map and thread are also MCP resources, and the skills are MCP prompts. The server is
+written against the standard library, like the rest of godkit.
 
-| Hook | Event | Does |
-|:--|:--|:--|
-| `brief.js` | `SessionStart` | injects the board, map freshness, newest log entries, and this project's skills |
-| `lazy-activate.js` | `SessionStart` | resolves the active `godkit-lazy` mode and injects its ruleset |
-| `lazy-subagent.js` | `SubagentStart` | injects the same ruleset into spawned subagents |
-| `guard.js` | `PreToolUse` | denies force push, `reset --hard`, `clean -f`, `rm -r` on a root or home folder, a download piped into a shell, writes to `.git/` `.env` credentials and shell startup files, and edits inside a live claim held by another session. `GODKIT_GUARD=off` turns it off |
-| `checkpoint.js` | `PreToolUse` (edits) | saves a file checkpoint before the agent edits, at most one per 15 seconds; see `godkit rewind` |
-| `lazy-mode-tracker.js` | `UserPromptSubmit` | tracks `/godkit-lazy` mode switches for the session |
-| `work-track.js` | `PreToolUse`, `PostToolUse`, `SessionEnd` | records whether *this* session changed project files |
-| `clockout.js` | `Stop` | blocks the turn if this session changed files and wrote no log |
-| `map-watch.js` | `PostToolUse` (Bash) | after a commit or merge, says if the map went stale |
+`--codex-approve` changes a Codex safety setting (tool approval for godkit's server only), so it is
+off unless you pass it; `--no-codex-approve` turns it back off, and `GODKIT_CODEX_APPROVE=1|0`
+overrides it per run.
 
-Re-running is safe: it drops its own previous entries first and writes a `.bak`. Other tools' hooks are left alone — including one that shares a group with ours, because entries are matched one handler at a time, not one group at a time. The write is a temp-and-rename compared against the bytes it read, so a settings file edited underneath it is never silently clobbered, and a file that already says exactly the right thing is not rewritten at all. If it cannot parse your settings file it changes nothing and says so.
+## Subagents and delegation
 
-`clockout.js` judges the session, not the directory: a dirty file someone else left behind is not evidence about you, and a log naming a different session does not clock you out. That is what `work-track.js` is for — without it registered, clockout has nothing to act on.
+### Named subagents
 
-**Hooks never throw.** Malformed input, missing git, absent `.agent/` — all exit 0. A broken hook must not break the session it was meant to help.
+```bash
+godkit agent list
+godkit agent run godkit-reviewer "review lib/auth/token.js"
+godkit agent model codex gpt-5.6-terra   # the model godkit's Codex children use
+```
 
-</details>
+This is Claude Code's subagent harness for agents whose own is thinner, Codex above all. The files
+are the same markdown files Claude reads (`.claude/agents/`, `.agent/agents/`, `~/.claude/agents/`),
+plus four godkit ships: `godkit-explorer`, `godkit-planner`, `godkit-reviewer`,
+`godkit-implementer`. Running one starts a **separate agent process** (`codex exec` or `claude -p`)
+and enforces what the file says:
+
+- `tools` and `permissionMode` decide the sandbox: read-only unless the file lists `Edit` or `Write`;
+- `isolation: worktree` runs it in a git worktree on its own branch, removed if untouched, otherwise
+  committed for you to `git merge`;
+- `skills` are preloaded into its prompt, and `memory` reads the same `agent-memory` folders Claude uses;
+- only a 6 KB report comes back, with any fake system text in it defused;
+- nesting stops at 3 deep (`GODKIT_AGENT_MAX_DEPTH`) and 20 at once (`GODKIT_AGENT_MAX_CONCURRENT`).
+
+Checked on real Codex: a read-only agent could not create a file even when told to, a write agent
+could, and an isolated agent fixed a bug in its worktree while the caller's copy stayed as it was.
+Not reproduced: per-agent hooks and MCP servers, fork, resume, background runs.
+
+`godkit agents sync` writes the subagents the map skill uses (`file-analyzer`, `architect`) in the
+Claude form and the Codex form (`.toml` with `developer_instructions`). A file not marked as
+generated is never replaced. Cursor and Antigravity are not generated: their formats are not
+documented where they could be checked, so they run subagents through `godkit agent run`.
+
+### Delegation
+
+```bash
+godkit delegate claude "review lib/x.js"           # read-only
+godkit delegate codex "fix the failing test" --write
+```
+
+For agents with no subagent of their own, or when a second model should look at the work.
+Read-only is enforced by the target CLI, not by asking: `claude` with `dontAsk` and read tools only,
+`codex --sandbox read-only`, `gemini --approval-mode plan`, `agy --mode plan`. The task travels on
+stdin, the answer is capped at 6 KB, and a delegated agent cannot delegate again. The model comes
+from `GODKIT_<HOST>_MODEL` (for example `GODKIT_CODEX_MODEL`) or from `godkit agent model`.
+
+### Eval
+
+```bash
+godkit eval --host claude,agy            # the same small tasks through each CLI
+godkit eval --host claude,agy --godkit   # the same, with godkit initialised in each task repo
+```
+
+Each task in `evals/*.json` is a small repo, a prompt and a command that exits 0 only when the work
+is right; every run gets a fresh git repo. It measures pass/fail and seconds, nothing else.
+`--godkit` compares an agent with and without the protocol.
 
 <br>
 
@@ -256,208 +417,19 @@ goal  ──►  wave 1 ──► join gate ──► wave 2 ──► join gate
            disjoint files       full suite after the merge
 ```
 
-**A wave is a set of tasks whose file scopes do not overlap.** That is the entire admission rule. A task touching a file already claimed in this wave drops to the next one — it does not run in parallel and get merged hopefully. It is "one owner per file", stated at wave level.
+- **A wave is a set of tasks whose file scopes do not overlap.** A task that touches a file already
+  claimed in this wave drops to the next one. "One owner per file", at wave level.
+- **Every wave ends at a join gate:** one agent runs the full check suite after the merge. Each
+  seam's exit condition proves the seam; the gate proves they still compose.
+- `godkit sprint close` refuses while a task is unfinished, unwritten, or done with an empty `## Test`.
 
-**Every wave ends at a join gate:** one agent runs the full check suite after the merge. Without it you do not have a wave, you have several edits that happened to overlap in time. Each seam's own exit condition proves the seam; the gate proves they still compose.
+The CLI owns what a machine can decide: the file, the ids, the checks. Cutting the waves stays with
+the model.
 
-`godkit sprint close` refuses while any task the sprint names is unfinished, unwritten, or finished with an empty `## Test`. It is the same contract `godkit verify` applies, scoped to one goal.
-
-The CLI owns only what a machine can decide — creating the file, resolving the ids, checking the tasks. **Cutting the waves stays with the model**, the same split `scan`/`save` has with the map.
-
-## Identity — a model, never a tool
-
-Every claim, task and log is signed with the **model** that made it:
-
-```yaml
-agent: "claude-opus-5"     # not "claude"
-owner: codex-5.6-terra     # not "codex"
-```
-
-One tool runs many models, with different costs, context windows and failure modes. An agent reading someone else's unproven claim needs to know which one made it — and `claude` cannot answer that. `godkit verify` rejects a bare tool name.
-
-It is enforced by **shape**, not by a shipped list of known model ids: an allowlist goes stale within a quarter and then starts rejecting the truth. Entries written before the rule say `unrecorded`, because back-filling a guess would put a fabricated attribution into a permanent record.
-
-<br>
-
----
-
-## CLI
-
-| Command | Does |
-|:--|:--|
-| `godkit init [path] [--new] [--no-install]` | set up this project: `.agent/`, rule files, all skills; auto-detects a new project |
-| `godkit recall <file\|words>` | search all history — logs, board, thread, tasks, archive — in a bounded answer |
-| `godkit install [tool...]` | install the skills for claude, codex, antigravity (default: all) |
-| `godkit sprint [new "goal" \| close]` | a goal and its waves of file-disjoint tasks |
-| `godkit scan [path]` | walk the project and group it into batches for the map |
-| `godkit save [file]` | save a merged graph as the map (`graph.json`, `MAP.md`, `meta.json`) |
-| `godkit skills [--link\|--unlink] [tool...]` | this project's own skills in `.agent/skills/` |
-| `godkit evolve [--write]` | what the logs say about each project skill; `--write` → `.agent/SKILLS.md` |
-| `godkit refactor [--all]` | what the logs say about each code file: churn, blame, fan-in |
-| `godkit hooks [status\|install\|uninstall]` | the hook registrations, with `--dry-run` |
-| `godkit verify [--quiet]` | tasks and logs against the rules the templates state; non-zero on findings |
-| `godkit doctor` | what is set up here, whether the map is stale, which hooks are registered |
-| `godkit uninstall [tool\|--project]` | remove the skills godkit placed (leaves your `.agent/` alone) |
-| `godkit --version` | the installed version |
-
-## Skills
-
-Sixteen skills ship with godkit and are the same in every project.
-
-<table>
-<tr><th align="left" width="34%">Arriving and coordinating</th><th align="left">Use for</th></tr>
-<tr><td><code>godkit</code></td><td>arriving at a project, synthesizing the work, running a sprint</td></tr>
-<tr><td><code>godkit-handoff</code></td><td>the <code>.agent/</code> protocol and its file formats</td></tr>
-<tr><td><code>godkit-plan</code></td><td>cutting seams, assigning owners, writing task files</td></tr>
-<tr><td><code>godkit-map</code></td><td>building or refreshing the project map</td></tr>
-<tr><td><code>godkit-git</code></td><td>worktrees, commit-as-checkpoint, merging <code>.agent/</code></td></tr>
-</table>
-
-<table>
-<tr><th align="left" width="34%">Doing the work</th><th align="left">Use for</th></tr>
-<tr><td><code>godkit-execute</code></td><td>running work through the pipeline, error recovery</td></tr>
-<tr><td><code>godkit-lazy</code></td><td>fewest turns to the smallest change that works</td></tr>
-<tr><td><code>godkit-refactor</code></td><td>evolving the source, from what the logs say is churned and blamed</td></tr>
-<tr><td><code>godkit-test</code></td><td>what counts as verified, and writing the check</td></tr>
-<tr><td><code>godkit-output-enforcement</code></td><td>catching stubbed or truncated generated output</td></tr>
-<tr><td><code>godkit-frontend</code></td><td>design taste — dials, banned defaults, 11 style variants</td></tr>
-</table>
-
-<table>
-<tr><th align="left" width="34%">Judging it afterwards</th><th align="left">Use for</th></tr>
-<tr><td><code>godkit-review</code></td><td>reviewing the process, or diagnosing a failed run</td></tr>
-<tr><td><code>godkit-triage</code></td><td>GitHub issues and PRs: fresh-base diffs, the posting gate, batches</td></tr>
-<tr><td><code>godkit-doubt</code></td><td>pressure-testing a decision before it binds everyone</td></tr>
-<tr><td><code>godkit-evolve</code></td><td>capturing, deriving and fixing this project's own skills</td></tr>
-<tr><td><code>godkit-help</code></td><td>quick reference card</td></tr>
-</table>
-
-<details>
-<summary><b>godkit-lazy — the two ladders, and how to change the level</b></summary>
-
-<br>
-
-`godkit-lazy` optimises two things most guidance ignores one of: the code you write, and the turns you take getting there.
-
-**Ladder one — fewest turns.** Is the answer already in the map or the board? Can a command answer it? Read once, wide. Edit, do not rewrite. Verify once, at the end.
-
-**Ladder two — least code.** Does it need to exist? Already in this repo? Stdlib? A native platform feature? An installed dependency? One line? Only then, the minimum that works.
-
-Where the hooks are installed it runs every session automatically, at a level resolved in this order: the `GODKIT_LAZY_MODE` env var, then `defaultMode` in `~/.config/godkit/config.json` (`%APPDATA%\godkit\config.json` on Windows), then `full`.
-
-```
-/godkit-lazy [lite|full|ultra|off]           switch for this session (no argument reports the level)
-/godkit-lazy default [lite|full|ultra|off]   persist the default for new sessions
-```
-
-It injects into every subagent spawned via the Agent tool too — scope that with `GODKIT_LAZY_SUBAGENT_MATCHER`, a regex tested against the subagent's type, if some agent types should skip it.
-
-</details>
-
-<br>
-
----
-
-## Project skills
-
-The sixteen skills above are the same everywhere. A *project* also accumulates its own procedures — a fixture reset, a release check, a migration dance. Those live in `.agent/skills/<name>/SKILL.md`: committed, tool-neutral, and linked into the paths Claude Code and Codex actually read.
+## Verify: is "done" actually done
 
 ```bash
-godkit skills            # origin, safety findings, which hosts see them
-godkit skills --link     # link into .claude/skills/ and .agents/skills/
-godkit skills --unlink
-```
-
-Write one with the `godkit-evolve` skill, or by hand. Every SKILL.md must declare `origin` (`authored`, `captured`, `derived` or `fix`) and `enabled` (`true` or `false`) in its frontmatter; one that does not, or whose frontmatter will not parse, is a blocking finding and does not link.
-
-What godkit links is an owned **snapshot**, not a live link: the copy carries a digest of the source it was taken from, so godkit replaces only what it wrote and never removes something you put at that path yourself.
-
-**Two things keep a generated skill from being dangerous, and the pattern scan is neither of them.** It is **inert until linked** — no host reads `.agent/skills/` — and `.agent/` is **committed**, so every skill and every revision lands in a diff. On top of those, a scan blocks linking a skill that bundles an executable, carries a credential, or tries to override the agent's instructions.
-
-Generated skills (`origin: captured` or `derived`) will not link at all under the default `audit_only` mode. They sit in the repo as reviewable, inert markdown until you set `GODKIT_EVOLVE_MODE=autonomous` or pass `--force`. **`--force` overrides the mode; it never overrides a safety block.**
-
-<details>
-<summary><b>Evidence — what "trusted" actually means, and why it is a correlation</b></summary>
-
-<br>
-
-`godkit evolve` re-reads `.agent/log/*.md` and says what the evidence implies about each skill.
-
-```bash
-godkit evolve            # the report
-godkit evolve --write    # project it to .agent/SKILLS.md
-```
-
-There is no separate store. A log entry lists the skills it used in its `skills:` frontmatter, and that plus `status:` and the `## Verified` and `## Bugs` sections is the whole signal. Edit a skill and bump `revised:`, and its evidence window resets — you are judging the text that exists now, not what its ancestor did.
-
-| Level | Reached by |
-|:--|:--|
-| **trusted** | 3 successes across 3 *distinct* sessions, no failures |
-| **provisional** | the default, and where a trusted skill lands after one attributable failure |
-| **quarantined** | 2 failures, a blocking safety finding, or `enabled: false` — will not link, even with `--force` |
-
-> **Precisely: *used repeatedly, and the sessions that used it finished verified*.**
-
-Godkit does not run your agent, so it cannot observe a skill being used. The `skills:` field is a self-report by the same agent that just used it, and self-reports skew positive. This is a usage/outcome **correlation, not a quality measure**, and a trusted skill can still be wrong. `godkit evolve` prints how many log entries it could not attribute at all, on every run, for exactly this reason.
-
-Demotion is deliberately asymmetric — three sessions to promote, one failure to demote — because a wrong instruction auto-loaded into an agent's context costs more than a slow promotion. And a session that ends `blocked` with three skills listed blames none of them: attribution that guesses would demote good skills.
-
-</details>
-
-<br>
-
----
-
-## The project map
-
-`godkit-map` builds a graph of the codebase into `.agent/graph.json`, with a readable `.agent/MAP.md` projection. The deterministic half is a script — walk, categorize, resolve imports, group files that import each other into the same batch:
-
-```bash
-godkit scan     # walk, categorize, resolve imports, batch
-godkit save     # normalize, write graph.json + MAP.md + meta.json
-```
-
-The judgment half is the model, through two agent prompts the package ships in `agents/`: `file-analyzer` reads one batch and emits the nodes and edges for it, then `architect` reads the merged graph and derives the layers, the start-here tour and the project description. Both read files and write one JSON each — neither edits your code.
-
-**Recall is grep, not load.** Node ids are `type:path[:name]`, so finding a concept and then its one-hop neighbourhood costs two greps and no context:
-
-```bash
-rg '"summary"' .agent/graph.json | rg -i token
-rg 'function:src/auth/token.ts:isExpired' .agent/graph.json    # every caller
-```
-
-Refreshes are incremental. The map records the commit it was built at; the classifier decides how much to redo — `SKIP`, `PARTIAL`, `ARCHITECTURE` or `FULL` — so a two-file change never triggers a full rebuild.
-
-A file's structural signature is derived from the graph itself rather than a second store, which means the two can never disagree. The save path also refuses to overwrite a graph it could not read, so one bad parse cannot quietly reset your project's memory.
-
-## Refactor — evolving the code
-
-Every session already records which files it claimed, which it changed, and which one was actually to blame when something broke. After a dozen sessions that is a churn-and-blame record nobody had to author.
-
-```bash
-godkit refactor          # top 15 code files by churn and blame
-godkit refactor --all    # the whole ranking
-```
-
-```
-  score  file                              touched  blamed  sessions  fan-in
-  6      bin/godkit.js                     4        1       3         3
-  6      hooks/install.js                  4        1       4         1
-  4      lib/graph.js                      2        1       2         7
-```
-
-`touched` is sessions whose `scope:` or `## Did` named the file, `blamed` is `## Bugs` bullets that named it as a **root cause**, and `fan-in` comes from the map — who breaks if this file is wrong. Score is `blamed × 2 + touched`: a root cause is evidence about the code, while a touch is often evidence about what someone happened to be working on that week.
-
-**It ranks attention, not badness**, and the four columns say different things — high blame with low fan-in is a fragile file worth fixing, while high touch with zero blame is usually just the newest feature. Reading the code is not optional, and "nothing is wrong with the top file" is an expected result. The `godkit-refactor` skill is the judgment half; the same split as the map.
-
-Note the division of labour with `godkit evolve`: both read the same log stream, but **evolve evolves procedures** into `.agent/skills/`, and **refactor evolves the source code**.
-
-## Verify — is "done" actually done
-
-The task and log templates state the rules: a task needs a checkable `exit:`, a `done` claim needs the command and its real output, anything short of done needs a handoff, and every entry is signed with the model that wrote it. Nothing read those files back, so an agent could mark a task done, write a log, clock out clean, and have proven nothing. The next agent then inherits a claim instead of a result.
-
-```bash
-godkit verify            # every task and log, against those rules
+godkit verify            # every task and log, against the rules the templates state
 godkit verify --quiet    # the summary line only
 ```
 
@@ -470,11 +442,186 @@ log/2026-08-31T1402Z-claude-9f2a.md: resume-blocked - status: partial, ## Left /
 tasks: 4 findings - all blocking.
 ```
 
-Findings use `godkit-review`'s own tags — `no-exit`, `no-verify`, `no-identity`, `resume-blocked` — so a verify finding and a review finding read the same. It exits non-zero, so CI and hooks can stop on it, and `godkit doctor` shows the count. The Stop hook enforces exactly one of these rules: a log claiming `status: done` with an empty `## Verified` does not clock out.
+A task needs a checkable `exit:`, a `done` claim needs the command and its real output, anything
+short of done needs a handoff, every entry is signed with a model, and a `blocked` task says which
+kind (`needs-decision`, `needs-evidence`, `external-wait`, `needs-owner`). Findings use
+`godkit-review`'s tags, the command exits non-zero, and `godkit doctor` shows the count. The `Stop`
+hook enforces one of these rules directly: a log saying `status: done` with an empty `## Verified`
+does not clock out.
 
-A `blocked` task also has to say **which kind** of blocked — `needs-decision`, `needs-evidence`, `external-wait`, or `needs-owner` — because "blocked" alone tells the next agent that work stopped but not whether they can do anything about it.
+The check is **structural** on purpose: present, non-empty, not the template's placeholder. Judging
+whether the evidence is any good is `godkit-review`'s job; a fuzzy check would misfire forever and
+teach agents to write around it.
 
-The check is deliberately **structural**: present, non-empty, not the template's own placeholder comment. It cannot tell whether your evidence is any good, and it does not try — a fuzzy check would misfire forever and teach agents to write around it. Judging the evidence is `godkit-review`'s job.
+## The project map
+
+`godkit-map` builds a graph of the codebase into `.agent/graph.json`, with a readable `MAP.md`.
+
+```bash
+godkit scan     # walk, categorize, resolve imports, group files that import each other into batches
+godkit save     # normalize and write graph.json, MAP.md, meta.json
+```
+
+The judgment half is the model, through two subagents: `file-analyzer` reads one batch and emits
+its nodes and edges, then `architect` derives the layers, the start-here tour and the description.
+Both write one JSON each and never edit your code.
+
+**Recall is grep, not load.** Node ids are `type:path[:name]`, so a concept and its neighbours cost
+two greps and no context:
+
+```bash
+rg '"summary"' .agent/graph.json | rg -i token
+rg 'function:src/auth/token.ts:isExpired' .agent/graph.json    # every caller
+```
+
+Refreshes are incremental: the map records the commit it was built at, and the classifier decides
+how much to redo (`SKIP`, `PARTIAL`, `ARCHITECTURE`, `FULL`). The save path refuses to overwrite a
+graph it could not read, so one bad parse cannot reset the project's memory.
+
+## Refactor: evolving the code
+
+Every session records which files it claimed, which it changed, and which one was to blame when
+something broke. After a dozen sessions that is a churn-and-blame record nobody had to write.
+
+```bash
+godkit refactor          # top 15 code files by churn and blame
+godkit refactor --all
+```
+
+```
+  score  file                              touched  blamed  sessions  fan-in
+  6      bin/godkit.js                     4        1       3         3
+  6      hooks/install.js                  4        1       4         1
+  4      lib/graph.js                      2        1       2         7
+```
+
+Score is `blamed × 2 + touched`; `fan-in` comes from the map. **It ranks attention, not badness:**
+high blame with low fan-in is a fragile file worth fixing, high touch with no blame is usually just
+the newest feature. The `godkit-refactor` skill is the judgment half.
+
+## Project skills
+
+The 16 shipped skills are the same everywhere. A project also builds up its own procedures (a
+fixture reset, a release check), kept in `.agent/skills/<name>/SKILL.md`: committed, tool-neutral,
+and linked into the paths Claude Code and Codex read.
+
+```bash
+godkit skills            # origin, safety findings, which agents see them
+godkit skills --link     # into .claude/skills/ and .agents/skills/
+godkit evolve            # what the logs say about each skill
+godkit evolve --write    # project it to .agent/SKILLS.md
+```
+
+Every `SKILL.md` declares `origin` (`authored`, `captured`, `derived`, `fix`) and `enabled`. A
+project skill is **inert until linked** and every revision lands in a diff; a scan also blocks one
+that bundles an executable, carries a credential or tries to override the agent's instructions.
+Generated skills do not link under the default `audit_only` mode until you set
+`GODKIT_EVOLVE_MODE=autonomous` or pass `--force`, and `--force` never overrides a safety block.
+
+| Trust level | Reached by |
+|:--|:--|
+| **trusted** | 3 successes across 3 distinct sessions, no failures |
+| **provisional** | the default, and where a trusted skill lands after one failure |
+| **quarantined** | 2 failures, a blocking safety finding, or `enabled: false`; never links |
+
+The signal is the `skills:` field each log reports, so trust means *used repeatedly by sessions that
+finished verified*: a correlation, not a quality measure. One failure demotes and three successes
+promote, because a wrong instruction loaded into every session costs more than a slow promotion.
+
+## The shipped skills
+
+| Arriving and coordinating | Doing the work | Judging it afterwards |
+|:--|:--|:--|
+| `godkit` · arriving, sprints | `godkit-execute` · the pipeline, recovery | `godkit-review` · the process, failed runs |
+| `godkit-handoff` · the `.agent/` protocol | `godkit-lazy` · fewest turns, least code | `godkit-triage` · GitHub issues and PRs |
+| `godkit-plan` · seams, owners, task files | `godkit-refactor` · code that churns | `godkit-doubt` · test a decision first |
+| `godkit-map` · the project map | `godkit-test` · what counts as verified | `godkit-evolve` · project skills |
+| `godkit-git` · worktrees, merging `.agent/` | `godkit-output-enforcement` · no stubs | `godkit-help` · quick reference |
+| | `godkit-frontend` · design taste, 11 variants | |
+
+<details>
+<summary><b>godkit-lazy: the two ladders, and the level</b></summary>
+
+<br>
+
+**Fewest turns.** Is the answer already in the map or the board? Can a command answer it? Read once,
+wide. Edit, do not rewrite. Verify once, at the end.
+
+**Least code.** Does it need to exist? Is it already in this repo? The standard library? A native
+platform feature? An installed dependency? One line? Only then, the minimum that works.
+
+Where the hooks are installed it is on every session, at a level resolved from `GODKIT_LAZY_MODE`,
+then `defaultMode` in `~/.config/godkit/config.json` (`%APPDATA%\godkit\config.json` on Windows),
+then `full`.
+
+```
+/godkit-lazy [lite|full|ultra|off]           this session
+/godkit-lazy default [lite|full|ultra|off]   the default for new sessions
+```
+
+It is injected into subagents too; `GODKIT_LAZY_SUBAGENT_MATCHER` (a regex on the subagent type)
+narrows which ones.
+
+</details>
+
+<br>
+
+---
+
+## CLI reference
+
+| Command | Does |
+|:--|:--|
+| `godkit init [path] [--new] [--no-install]` | set up the project (and the machine, the first time); detects a new project by itself |
+| `godkit doctor` | what is set up, whether the map is stale, Codex approval, last seen per agent |
+| `godkit recall <file\|words>` | search all history: logs, board, thread, tasks, archive |
+| `godkit verify [--quiet]` | is every "done" backed by evidence? non-zero if not |
+| `godkit sprint [new "<goal>" \| close]` | a goal and its waves of file-disjoint tasks |
+| `godkit scan` · `godkit save` | build the project map |
+| `godkit skills [--link\|--unlink]` | this project's own skills |
+| `godkit evolve [--write]` | what the logs say about each project skill |
+| `godkit refactor [--all]` | which code files churn and get blamed most |
+| `godkit hooks [status\|install\|uninstall]` | hook registrations for all four agents; `--dry-run` |
+| `godkit mcp [install\|uninstall]` | the MCP server; no argument runs it on stdio; `--codex-approve` |
+| `godkit githook [install\|uninstall]` | the pre-commit hook |
+| `godkit autoinit [on\|off]` | set a project up at its first agent session |
+| `godkit agents [sync\|clean\|status]` | subagent files for Claude and Codex |
+| `godkit agent [list \| run <name> "<task>" \| model]` | run a named subagent as its own process |
+| `godkit delegate <host> "<task>" [--write]` | hand a task to another agent CLI, read-only by default |
+| `godkit rewind [session/n] [--yes]` | go back to a checkpoint taken before an edit |
+| `godkit eval --host a,b [--godkit]` | run small tasks through agent CLIs and compare |
+| `godkit install [tool...]` | the skills into your home folder, for every project |
+| `godkit uninstall [tool\|--project]` | remove what godkit placed; never touches `.agent/` |
+| `godkit --version` | the installed version |
+
+### Environment variables
+
+| Variable | Effect |
+|:--|:--|
+| `GODKIT_GUARD=off` | turn the guard off |
+| `GODKIT_CHECKPOINT=off` | turn checkpoints off |
+| `GODKIT_CHECKPOINT_DEBOUNCE` | minimum time between checkpoints (default 15 s) |
+| `GODKIT_STRICT=1` | the pre-commit hook blocks instead of warning |
+| `GODKIT_AUTO_INIT` | same as `godkit autoinit`, for one run |
+| `GODKIT_CODEX_APPROVE=1\|0` | override the Codex tool-approval setting |
+| `GODKIT_<HOST>_MODEL` | model for delegated and subagent runs, e.g. `GODKIT_CODEX_MODEL` |
+| `GODKIT_AGENT_MAX_DEPTH` / `GODKIT_AGENT_MAX_CONCURRENT` | subagent nesting and concurrency limits (3 / 20) |
+| `GODKIT_LAZY_MODE` | `lite`, `full`, `ultra` or `off` |
+| `GODKIT_LAZY_SUBAGENT_MATCHER` | which subagent types get the lazy rules |
+| `GODKIT_EVOLVE_MODE=autonomous` | let generated project skills link |
+| `CLAUDE_CONFIG_DIR`, `CODEX_HOME`, `CURSOR_HOME`, `GEMINI_HOME` | where each agent's config lives |
+
+## Troubleshooting
+
+| Symptom | Cause and fix |
+|:--|:--|
+| Codex never shows the brief, edits are not tracked | Codex has not approved the hooks. Open `/hooks` in Codex (or "Review hooks" in the app) and approve godkit's. Again after each upgrade. `godkit doctor` says when it is pending. |
+| Codex asks before every godkit tool call | Expected by default. `godkit mcp install --codex-approve` lets godkit's own tools through. |
+| A Codex subagent fails: "model not supported" | Your Codex default model is one your account rejects. `godkit agent model codex <model>` or `GODKIT_CODEX_MODEL`. |
+| Antigravity: every hook fails, even other tools' | On Windows, a hook command with double quotes around its path fails. Remove the quotes from that command in `~/.gemini/config/hooks.json`; a path without spaces does not need them. |
+| `agy` delegation returns `AGY_ERROR` with a 503 | The model is out of capacity for a while. Retry, or name another with `GODKIT_AGY_MODEL`. |
+| `agy` delegation: "jetski: no output produced" | A tool wanted a permission headless mode cannot ask for. Godkit does not pass `--dangerously-skip-permissions`; allow the command in Antigravity's settings, or delegate read-only. |
+| A hook seems to do nothing | Hooks fail open by design. `godkit doctor` shows what is registered and when each agent last ran it. |
 
 <br>
 
@@ -484,25 +631,30 @@ The check is deliberately **structural**: present, non-empty, not the template's
 
 | | |
 |:--|:--|
-| **Zero runtime dependencies** | Node standard library only, in the package and in the tests. No install step, nothing to audit, nothing to break. |
-| **One source of truth per fact** | `AGENTS.md` generates every rule file. `graph.json` generates `MAP.md` and its own freshness signatures. A generated file cannot be edited in the wrong place. |
-| **Derive, do not duplicate** | Skill trust comes from the log stream rather than a second store, because a stale record would actively mislead the next agent. |
-| **Hooks never throw** | Malformed input, missing git, absent `.agent/` — all exit 0. |
-| **Nothing absolute is committed** | Paths in the graph are sanitized to the project root, so no machine layout or username ships in your repo. |
-| **Shortcuts are marked** | A `godkit:` comment names the ceiling and the upgrade path. An unmarked shortcut is indistinguishable from a mistake. |
+| **Zero runtime dependencies** | Node's standard library only, in the package, the hooks, the MCP server and the tests. |
+| **One source of truth per fact** | `AGENTS.md` generates every rule file; `hooks/godkit-hooks.json` every hook registration; `graph.json` the map and its freshness. |
+| **Enforce with the strongest tool the agent has** | Hooks where they exist, MCP everywhere, git and CI underneath. Instructions are the floor, not the plan. |
+| **Hooks never throw** | A broken hook must not break the session it was meant to help. |
+| **Derive, do not duplicate** | Skill trust and refactor scores come from the log stream, not a second store that could go stale. |
+| **Nothing absolute is committed** | Paths in the graph are relative to the project root; no machine layout or username ships in your repo. |
+| **Shortcuts are marked** | A `godkit:` comment names the ceiling and the upgrade path. |
 
 ## Development
 
 ```bash
 npm test                            # node --test, no framework
 node scripts/sync-rules.js          # regenerate the rule copies from AGENTS.md
-node scripts/sync-rules.js --check  # fail if any drifted (runs in CI)
-node scripts/check-versions.js      # all four manifests agree on the version
+node scripts/sync-rules.js --check  # fail if any drifted (CI runs it)
+node scripts/sync-hooks.js          # regenerate hook registrations from hooks/godkit-hooks.json
+node scripts/check-versions.js      # all manifests agree on the version
 ```
 
-`npm test` runs `pretest` first, so the rule-sync and version checks gate the suite. CI runs the same three steps across `{ubuntu, windows} × {node 18, 22, 24}`.
+`npm test` runs the sync and version checks first. CI runs on `{ubuntu, windows} × {node 18, 22, 24}`.
+The landing page is in [`site/`](site/README.md).
 
-Contributions follow the protocol the tool describes: read `.agent/BOARD.md`, claim your scope, and leave a log entry. Adding a skill means a `skills/<name>/SKILL.md` with frontmatter and a `## Boundaries` section, plus a matching `commands/<name>.toml` — the contract tests enforce both.
+Contributions follow the protocol the tool describes: read `.agent/BOARD.md`, claim your scope,
+leave a log. A new skill is `skills/<name>/SKILL.md` with frontmatter and a `## Boundaries` section,
+plus a matching `commands/<name>.toml`; the contract tests enforce both.
 
 <br>
 
