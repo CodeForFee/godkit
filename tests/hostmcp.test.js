@@ -214,5 +214,7 @@ test('antigravity: a Bash-only change is now seen, because the before-snapshot c
 })
 
 test('board.unclaimed is what check-staged uses; the module agrees with the CLI', () => {
-  assert.deepEqual(board.unclaimed(fs.readFileSync(path.join(ROOT, '.agent', 'BOARD.md'), 'utf8'), ['.agent/x.md']), [])
+  // The shipped template, not this repo's own board: .agent/ is local-only here, so a checkout
+  // (CI) does not have one.
+  assert.deepEqual(board.unclaimed(fs.readFileSync(path.join(ROOT, 'templates', 'BOARD.md'), 'utf8'), ['.agent/x.md']), [])
 })
