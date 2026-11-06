@@ -3,381 +3,387 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="dark" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-    <meta name="theme-color" content="#f7f5f1" />
+    <meta name="theme-color" content="#05050b" />
 
-    <title>Godkit — one shared harness for every AI agent</title>
+    <title>Godkit — one shared harness for every coding agent</title>
     <meta
       name="description"
-      content="Claude Code, Cursor, Codex and Antigravity all point at the same repo. Godkit gives them one committed board, map and log — so work is not redone and two agents never edit the same file."
+      content="Claude Code, Codex, Cursor and Antigravity work on the same repo. Godkit gives them one committed memory, hooks that enforce the protocol, a guard against destructive commands, and subagents with permissions that hold."
     />
     <link rel="canonical" href="https://godkit.vercel.app/" />
-
     <meta property="og:type" content="website" />
-    <meta property="og:title" content="Godkit — one shared harness for every AI agent" />
+    <meta property="og:title" content="Godkit — one shared harness for every coding agent" />
     <meta
       property="og:description"
-      content="One committed .agent/ directory. Read it before you edit, write your log before you finish. Zero dependencies."
+      content="One committed .agent/ directory, hooks on four agents, an MCP server, a guard, and Claude-style subagents on Codex. Zero runtime dependencies."
     />
     <meta name="twitter:card" content="summary_large_image" />
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;0,6..72,500;1,6..72,300;1,6..72,400&family=JetBrains+Mono:wght@400;500;700&family=Instrument+Sans:wght@400;500;600&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap"
       rel="stylesheet"
     />
 
     <script type="module" src="/src/main.ts"></script>
   </head>
   <body>
-    <div class="bg" aria-hidden="true">
-      <div class="glow glow-a"></div>
-      <div class="glow glow-b"></div>
-      <div class="grid"></div>
-    </div>
+    <a class="skip" href="#main">Skip to content</a>
+    <canvas class="stars" data-stars aria-hidden="true"></canvas>
+    <div class="spot" data-spot aria-hidden="true"></div>
+    <div class="progress" aria-hidden="true"><span data-progress></span></div>
 
-    <!-- ══ hero ══════════════════════════════════════════════════════════ -->
-    <header class="hero">
-      <div class="mark">
-        <svg viewBox="0 0 128 128" width="62" height="62" aria-hidden="true">
-          <g fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" opacity=".45">
-            <path d="M64 34v14M64 80v14M34 64h14M80 64h14" />
-            <rect x="49" y="9" width="30" height="25" rx="6" />
-            <rect x="49" y="94" width="30" height="25" rx="6" />
-            <rect x="9" y="49" width="25" height="30" rx="6" />
-            <rect x="94" y="49" width="25" height="30" rx="6" />
-          </g>
-          <rect x="46" y="46" width="36" height="36" rx="9" fill="url(#g)" />
-          <g stroke="#fff" stroke-width="4" stroke-linecap="round">
-            <path d="M55 58h18M55 64h18M55 70h11" />
-          </g>
-          <defs>
-            <linearGradient id="g" x1="46" y1="46" x2="82" y2="82" gradientUnits="userSpaceOnUse">
-              <stop stop-color="#c2680d" /><stop offset="1" stop-color="#9a3412" />
-            </linearGradient>
-          </defs>
-        </svg>
-      </div>
-
-      <p class="eyebrow"><span class="dot"></span> v1.0.0 · zero dependencies · MIT</p>
-
-      <h1>One shared harness<br />for <em>every</em> AI agent</h1>
-
-      <p class="sub">
-        Four tools, one repo, four private memories. Godkit gives them one memory that is
-        committed.
-      </p>
-
-      <div class="actions">
-        <button class="cmd" type="button"><code>npx @codeforfee/godkit init</code></button>
-        <a class="ghost" href="https://github.com/CodeForFee/godkit">
-          GitHub
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M7 17 17 7M9 7h8v8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        </a>
-      </div>
-
-      <ul class="stats">
-        <li><b>0</b><span>runtime dependencies</span></li>
-        <li><b>16</b><span>skills, same everywhere</span></li>
-        <li><b>4</b><span>agent tools, one protocol</span></li>
-        <li><b>209</b><span>tests, green</span></li>
+    <!-- ══ nav ══════════════════════════════════════════════════════════ -->
+    <nav class="nav" aria-label="Primary">
+      <a class="brand" href="#top" aria-label="Godkit, back to top">
+        <img class="brand-mark" src="/logo.svg" alt="" width="28" height="28" />
+        <span>godkit</span>
+      </a>
+      <ul class="nav-links">
+        <li><a href="#agents">Agents</a></li>
+        <li><a href="#capabilities">Capabilities</a></li>
+        <li><a href="#protocol">Protocol</a></li>
+        <li><a href="#hosts">Support</a></li>
+        <li><a href="#cli">CLI</a></li>
       </ul>
+      <a class="btn glass sm" href="https://github.com/CodeForFee/godkit">GitHub</a>
+    </nav>
+
+    <!-- ══ hero ═════════════════════════════════════════════════════════ -->
+    <header class="hero" id="top" data-hero-zone>
+      <div class="beam" data-beam aria-hidden="true"></div>
+
+      <!-- sides: 3D cubes and two live cards, so neither margin is empty -->
+      <div class="side left" aria-hidden="true">
+        <div class="cube-scene" data-depth="0.6" style="--s: 5.2rem">
+          <div class="cube" data-cube>
+            <span class="f fr">claim</span><span class="f bk">log</span><span class="f rt">verify</span>
+            <span class="f lf">map</span><span class="f tp">.agent</span><span class="f bt">brief</span>
+          </div>
+        </div>
+        <div class="float-card log" data-depth="1.1">
+          <p class="fc-k"><span class="ok-dot"></span>log · verified</p>
+          <p class="fc-t">2026-11-05 · claude-opus-5</p>
+          <code>npm test → 330 passing</code>
+        </div>
+      </div>
+      <div class="side right" aria-hidden="true">
+        <div class="float-card deny" data-depth="1.2">
+          <p class="fc-k"><span class="no-dot"></span>guard · denied</p>
+          <code>git push --force origin main</code>
+          <p class="fc-t">use --force-with-lease</p>
+        </div>
+        <div class="cube-scene" data-depth="0.5" style="--s: 4.2rem">
+          <div class="cube" data-cube>
+            <span class="f fr">Claude</span><span class="f bk">Codex</span><span class="f rt">Cursor</span>
+            <span class="f lf">agy</span><span class="f tp">MCP</span><span class="f bt">hooks</span>
+          </div>
+        </div>
+      </div>
+      <div class="hero-copy">
+        <p class="eyebrow" data-hero>
+          <span class="eb-logos" aria-hidden="true"><img src="/logos/claude.png" alt="" width="28" height="28" /><img src="/logos/codex.png" alt="" width="28" height="28" /><img src="/logos/cursor.png" alt="" width="28" height="28" /><img src="/logos/antigravity.png" alt="" width="28" height="28" /></span>
+          <span>Runs inside <b>Claude Code</b>, <b>Codex</b>, <b>Cursor</b> and <b>Antigravity</b></span>
+        </p>
+        <h1 data-hero-title>
+          <span class="line"><span><span class="grad">One memory</span> for</span></span>
+          <span class="line"><span>every coding agent</span></span>
+        </h1>
+        <p class="sub" data-hero>
+          Claude Code, Codex, Cursor and Antigravity share one committed <code>.agent/</code>, with hooks
+          that make them read it, a guard that runs before their commands, and subagents whose permissions hold.
+        </p>
+        <div class="actions" data-hero>
+          <button class="btn primary" type="button" data-copy="npx @codeforfee/godkit init" aria-describedby="copy-status">
+            <code>npx @codeforfee/godkit init</code>
+            <svg class="ic" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+          </button>
+          <a class="btn glass" href="#agents">See how it works</a>
+          <span class="sr-only" id="copy-status" role="status" aria-live="polite"></span>
+        </div>
+      </div>
+
+      <!-- the board, as a product screen -->
+      <div class="stage" data-stage>
+        <div class="board" aria-label="The godkit board for a project, as an agent sees it" role="img">
+          <div class="board-top">
+            <span class="board-logo">godkit</span>
+            <ul class="tabs" aria-hidden="true">
+              <li class="on">Board</li><li>Map</li><li>Logs</li><li>Sprints</li><li>Agents</li>
+            </ul>
+            <span class="round" aria-hidden="true"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></span>
+            <span class="avatar" aria-hidden="true">C</span>
+          </div>
+
+          <div class="board-head">
+            <div>
+              <p class="welcome">Welcome back, <span>claude-opus-5</span></p>
+              <ul class="meters">
+                <li><span class="lab">Claims</span><span class="bar pink" style="--w: 64%">2 live</span></li>
+                <li><span class="lab">Map</span><span class="bar white" style="--w: 100%">fresh</span></li>
+                <li><span class="lab">Tests</span><span class="bar gray" style="--w: 100%">330 green</span></li>
+                <li><span class="lab">Guard</span><span class="bar striped" style="--w: 100%">on</span></li>
+              </ul>
+            </div>
+            <dl class="kpis">
+              <div><dt><span data-count="4">4</span></dt><dd>agents</dd><span class="delta up">hooks</span></div>
+              <div><dt><span data-count="9">9</span></dt><dd>MCP tools</dd><span class="delta up">+3</span></div>
+              <div><dt><span data-count="16">16</span></dt><dd>skills</dd><span class="delta">same</span></div>
+            </dl>
+          </div>
+
+          <div class="board-grid">
+            <div class="panel summary">
+              <p class="panel-h">Live claims</p>
+              <ul>
+                <li><i class="c1"></i>lib/auth/*<b>claude</b></li>
+                <li><i class="c2"></i>docs/<b>codex</b></li>
+                <li><i class="c3"></i>site/*<b>agy</b></li>
+              </ul>
+              <p class="panel-note">Each claim carries its session. Any other session is denied an edit inside it.</p>
+            </div>
+
+            <div class="panel chart">
+              <div class="chart-head">
+                <p class="panel-h">Sessions by agent</p>
+                <ul class="seg" aria-hidden="true"><li>12 weeks</li><li class="on">30 days</li><li>1 week</li></ul>
+              </div>
+              <svg viewBox="0 0 420 150" class="lines" aria-hidden="true">
+                <g class="gridlines"><path d="M0 30H420M0 70H420M0 110H420"/></g>
+                <path data-line class="l-a" d="M0 120 C40 112 60 40 100 46 S160 130 200 104 S260 20 300 52 S360 90 420 70" />
+                <path data-line class="l-b" d="M0 90 C40 80 70 116 110 108 S170 30 210 60 S280 120 320 96 S380 60 420 84" />
+                <circle class="pt" cx="210" cy="60" r="5" />
+              </svg>
+              <span class="tip">5 Nov · 18 sessions</span>
+            </div>
+
+            <div class="panel blue">
+              <p class="panel-h">Guard</p>
+              <p class="blue-p">Force pushes, <code>reset --hard</code> and edits inside another agent's claim stop before they run.</p>
+              <ul class="stack">
+                <li>denied today <b>3</b></li>
+                <li>allowed <b>41</b></li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
     </header>
 
-    <main>
-      <!-- ══ problem ═══════════════════════════════════════════════════── -->
-      <section class="sec" id="problem">
-        <p class="kicker">The problem</p>
-        <h2>Every agent arrives blind</h2>
-        <p class="lead">
-          It cannot see what was already done, or which files another agent is holding. Private
-          memory cannot fix that: Cursor cannot read Claude's, and Claude cannot read Cursor's.
+    <div class="marquee" aria-hidden="true">
+      <div class="marquee-track">
+        <span class="ag"><img src="/logos/claude.png" alt="" width="26" height="26" />Claude Code</span><i></i><span class="ag"><img src="/logos/codex.png" alt="" width="26" height="26" />Codex</span><i></i><span class="ag"><img src="/logos/cursor.png" alt="" width="26" height="26" />Cursor</span><i></i><span class="ag"><img src="/logos/antigravity.png" alt="" width="26" height="26" />Antigravity</span><i></i>
+        <span>godkit_claim</span><i></i><span>guard.js</span><i></i><span>godkit rewind</span><i></i><span>godkit_agent</span><i></i>
+        <span>sprint close</span><i></i><span>godkit verify</span><i></i><span>.agent/</span><i></i><span>MCP</span><i></i>
+        <span class="ag"><img src="/logos/claude.png" alt="" width="26" height="26" />Claude Code</span><i></i><span class="ag"><img src="/logos/codex.png" alt="" width="26" height="26" />Codex</span><i></i><span class="ag"><img src="/logos/cursor.png" alt="" width="26" height="26" />Cursor</span><i></i><span class="ag"><img src="/logos/antigravity.png" alt="" width="26" height="26" />Antigravity</span><i></i>
+        <span>godkit_claim</span><i></i><span>guard.js</span><i></i><span>godkit rewind</span><i></i><span>godkit_agent</span><i></i>
+        <span>sprint close</span><i></i><span>godkit verify</span><i></i><span>.agent/</span><i></i><span>MCP</span><i></i>
+      </div>
+    </div>
+
+    <main id="main">
+      <!-- ══ agents → .agent/ ══════════════════════════════════════════ -->
+      <section class="sec center" id="agents" aria-labelledby="agents-h">
+        <h2 id="agents-h" data-reveal>One memory, every agent</h2>
+        <p class="lead" data-reveal>
+          Four tools open the same repository with four private memories. Godkit wires them into one
+          directory that is committed, so it shows up in the diff and git merges it.
         </p>
 
-        <div class="compare">
-          <div class="cmp bad">
-            <p class="cmp-h"><span class="badge no">without godkit</span></p>
-            <ul class="memlist">
-              <li><b>Claude Code</b><code>~/.claude/</code><span class="cut" aria-hidden="true"></span></li>
-              <li><b>Cursor</b><code>.cursor/</code><span class="cut" aria-hidden="true"></span></li>
-              <li><b>Codex</b><code>~/.codex/</code><span class="cut" aria-hidden="true"></span></li>
-            </ul>
-            <p class="cmp-cap">
-              Three private memories, none readable by the other two — so the same work gets done
-              twice and two agents edit one file.
-            </p>
-          </div>
-
-          <div class="cmp good">
-            <p class="cmp-h"><span class="badge yes">with godkit</span></p>
-            <ul class="memlist row">
-              <li><b>Claude Code</b></li>
-              <li><b>Cursor</b></li>
-              <li><b>Codex</b></li>
-            </ul>
-            <svg class="wires" viewBox="0 0 300 54" preserveAspectRatio="none" aria-hidden="true">
-              <path d="M50 0 V22 H150 V50" /><path d="M150 0 V50" /><path d="M250 0 V22 H150 V50" />
+        <div class="circuit" data-circuit>
+          <ul class="nodes">
+            <li class="node" data-tilt3d><img class="node-logo" src="/logos/claude.png" alt="" width="40" height="40" /><b>Claude Code</b><span>12 hooks, every tool guarded</span></li>
+            <li class="node" data-tilt3d><img class="node-logo" src="/logos/codex.png" alt="" width="40" height="40" /><b>Codex</b><span>12 hooks, approved once in /hooks</span></li>
+            <li class="node" data-tilt3d><img class="node-logo" src="/logos/cursor.png" alt="" width="40" height="40" /><b>Cursor</b><span>5 adapted hooks, shell guard</span></li>
+            <li class="node" data-tilt3d><img class="node-logo" src="/logos/antigravity.png" alt="" width="40" height="40" /><b>Antigravity</b><span>4 adapted hooks, every tool guarded</span></li>
+          </ul>
+          <svg class="wires" viewBox="0 0 300 360" preserveAspectRatio="none" aria-hidden="true">
+            <path data-wire pathLength="100" d="M0 52 H70 Q90 52 90 72 V160 Q90 180 110 180 H300" />
+            <path data-wire pathLength="100" d="M0 140 H50 Q70 140 70 160 V170 Q70 180 90 180 H300" />
+            <path data-wire pathLength="100" d="M0 222 H50 Q70 222 70 202 V190 Q70 180 90 180 H300" />
+            <path data-wire pathLength="100" d="M0 308 H70 Q90 308 90 288 V200 Q90 180 110 180 H300" />
+            <path data-pulse class="pulse" pathLength="100" d="M0 52 H70 Q90 52 90 72 V160 Q90 180 110 180 H300" />
+            <path data-pulse class="pulse" pathLength="100" d="M0 140 H50 Q70 140 70 160 V170 Q70 180 90 180 H300" />
+            <path data-pulse class="pulse" pathLength="100" d="M0 222 H50 Q70 222 70 202 V190 Q70 180 90 180 H300" />
+            <path data-pulse class="pulse" pathLength="100" d="M0 308 H70 Q90 308 90 288 V200 Q90 180 110 180 H300" />
+            <g class="pins" data-pins></g>
+          </svg>
+          <div class="chip-wrap">
+            <svg class="traces" viewBox="0 0 320 320" aria-hidden="true">
+              <g data-traces>
+                <path d="M160 70V20M140 70V36L128 24M180 70V36L192 24M120 72V48L104 32M200 72V48L216 32" />
+                <path d="M160 250V300M140 250V284L128 296M180 250V284L192 296M120 248V272L104 288M200 248V272L216 288" />
+                <path d="M250 160H300M250 140H284L296 128M250 180H284L296 192M248 120H272L288 104M248 200H272L288 216" />
+              </g>
             </svg>
-            <p class="hub"><code>.agent/</code> <span>committed — it shows up in the diff</span></p>
-            <p class="cmp-cap">
-              One board, one map, one log, in the repo every tool already opens.
-            </p>
+            <div class="chip" data-chip>
+              <code>.agent/</code>
+              <span>board · map · logs</span>
+            </div>
           </div>
-        </div>
-
-        <blockquote>
-          The only shared memory between tools<br />is the filesystem they both open.
-        </blockquote>
-      </section>
-
-      <!-- ══ the workflow ══════════════════════════════════════════════── -->
-      <section class="sec" id="flow">
-        <p class="kicker">The protocol</p>
-        <h2>Six steps, every session, every tool</h2>
-        <p class="lead">
-          Not a suggestion: on Claude Code and Codex a <code>Stop</code> hook blocks the turn until
-          the log exists.
-        </p>
-
-        <div class="flow">
-          <div class="track"><span class="pulse"></span></div>
-          <div class="step" style="--i: 0">
-            <div class="step-num">01</div>
-            <h3>Clock in</h3>
-            <p>Read the board, the map, the last two logs.</p>
-          </div>
-          <div class="step" style="--i: 1">
-            <div class="step-num">02</div>
-            <h3>Claim</h3>
-            <p>Your file globs, on the board, before you edit.</p>
-          </div>
-          <div class="step" style="--i: 2">
-            <div class="step-num">03</div>
-            <h3>Work</h3>
-            <p>Inside your scope. Found a bug outside it? File it.</p>
-          </div>
-          <div class="step" style="--i: 3">
-            <div class="step-num">04</div>
-            <h3>Verify</h3>
-            <p>Run the exit condition. A return value is not evidence.</p>
-          </div>
-          <div class="step" style="--i: 4">
-            <div class="step-num">05</div>
-            <h3>Log</h3>
-            <p>Real paths, real commands, real output.</p>
-          </div>
-          <div class="step" style="--i: 5">
-            <div class="step-num">06</div>
-            <h3>Hand off</h3>
-            <p>Release the claim. The next agent starts cold.</p>
-          </div>
-        </div>
-
-        <p class="loopnote"><span class="loop-arrow" aria-hidden="true"></span> and the next session starts at 01 again</p>
-
-        <div class="rules">
-          <p class="rule">Read <code>.agent/</code> before you edit.</p>
-          <span class="rule-sep"></span>
-          <p class="rule">Write your log before you finish.</p>
         </div>
       </section>
 
-      <!-- ══ the directory ═════════════════════════════════════════════── -->
-      <section class="sec" id="state">
-        <p class="kicker">The shared state</p>
-        <h2>One directory, and it is committed</h2>
-        <p class="lead">
-          Not a database, not a service, not a plugin API — markdown every tool can already open
-          and git can already merge.
-        </p>
+      <!-- ══ bento ═════════════════════════════════════════════════════ -->
+      <section class="sec" id="capabilities" aria-labelledby="cap-h">
+        <h2 id="cap-h" class="center" data-reveal>What the harness does for them</h2>
+        <div class="bento">
+          <article class="tile blue big" data-reveal data-tilt3d>
+            <h3>Every agent,<br />one board.</h3>
+            <p>At the start of each session a hook puts the live claims, open bugs, the map state and the newest logs in front of the model. No agent arrives blind.</p>
+            <div class="sparkles" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+          </article>
 
-        <div class="win">
-          <div class="win-bar"><i></i><i></i><i></i><span>.agent/</span></div>
-          <pre><code><span class="f">BOARD.md</span>               <span class="c">roster · claims · bugs · decisions — one screen</span>
-<span class="f">THREAD.md</span>              <span class="c">append-only conversation between agents</span>
-<span class="f">BRIEF.md</span>               <span class="c">what this is, before there is code to map</span>
-<span class="f">MAP.md</span>                 <span class="c">what this codebase is (generated)</span>
-<span class="f">graph.json</span>             <span class="c">the machine-readable map</span>
-<span class="f">sprints/S-001.md</span>       <span class="c">a goal, and the waves of tasks under it</span>
-<span class="f">tasks/T-001-*.md</span>       <span class="c">Plan · Execute · Review · Test · Handoff</span>
-<span class="f">log/&lt;UTC&gt;-&lt;model&gt;.md</span>   <span class="c">one per session, never edited by anyone else</span></code></pre>
-        </div>
+          <article class="tile shot" data-reveal data-tilt3d aria-label="The brief a session starts with">
+            <div class="tilt" data-tilt>
+              <div class="term">
+                <div class="term-bar"><i></i><i></i><i></i><span>SessionStart · brief.js</span></div>
+                <pre class="term-body" data-typer><code><span class="tl"><span class="t-h">## Handoff (.agent/)</span></span>
+<span class="tl"><span class="t-h">### BOARD</span></span>
+<span class="tl">  claude-opus-5 <span class="t-dim">(9fe96f63)</span>  <span class="t-f">lib/auth/*</span>  wip</span>
+<span class="tl">  codex-5.6     <span class="t-dim">(4b1e0c27)</span>  <span class="t-f">docs/</span>       wip</span>
+<span class="tl">  <span class="t-warn">B-014</span> token refresh races on resume</span>
+<span class="tl"><span class="t-h">### MAP</span>  fresh at a41c9e2 · 183 nodes</span>
+<span class="tl"><span class="t-ok">Claim your scope before you edit.</span></span><span class="caret" aria-hidden="true"></span></code></pre>
+              </div>
+            </div>
+          </article>
 
-        <p class="lead sm">
-          <strong>One log file per session</strong> is the whole concurrency design: two tools
-          never write the same file, so git merges them without a thought.
-        </p>
-      </section>
+          <article class="tile chat" data-reveal data-tilt3d>
+            <ul class="msgs">
+              <li class="msg"><span class="pill indigo">Claimed</span><span class="msg-id">lib/auth/*</span><p>Taking the token refresh race, B-014.</p><span class="who"><i class="av a1">C</i>claude-opus-5<small>9fe96f63</small></span></li>
+              <li class="msg"><span class="pill red">Denied</span><span class="msg-id">token.ts</span><p>Edit refused: inside claude-opus-5's open claim.</p><span class="who"><i class="av a2">X</i>codex-5.6<small>4b1e0c27</small></span></li>
+              <li class="msg"><span class="pill white">Released</span><span class="msg-id">lib/auth/*</span><p>Done, verified: <code>npm test</code> 330 passing.</p><span class="who"><i class="av a1">C</i>claude-opus-5<small>9fe96f63</small></span></li>
+              <li class="msg"><span class="pill indigo">Claimed</span><span class="msg-id">lib/auth/*</span><p>Picking up where claude left off, from its log.</p><span class="who"><i class="av a2">X</i>codex-5.6<small>4b1e0c27</small></span></li>
+            </ul>
+            <h3 class="chat-h">Claims that hold</h3>
+          </article>
 
-      <!-- ══ sprints ═══════════════════════════════════════════════════── -->
-      <section class="sec" id="sprints">
-        <p class="kicker">Sprints</p>
-        <h2>Waves that cannot collide</h2>
-        <p class="lead">
-          A task is one seam. Several seams aimed at one goal is a sprint — and the only rule that
-          governs a wave is which files it touches.
-        </p>
-
-        <ol class="waves">
-          <li class="wv">
-            <span class="wv-h">Wave 1 — runs in parallel</span>
-            <span class="tasks"><i>T-001</i><i>T-002</i><i>T-003</i></span>
-            <p>No two of them touch the same file.</p>
-          </li>
-          <li class="gate">
-            <span class="wv-h">Join gate</span>
-            <p>Full suite green before the next wave starts.</p>
-          </li>
-          <li class="wv">
-            <span class="wv-h">Wave 2 — runs in parallel</span>
-            <span class="tasks"><i>T-004</i><i>T-005</i></span>
-            <p>A task wanting a file wave 1 claimed waited for this one.</p>
-          </li>
-          <li class="gate">
-            <span class="wv-h">Join gate</span>
-            <p>Full suite green again.</p>
-          </li>
-          <li class="wv done">
-            <span class="wv-h">Sprint closes</span>
-            <span class="tasks"><i>every task proven</i></span>
-            <p><code>sprint close</code> refuses while anything is unproven.</p>
-          </li>
-        </ol>
-
-        <div class="win">
-          <div class="win-bar"><i></i><i></i><i></i><span>godkit sprint</span></div>
-          <pre><code><span class="p">$</span> godkit sprint
-S-001  open  ship auth
-
-  task     owner               phase     state
-  T-001    <span class="m">claude-opus-5</span>       done      <span class="ok">proven</span>
-  T-002    <span class="m">codex-5.6-terra</span>     done      <span class="ok">proven</span>
-  T-003    <span class="m">gemini-3.6-pro</span>      execute   ok
-
-  1 blocker(s) — `godkit sprint close` lists them</code></pre>
+          <article class="tile dark" data-reveal data-tilt3d>
+            <h3>Subagents that obey their file, on any agent.</h3>
+            <p>A named agent runs as its own <code>codex exec</code> or <code>claude -p</code> process. Read-only means a read-only sandbox, not a polite request.</p>
+            <a class="btn primary sm" href="#features">Discover</a>
+          </article>
         </div>
       </section>
 
-      <!-- ══ identity ══════════════════════════════════════════════════── -->
-      <section class="sec narrow" id="identity">
-        <p class="kicker">Identity</p>
-        <h2>Signed by a model, never by a tool</h2>
-        <div class="idcards">
-          <div class="idc bad">
-            <span class="badge no">rejected</span>
-            <code>agent: "claude"</code>
-            <span class="idc-why">Which model? Costs and failure modes differ.</span>
+      <!-- ══ floating features ═════════════════════════════════════════ -->
+      <section class="sec" id="features" aria-labelledby="feat-h">
+        <h2 id="feat-h" class="center" data-reveal>Everything an agent needs, nothing it can break</h2>
+        <ul class="floaty">
+          <li class="fcard" data-float data-tilt3d style="--x: 4%; --y: 18%">
+            <span class="ficon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3 4 6v6c0 4.5 3.4 8.3 8 9 4.6-.7 8-4.5 8-9V6l-8-3Z"/><path d="m9 12 2 2 4-4"/></svg></span>
+            <h3>Guard</h3><p>Denies force push, <code>reset --hard</code>, a download piped into a shell, writes to <code>.env</code> and <code>.git/</code>.</p>
+          </li>
+          <li class="fcard" data-float data-tilt3d style="--x: 26%; --y: 0%">
+            <span class="ficon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="5" r="2.5"/><circle cx="5" cy="19" r="2.5"/><circle cx="19" cy="19" r="2.5"/><path d="M12 7.5V12M12 12 6.5 17M12 12l5.5 5"/></svg></span>
+            <h3>Subagents</h3><p>Explorer, planner, reviewer, implementer. Permissions from the file, enforced by the sandbox.</p>
+          </li>
+          <li class="fcard hi" data-float data-tilt3d style="--x: 48%; --y: 30%">
+            <span class="ficon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/><path d="M12 8v4l3 2"/></svg></span>
+            <h3>Checkpoints</h3><p>The tree is saved as a hidden git ref before each edit. <code>godkit rewind</code> goes back, and can be undone.</p>
+          </li>
+          <li class="fcard" data-float data-tilt3d style="--x: 72%; --y: 4%">
+            <span class="ficon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="6" rx="2"/><rect x="3" y="14" width="18" height="6" rx="2"/><path d="M7 7h.01M7 17h.01"/></svg></span>
+            <h3>MCP server</h3><p>Nine tools on all four agents: claim, log, recall, map, verify, delegate, run a subagent.</p>
+          </li>
+          <li class="fcard" data-float data-tilt3d style="--x: 14%; --y: 62%">
+            <span class="ficon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 6h10M4 12h16M4 18h7"/><circle cx="18" cy="6" r="2"/><circle cx="15" cy="18" r="2"/></svg></span>
+            <h3>Sprints</h3><p>Waves of tasks whose files cannot overlap, a join gate after each, and no close while anything is unproven.</p>
+          </li>
+          <li class="fcard" data-float data-tilt3d style="--x: 70%; --y: 58%">
+            <span class="ficon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M9 11l3 3 8-8"/><path d="M20 12v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h9"/></svg></span>
+            <h3>Verify</h3><p>A "done" without the command and its output is a blocking finding. So is a log signed by a tool, not a model.</p>
+          </li>
+        </ul>
+      </section>
+
+      <!-- ══ protocol ring ═════════════════════════════════════════════ -->
+      <section class="sec center" id="protocol" aria-labelledby="protocol-h">
+        <h2 id="protocol-h" data-reveal>Six steps, every session</h2>
+        <p class="lead" data-reveal>Read <code>.agent/</code> before you edit. Write your log before you finish. Hooks hold every agent to both.</p>
+        <div class="portal" data-portal>
+          <div class="orbit" aria-hidden="true"></div>
+          <div class="ring" aria-hidden="true">
+            <canvas data-rain></canvas>
           </div>
-          <div class="idc good">
-            <span class="badge yes">accepted</span>
-            <code>agent: "claude-opus-5"</code>
-            <span class="idc-why">Answerable — the next agent knows who claimed it.</span>
-          </div>
+          <ol class="orbiters" data-orbit>
+            <li style="--a: 0deg"><span>01 Clock in</span></li>
+            <li style="--a: 60deg"><span>02 Claim</span></li>
+            <li style="--a: 120deg"><span>03 Work</span></li>
+            <li style="--a: 180deg"><span>04 Verify</span></li>
+            <li style="--a: 240deg"><span>05 Log</span></li>
+            <li style="--a: 300deg"><span>06 Hand off</span></li>
+          </ol>
         </div>
-        <p class="lead">
-          One tool runs many models, and an agent reading someone else's unproven claim needs to
-          know which one made it. <code>godkit verify</code> rejects a bare tool name.
-        </p>
       </section>
 
-      <!-- ══ hosts ═════════════════════════════════════════════════════── -->
-      <section class="sec" id="hosts">
-        <p class="kicker">Compatibility</p>
-        <h2>Four tools, one protocol</h2>
-        <p class="lead">Same 16 skills, same <code>.agent/</code>. Only the install path differs.</p>
-
-        <div class="tablewrap">
+      <!-- ══ hosts ═════════════════════════════════════════════════════ -->
+      <section class="sec" id="hosts" aria-labelledby="hosts-h">
+        <h2 id="hosts-h" class="center" data-reveal>Where it runs</h2>
+        <p class="lead center" data-reveal>Registered once per machine, read by each agent's CLI, editor extension and desktop app alike.</p>
+        <div class="tablewrap" data-reveal>
           <table class="matrix">
             <thead>
-              <tr>
-                <th scope="col">Tool</th>
-                <th scope="col">Skills go to</th>
-                <th scope="col">Rules file</th>
-                <th scope="col">Protocol is</th>
-              </tr>
+              <tr><th scope="col">Agent</th><th scope="col">Hooks</th><th scope="col">Guard</th><th scope="col">MCP</th><th scope="col">Rules</th></tr>
             </thead>
             <tbody>
-              <tr>
-                <th scope="row">Claude Code</th>
-                <td data-label="Skills go to"><code>~/.claude/skills/</code></td>
-                <td data-label="Rules file"><code>CLAUDE.md</code></td>
-                <td data-label="Protocol is"><span class="badge yes">enforced by a hook</span></td>
-              </tr>
-              <tr>
-                <th scope="row">Codex</th>
-                <td data-label="Skills go to"><code>~/.agents/skills/</code></td>
-                <td data-label="Rules file"><code>AGENTS.md</code></td>
-                <td data-label="Protocol is"><span class="badge yes">enforced by a hook</span></td>
-              </tr>
-              <tr>
-                <th scope="row">Cursor</th>
-                <td data-label="Skills go to"><span class="na">no skill dir</span></td>
-                <td data-label="Rules file"><code>.cursor/rules/godkit.mdc</code></td>
-                <td data-label="Protocol is"><span class="badge">instructed</span></td>
-              </tr>
-              <tr>
-                <th scope="row">Antigravity</th>
-                <td data-label="Skills go to"><code>~/.gemini/antigravity/</code></td>
-                <td data-label="Rules file"><code>.agents/rules/godkit.md</code></td>
-                <td data-label="Protocol is"><span class="badge">instructed</span></td>
-              </tr>
+              <tr><th scope="row">Claude Code</th><td data-label="Hooks"><span class="pill indigo">full · 12</span></td><td data-label="Guard"><span class="pill indigo">every tool</span></td><td data-label="MCP"><span class="pill indigo">9 tools</span></td><td data-label="Rules"><code>CLAUDE.md</code></td></tr>
+              <tr><th scope="row">Codex</th><td data-label="Hooks"><span class="pill indigo">full · 12</span><small>approve once in <code>/hooks</code></small></td><td data-label="Guard"><span class="pill indigo">every tool</span></td><td data-label="MCP"><span class="pill indigo">9 tools</span></td><td data-label="Rules"><code>AGENTS.md</code></td></tr>
+              <tr><th scope="row">Antigravity</th><td data-label="Hooks"><span class="pill soft">adapted · 4</span></td><td data-label="Guard"><span class="pill indigo">every tool</span></td><td data-label="MCP"><span class="pill indigo">9 tools</span></td><td data-label="Rules"><code>.agents/rules/</code></td></tr>
+              <tr><th scope="row">Cursor</th><td data-label="Hooks"><span class="pill soft">adapted · 5</span></td><td data-label="Guard"><span class="pill soft">shell commands</span></td><td data-label="MCP"><span class="pill indigo">9 tools</span></td><td data-label="Rules"><code>.cursor/rules/</code></td></tr>
             </tbody>
           </table>
         </div>
-
-        <p class="lead sm">
-          <strong>Enforced</strong> means the turn is blocked until the log exists.
-          <strong>Instructed</strong> means the rule is in the tool's own rules file.
-          All four are generated from one <code>AGENTS.md</code> and byte-compared in CI, so they
-          cannot drift apart.
-        </p>
+        <p class="note center">Registered is not running: <code>godkit doctor</code> shows the last time each agent actually ran a godkit hook.</p>
       </section>
 
-      <!-- ══ cli ═══════════════════════════════════════════════════════── -->
-      <section class="sec" id="cli">
-        <p class="kicker">Reference</p>
-        <h2>What you actually type</h2>
-        <div class="cmds">
-          <div class="cmd-row">
-            <code>godkit init</code>
-            <span>scaffold <code>.agent/</code> + the rule files, and set up this machine once</span>
-          </div>
-          <div class="cmd-row">
-            <code>godkit init --new</code>
-            <span>a project with no code yet: a brief instead of a map</span>
-          </div>
-          <div class="cmd-row">
-            <code>godkit sprint new "…"</code>
-            <span>a goal, and waves of file-disjoint tasks under it</span>
-          </div>
-          <div class="cmd-row">
-            <code>godkit sprint close</code>
-            <span>refuses while anything in it is unfinished or unproven</span>
-          </div>
-          <div class="cmd-row">
-            <code>godkit verify</code>
-            <span>every task and log against the rules the templates state</span>
-          </div>
-          <div class="cmd-row">
-            <code>godkit doctor</code>
-            <span>what is set up, and whether the map went stale</span>
-          </div>
+      <!-- ══ cli ═══════════════════════════════════════════════════════ -->
+      <section class="sec" id="cli" aria-labelledby="cli-h">
+        <h2 id="cli-h" class="center" data-reveal>What you actually type</h2>
+        <p class="lead center" data-reveal>Usually one command. The agents run the rest themselves.</p>
+        <dl class="cmds">
+          <div class="cmd" data-reveal data-tilt3d><dt><code>godkit init</code></dt><dd>the project and, once, the machine: <code>.agent/</code>, rules, skills, hooks, MCP</dd></div>
+          <div class="cmd" data-reveal data-tilt3d><dt><code>godkit doctor</code></dt><dd>what is set up, and which agents really ran it</dd></div>
+          <div class="cmd" data-reveal data-tilt3d><dt><code>godkit agent run &lt;name&gt;</code></dt><dd>a named subagent with enforced permissions</dd></div>
+          <div class="cmd" data-reveal data-tilt3d><dt><code>godkit rewind</code></dt><dd>back to a checkpoint taken before an edit</dd></div>
+          <div class="cmd" data-reveal data-tilt3d><dt><code>godkit sprint new "…"</code></dt><dd>a goal and its waves of file-disjoint tasks</dd></div>
+          <div class="cmd" data-reveal data-tilt3d><dt><code>godkit verify</code></dt><dd>is every "done" backed by evidence? Non-zero if not</dd></div>
+        </dl>
+      </section>
+
+      <!-- ══ cta ═══════════════════════════════════════════════════════ -->
+      <section class="cta" aria-labelledby="cta-h">
+        <div class="cta-light" aria-hidden="true">
+          <i class="cone wide"></i><i class="cone"></i><i class="source"></i>
+          <div class="motes" data-motes></div>
         </div>
-      </section>
-
-      <!-- ══ cta ═══════════════════════════════════════════════════════── -->
-      <section class="cta">
-        <h2>Give them a memory they share</h2>
-        <button class="cmd big" type="button"><code>npx @codeforfee/godkit init</code></button>
-        <p>Node 18+. No dependencies. Nothing to configure.</p>
+        <div class="cta-side l" aria-hidden="true">
+          <div class="cube-scene" style="--s: 4.6rem"><div class="cube" data-cube><span class="f fr">init</span><span class="f bk">doctor</span><span class="f rt">verify</span><span class="f lf">rewind</span><span class="f tp">agent</span><span class="f bt">sprint</span></div></div>
+        </div>
+        <div class="cta-side r" aria-hidden="true">
+          <div class="cube-scene" style="--s: 3.8rem"><div class="cube" data-cube><span class="f fr">0 deps</span><span class="f bk">MIT</span><span class="f rt">Node 18</span><span class="f lf">330 tests</span><span class="f tp">godkit</span><span class="f bt">v1.1</span></div></div>
+        </div>
+        <h2 id="cta-h"><span class="grad">Give them a memory</span><br />they share</h2>
+        <button class="btn primary lg" type="button" data-copy="npx @codeforfee/godkit init" aria-describedby="copy-status">
+          <code>npx @codeforfee/godkit init</code>
+          <svg class="ic" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+        </button>
+        <p>Node 18 or newer. No runtime dependencies. Nothing to configure.</p>
       </section>
     </main>
 
-    <footer>
-      <a href="https://www.npmjs.com/package/@codeforfee/godkit">npm</a>
-      <a href="https://github.com/CodeForFee/godkit">source</a>
-      <span>MIT © CodeForFee</span>
+    <footer class="foot">
+      <p class="wordmark" aria-hidden="true">godkit</p>
+      <div class="foot-row">
+        <span>MIT © CodeForFee</span>
+        <a href="https://www.npmjs.com/package/@codeforfee/godkit">npm</a>
+        <a href="https://github.com/CodeForFee/godkit">Source</a>
+        <a href="https://github.com/CodeForFee/godkit#readme">Docs</a>
+      </div>
     </footer>
   </body>
 </html>
