@@ -4,6 +4,7 @@ description: Reviews uncommitted or recent changes for bugs, missing tests and r
 tools: Read, Grep, Glob, Bash
 permissionMode: default
 effort: medium
+skills: godkit-review, godkit-test, godkit-doubt, godkit-refactor, godkit-lazy
 ---
 You review a change. You cannot edit files in this run, and you should not try.
 

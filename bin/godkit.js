@@ -510,9 +510,73 @@ function cmdAgent(args) {
     require('../lib/lazy').setModel(host, model)
     return log('default model for ' + host + ': ' + (model || 'host default'))
   }
-  if (action !== 'run' || rest.length < 2) return log('godkit agent run <name> "<task>" [--host codex|claude] [--model m] [--timeout sec]')
+  if (action === 'jobs') return printJobs(require('../lib/jobs').list().slice(0, 30))
+  if (action === 'wait') return waitJobs(rest, opt.timeout)
+  if (action !== 'run' || rest.length < 2) return log('godkit agent run <name> "<task>" [--host codex|claude] [--model m] [--timeout sec] [--background]   ·   godkit agent jobs   ·   godkit agent wait <id...>')
   const [name, ...task] = rest
-  const r = sub.runAgent({ name, task: task.join(' '), host: opt.host, model: opt.model, cwd: process.cwd(), timeoutMs: opt.timeout ? Number(opt.timeout) * 1000 : undefined })
+  const o = { name, task: task.join(' '), host: opt.host, model: opt.model, cwd: process.cwd(), timeoutMs: opt.timeout ? Number(opt.timeout) * 1000 : undefined }
+  if (args.includes('--background')) {
+    sub.findAgent(projectRoot(process.cwd()), name) // a typo fails here, not silently in the background
+    const job = require('../lib/jobs').start('agent', o)
+    return log(job.id + '  started ' + name + ' in the background · godkit agent wait ' + job.id)
+  }
+  const r = sub.runAgent(o)
+  log(r.text)
+  if (!r.ok) process.exitCode = 1
+}
+
+function printJobs(list) {
+  if (!list.length) return log('no jobs')
+  for (const j of list) {
+    const secs = Math.round(((j.ended ? Date.parse(j.ended) : Date.now()) - Date.parse(j.started)) / 1000)
+    log('  ' + j.id.padEnd(30) + j.state.padEnd(8) + String(secs + 's').padStart(6) + '  ' + j.title)
+  }
+}
+
+// Wait for background jobs (members, or a whole team), then print what each one reported.
+function waitJobs(ids, timeout) {
+  const jobs = require('../lib/jobs')
+  if (!ids.length) return log('godkit agent wait <id...> [--timeout sec]   (ids from `godkit agent jobs`)')
+  const done = jobs.wait(ids, (Number(timeout) || 1800) * 1000)
+  for (const j of done) {
+    log('=== ' + j.id + '  ' + j.state)
+    if (j.result) log(j.result.text)
+    else if (j.state === 'running') log('still running; wait again later')
+  }
+  if (done.some((j) => j.state !== 'done')) process.exitCode = 1
+}
+
+// A team of agents: plan, code in parallel waves, test, review, as the team file says.
+function cmdTeam(args) {
+  const team = require('../lib/team')
+  const words = []
+  const opt = {}
+  for (let i = 0; i < args.length; i++) {
+    if (['--host', '--model', '--timeout'].includes(args[i])) opt[args[i].slice(2)] = args[++i]
+    else if (!args[i].startsWith('--')) words.push(args[i])
+  }
+  const [action = 'show', ...rest] = words
+  const root = projectRoot(process.cwd())
+  if (action === 'show') {
+    const t = team.loadTeam(root)
+    log('team "' + t.name + '"  (' + path.relative(process.cwd(), t.file) + ')')
+    log('  ' + t.description)
+    for (const role of team.ROLES) log('  ' + role.padEnd(7) + t.roles[role].agent.padEnd(22) + (t.roles[role].skills.length ? '+ ' + t.roles[role].skills.join(', ') : ''))
+    log('  parallel ' + t.parallel + ' · rounds ' + t.rounds)
+    log('')
+    log('godkit team run "<goal>" [--host codex|claude] [--model m] [--timeout sec] [--background]')
+    log('Your own team: copy ' + path.relative(process.cwd(), path.join(ROOT, 'teams', 'default.md')) + ' to .agent/team.md and edit it.')
+    return
+  }
+  if (action !== 'run' || !rest.length) return log('godkit team [show] · godkit team run "<goal>" [--host codex|claude] [--model m] [--background]')
+  const o = { goal: rest.join(' '), host: opt.host, model: opt.model, cwd: process.cwd(), timeoutMs: opt.timeout ? Number(opt.timeout) * 1000 : undefined }
+  if (args.includes('--background')) {
+    team.loadTeam(root)
+    const job = require('../lib/jobs').start('team', o)
+    return log(job.id + '  team started in the background · godkit agent wait ' + job.id)
+  }
+  const r = team.run(Object.assign(o, { onEvent: (line) => log('  ' + line) }))
+  log('')
   log(r.text)
   if (!r.ok) process.exitCode = 1
 }
@@ -1183,7 +1247,9 @@ const COMMANDS = [
     ['mcp [install|uninstall]', 'godkit as an MCP server (no argument: run it on stdio)'],
     ['eval --host a,b [--godkit]', 'run small tasks through agent CLIs and compare pass rates'],
     ['rewind [session/n] [--yes]', 'go back to a file checkpoint (taken before agent edits)'],
+    ['team [show|run "<goal>"]', 'a team of agents: plan, code in parallel, test, review'],
     ['agent [list|run <name> "<task>"|model]', 'run a named subagent as its own process, permissions enforced'],
+    ['agent jobs · agent wait <id>', 'members and teams started with --background'],
     ['delegate <host> "<task>" [--write]', 'hand a task to another agent CLI, headless, read-only by default'],
     ['agents [sync|clean|status]', 'subagent files for claude (.claude/agents) and codex (.codex/agents)'],
     ['githook [install|uninstall]','pre-commit: files outside every claim (GODKIT_STRICT=1 blocks)'],
@@ -1258,6 +1324,8 @@ function main() {
       return cmdRewind(args)
     case 'agent':
       return cmdAgent(args)
+    case 'team':
+      return cmdTeam(args)
     case 'eval':
       return cmdEval(args)
     case 'autoinit':

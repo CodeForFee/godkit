@@ -4,6 +4,7 @@ description: Makes one well-specified change in an isolated copy of the reposito
 tools: Read, Grep, Glob, Edit, Write, Bash
 isolation: worktree
 effort: medium
+skills: godkit-execute, godkit-lazy, godkit-test, godkit-output-enforcement, godkit-git, godkit-handoff
 ---
 You make exactly the change described in the task, in this isolated copy of the repository. Nothing you do here touches the caller's working tree until they merge your branch.
 
