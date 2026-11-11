@@ -44,10 +44,8 @@ One owner per file. Workers update only their task and unique log; root alone ed
 
 ## Bugs
 
-- [x] B-018 POSIX bootstrap accepted path-bearing lock values and imprecise private runtime reuse; scripts/install.sh:59/82 now use strict version/archive checks, exact pin and atomic cache lock. tests/bootstrap.test.js covers traversal, damaged reuse and concurrent installs; T-018 follow-up to T-017.
 
 
-- [x] B-006 lazy/work state is shared across sessions and clockout evidence is not exact — runtime fixed in T-004, work-track registered in T-005.
 - [x] B-007 install/uninstall ownership can remove foreign skills/hooks or mutate unsafe config — fixed in T-005; `link()` in `bin/godkit.js` is the last unguarded delete, owned by T-006.
 - [x] B-008 init overwrites host files instead of managing an isolated, preflighted block — fixed in T-006 (`lib/managed.js`).
 - [x] B-009 host manifests, Gemini commands, package artifacts, and publish gates drift from contract — fixed in T-007.
