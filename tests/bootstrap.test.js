@@ -80,7 +80,7 @@ test('runtime checksum mismatch leaves the active release and existing runtime u
     const name = 'node-v24.22.2-' + platform + '-' + arch + (windows ? '.zip' : '.tar.gz')
     fs.writeFileSync(path.join(base, name), 'interrupted or corrupt archive')
     const lock = path.join(base, 'lock.json')
-    fs.writeFileSync(lock, JSON.stringify({ godkitVersion: '1.1.0', version: '24.22.2', baseUrl: pathToFileURL(base + path.sep).href.replace(/\/$/, ''), archives: { [platform + '-' + arch]: { file: name, sha256: '0'.repeat(64) } } }))
+    fs.writeFileSync(lock, JSON.stringify({ godkitVersion: require('../package.json').version, version: '24.22.2', baseUrl: pathToFileURL(base + path.sep).href.replace(/\/$/, ''), archives: { [platform + '-' + arch]: { file: name, sha256: '0'.repeat(64) } } }))
     const args = windows
       ? ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', path.join(ROOT, 'scripts', 'install.ps1'), '-Source', fixture(base, '1.0.0'), '-HomeDirectory', home, '-RuntimeLock', lock, '-ForceRuntime', '-ProjectOnly']
       : [path.join(ROOT, 'scripts', 'install.sh'), '--source', fixture(base, '1.0.0'), '--home', home, '--runtime-lock', lock, '--force-runtime', '--project-only']
@@ -115,7 +115,7 @@ function posixFixture(base, options) {
   const lock = path.join(base, 'lock.json')
   const version = o.version === undefined ? '24.22.2' : o.version
   const archive = o.archive === undefined ? 'node-v24.22.2-linux-x64.tar.gz' : o.archive
-  let serializedLock = JSON.stringify({ godkitVersion: '1.1.0', version, baseUrl: 'http://127.0.0.1:9/no-network', archives: { 'linux-x64': { file: archive, sha256: o.sha256 || '0'.repeat(64) } } })
+  let serializedLock = JSON.stringify({ godkitVersion: require('../package.json').version, version, baseUrl: 'http://127.0.0.1:9/no-network', archives: { 'linux-x64': { file: archive, sha256: o.sha256 || '0'.repeat(64) } } })
   if (o.rawControl) serializedLock = serializedLock.replace('\\n', '\n')
   fs.writeFileSync(lock, serializedLock)
   const args = [shellPath(path.join(ROOT, 'scripts', 'install.sh')), '--source', shellPath(fixture(base, '1.0.0')), '--project', shellPath(path.join(base, 'project')), '--home', shellPath(home), '--runtime-lock', shellPath(lock), '--force-runtime', '--project-only']

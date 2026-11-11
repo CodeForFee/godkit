@@ -4,6 +4,8 @@ All notable changes to godkit. Format follows [Keep a Changelog](https://keepach
 
 ## [Unreleased]
 
+## [1.1.1] ? 2026-11-11
+
 ### Added
 
 - Antigravity App/CLI native role projections in `.agents/agents/`, on-demand workspace skill instruction paths and canonical per-skill global installation under `~/.gemini/config/skills/`. Readiness distinguishes generated configuration from real native invocation evidence; packed-artifact checks verify role/skill assets without claiming live host execution.
