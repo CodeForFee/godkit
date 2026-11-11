@@ -4,7 +4,7 @@ All notable changes to godkit. Format follows [Keep a Changelog](https://keepach
 
 ## [Unreleased]
 
-## [1.1.1] ? 2026-11-11
+## [1.1.2] ? 2026-11-11
 
 ### Added
 
@@ -37,6 +37,8 @@ All notable changes to godkit. Format follows [Keep a Changelog](https://keepach
 - `hooks status` now says a Codex hook needs approval after every change.
 
 ### Fixed
+
+- Canonical source paths preserve owned legacy link migrations across macOS aliases and Windows junctions; PowerShell runtime checksum verification uses built-in .NET cryptography without requiring an optional cmdlet module.
 
 - Hook commands for Cursor and Antigravity no longer contain double quotes. On Windows Antigravity turned them into literal ones, so every godkit hook failed there with "Cannot find module". Paths with whitespace use their 8.3 short form.
 - `delegate`/`eval` treat `agy`'s `AGY_ERROR` (API 503) and `jetski: no output produced` (headless permission denied) as failures, and `agy` accepts `--model`. Before, both counted as a success with no output.

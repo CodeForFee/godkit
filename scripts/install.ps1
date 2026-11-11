@@ -10,7 +10,7 @@ param(
   [switch]$Rollback
 )
 $ErrorActionPreference = 'Stop'
-$release = '1.1.1'
+$release = '1.1.2'
 function Get-Download([string]$Url, [string]$Destination) {
   if ($Url.StartsWith('file://')) { Copy-Item -LiteralPath ([Uri]$Url).LocalPath -Destination $Destination; return }
   if ($Url -notmatch '^https://' -and $Url -notmatch '^http://(127\.0\.0\.1|localhost):') { throw 'Unsupported download URL' }
@@ -44,7 +44,11 @@ try {
     if (-not (Test-Node $NodePath)) {
       $download = Join-Path $scratch $archive.file
       Get-Download "$($lock.baseUrl)/$($archive.file)" $download
-      if ((Get-FileHash -LiteralPath $download -Algorithm SHA256).Hash.ToLowerInvariant() -ne $archive.sha256) { throw 'Runtime checksum mismatch; existing installation kept' }
+      $hash = [Security.Cryptography.SHA256]::Create()
+      $stream = [IO.File]::OpenRead($download)
+      try { $checksum = [BitConverter]::ToString($hash.ComputeHash($stream)).Replace('-', '').ToLowerInvariant() }
+      finally { $stream.Dispose(); $hash.Dispose() }
+      if ($checksum -ne $archive.sha256) { throw 'Runtime checksum mismatch; existing installation kept' }
       Add-Type -AssemblyName System.IO.Compression.FileSystem
       $zip = [IO.Compression.ZipFile]::OpenRead($download)
       try { foreach ($entry in $zip.Entries) { if ($entry.FullName -match '(^[\\/]|^[A-Za-z]:|(^|[\\/])\.\.([\\/]|$))') { throw 'Unsafe runtime archive path' } } } finally { $zip.Dispose() }

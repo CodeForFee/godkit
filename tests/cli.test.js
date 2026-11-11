@@ -456,7 +456,7 @@ test('output meant for a person is plain when NO_COLOR is set or nobody is looki
     assert.doesNotMatch(out, /\x1b\[/, 'escape codes reached a pipe')
     assert.match(out, /recall <file\|words>/)
   }
-  const fancy = execFileSync(process.execPath, [CLI, 'help'], { cwd: dir, encoding: 'utf8', env: { ...process.env, GODKIT_FANCY: '1', GODKIT_ASCII: '' } })
+  const fancy = execFileSync(process.execPath, [CLI, 'help'], { cwd: dir, encoding: 'utf8', env: { ...process.env, GODKIT_FANCY: '1', GODKIT_PLAIN: '0', GODKIT_ASCII: '0', TERM_PROGRAM: 'vscode' } })
   assert.match(fancy, /\x1b\[/)
   assert.match(fancy, /╭──┴──╮/, 'the logo renders for a person')
 })

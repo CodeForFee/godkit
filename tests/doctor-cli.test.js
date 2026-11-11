@@ -11,8 +11,9 @@ const BIN = path.join(ROOT, 'bin', 'godkit.js')
 function fixture(t) {
   const home = fs.mkdtempSync(path.join(os.tmpdir(), 'godkit doctor cli \u03bb '))
   t.after(() => fs.rmSync(home, { recursive: true, force: true }))
-  const cwd = path.join(home, 'consumer project')
-  fs.mkdirSync(cwd)
+  const project = path.join(home, 'consumer project')
+  fs.mkdirSync(project)
+  const cwd = fs.realpathSync.native(project)
   const env = {
     ...process.env, HOME: home, USERPROFILE: home, GODKIT_HOME: path.join(home, 'godkit'),
     XDG_CONFIG_HOME: path.join(home, 'config'), APPDATA: path.join(home, 'appdata'), LOCALAPPDATA: path.join(home, 'localappdata'),

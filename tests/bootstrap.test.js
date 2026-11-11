@@ -12,6 +12,11 @@ const ROOT = path.resolve(__dirname, '..')
 const BOOT = path.join(ROOT, 'bin', 'bootstrap.js')
 const temporary = () => fs.mkdtempSync(path.join(os.tmpdir(), 'godkit-bootstrap-'))
 const environment = (base) => ({ ...process.env, HOME: base, USERPROFILE: base, GODKIT_HOME: path.join(base, 'home'), GODKIT_NO_CLAUDE_CLI: '1' })
+function assertNoRuntimePayload(home) {
+  const runtime = path.join(home, 'runtime')
+  // POSIX creates this parent before acquiring the lock; a failed checksum must leave it empty.
+  assert.deepEqual(fs.existsSync(runtime) ? fs.readdirSync(runtime) : [], [])
+}
 
 function fixture(base, version) {
   const source = path.join(base, 'source-' + version)
@@ -88,7 +93,7 @@ test('runtime checksum mismatch leaves the active release and existing runtime u
     assert.notEqual(run.status, 0)
     assert.match(run.stderr, /checksum mismatch/)
     assert.equal(fs.readFileSync(path.join(home, 'active.json'), 'utf8'), 'prior release')
-    assert.equal(fs.existsSync(path.join(home, 'runtime')), false)
+    assertNoRuntimePayload(home)
   } finally { fs.rmSync(base, { recursive: true, force: true }) }
 })
 
@@ -127,6 +132,26 @@ function posixFixture(base, options) {
   env.GODKIT_HOME = shellPath(home)
   return { home, tools, env, args, script, marker: path.join(base, 'unexpected-runtime-io'), runtime: path.join(home, 'runtime', '24.22.2-linux-x64') }
 }
+
+test('POSIX checksum failure removes its install lock and leaves no runtime payload', { skip: !posixShell }, () => {
+  const base = temporary()
+  try {
+    const f = posixFixture(base)
+    const lockFile = path.join(base, 'lock.json')
+    const lock = JSON.parse(fs.readFileSync(lockFile, 'utf8'))
+    lock.baseUrl = 'file://' + shellPath(base)
+    fs.writeFileSync(path.join(base, lock.archives['linux-x64'].file), 'corrupt local runtime archive')
+    fs.writeFileSync(lockFile, JSON.stringify(lock))
+    fs.mkdirSync(f.home, { recursive: true })
+    fs.writeFileSync(path.join(f.home, 'active.json'), 'prior release')
+    const run = spawnSync(posixShell, posixArgs(f.args), { env: f.env, encoding: 'utf8', timeout: 10000 })
+    assert.notEqual(run.status, 0)
+    assert.match(run.stderr, /checksum mismatch/)
+    assert.equal(fs.readFileSync(path.join(f.home, 'active.json'), 'utf8'), 'prior release')
+    assertNoRuntimePayload(f.home)
+    assert.equal(fs.existsSync(f.marker), false, 'checksum failure must not extract the archive')
+  } finally { fs.rmSync(base, { recursive: true, force: true }) }
+})
 
 test('POSIX runtime lock rejects traversal and control characters before download/extraction', { skip: !posixShell }, () => {
   const malformed = [

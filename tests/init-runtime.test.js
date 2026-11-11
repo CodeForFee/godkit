@@ -56,15 +56,18 @@ test('init migrates existing bare-node hooks even when script paths already poin
   } finally { fs.rmSync(dir, { recursive: true, force: true }) }
 })
 
-test('failed release setup restores a real installOne migration from an owned legacy junction', () => {
+test('failed release setup restores an owned legacy junction with a symlinked source parent', () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'godkit rollback legacy '))
   try {
     const install = require('../lib/install')
     const releases = require('../lib/releases')
     const home = path.join(dir, 'home')
-    const src = path.join(dir, 'skill')
+    const sourceParent = path.join(dir, 'sources')
+    const sourceAlias = path.join(dir, 'alias')
+    const src = path.join(sourceAlias, 'skill')
     const dest = path.join(dir, 'installed')
-    fs.mkdirSync(src)
+    fs.mkdirSync(path.join(sourceParent, 'skill'), { recursive: true })
+    fs.symlinkSync(sourceParent, sourceAlias, process.platform === 'win32' ? 'junction' : 'dir')
     fs.writeFileSync(path.join(src, 'SKILL.md'), 'original skill')
     fs.symlinkSync(src, dest, process.platform === 'win32' ? 'junction' : 'dir')
     const staged = releases.stageRelease(ROOT, { home })
@@ -77,6 +80,13 @@ test('failed release setup restores a real installOne migration from an owned le
     assert.equal(fs.lstatSync(dest).isSymbolicLink(), true)
     assert.equal(fs.readFileSync(path.join(src, 'SKILL.md'), 'utf8'), 'original skill')
     assert.equal(releases.readState(home).current, null)
+    const foreign = path.join(dir, 'foreign')
+    fs.mkdirSync(foreign)
+    assert.equal(install.installOne(foreign, dest, false).how, 'refused')
+    assert.equal(install.removeOne(dest, foreign, false).how, 'kept')
+    assert.equal(install.removeOne(dest, src, false).how, 'removed')
+    assert.equal(fs.existsSync(dest), false)
+    assert.equal(fs.readFileSync(path.join(src, 'SKILL.md'), 'utf8'), 'original skill')
   } finally { fs.rmSync(dir, { recursive: true, force: true }) }
 })
 
