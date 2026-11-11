@@ -40,7 +40,11 @@ function tpl(name, vars) {
 function writeIfAbsent(file, content) {
   if (fs.existsSync(file)) return false
   fs.mkdirSync(path.dirname(file), { recursive: true })
-  fs.writeFileSync(file, content)
+  if (process.env.GODKIT_INSTALL_JOURNAL) require('../lib/install-journal').recordWrite(file, null, content)
+  try { fs.writeFileSync(file, content, { flag: 'wx' }) } catch (error) {
+    if (error.code === 'EEXIST') return false
+    throw error
+  }
   return true
 }
 
@@ -64,7 +68,7 @@ function writeManaged(file, content, style) {
   if (result.action === 'unchanged') return result
 
   fs.mkdirSync(path.dirname(file), { recursive: true })
-  fs.writeFileSync(file, result.text)
+  require('../lib/session').atomicWriteFile(file, result.text, { expectedRaw: existing })
   return result
 }
 
@@ -98,10 +102,14 @@ function machineReady() {
     try {
       record = lib.readSettings(file)
     } catch {
-      return true // unreadable settings are cmdHooks' problem to report, not init's to overwrite
+      return false // installation must surface this error rather than claim readiness
     }
     if (lib.ourHandlers(record.settings, kind).length < lib.expectedCount(kind)) return false
     if (hooksPointElsewhere(record.settings, kind)) return false // an older copy's path: re-point
+    const desired = lib.applyHooks(record.settings, { hooksDir: path.join(ROOT, 'hooks'), kind })
+    if (desired.skipped) return false
+    const commands = (settings) => lib.ourHandlers(settings, kind).map((h) => h.command).sort()
+    if (JSON.stringify(commands(record.settings)) !== JSON.stringify(commands(desired.settings))) return false
   }
   return true
 }
@@ -137,10 +145,18 @@ function installProjectSkills(root) {
   return { names, done, refused }
 }
 
-function cmdInit(args) {
+function sourceRepository(root) {
+  try {
+    return JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8')).name === '@codeforfee/godkit' &&
+      fs.existsSync(path.join(root, 'scripts', 'sync-rules.js'))
+  } catch { return false }
+}
+
+function cmdInit(args, options = {}) {
   const startedAt = Date.now()
   const given = args.find((a) => !a.startsWith('-'))
   const root = given ? path.resolve(given) : projectRoot(process.cwd())
+  if (sourceRepository(root)) throw new Error('init cannot run in the Godkit source repository: AGENTS.md is the generator source. Run init in a consumer project instead.')
   const p = paths(root)
   const name = path.basename(root)
   const vars = { PROJECT: name, UTC: utcStamp() }
@@ -193,14 +209,21 @@ function cmdInit(args) {
   }
 
   const skills = args.includes('--no-skills') ? null : installProjectSkills(root)
+  const additionalSkills = []
+  const gemini = process.env.GEMINI_HOME || path.join(os.homedir(), '.gemini')
+  if (!args.includes('--no-install') && !args.includes('--no-skills') && fs.existsSync(path.join(gemini, 'antigravity'))) {
+    const result = require('../lib/install').installOne(SKILLS, path.join(gemini, 'antigravity/skills/godkit'), false, { copy: true, label: 'godkit@' + version() })
+    if (!result.ok) additionalSkills.push('antigravity skills: ' + result.reason)
+  }
 
   // The subagents the map skill spawns, for hosts that read them from the project.
   let agentRows = null
+  const issues = []
   if (!args.includes('--no-agents')) {
     try {
       agentRows = require('../lib/agents').syncAgents(root, 'sync', false)
-    } catch {
-      /* a broken agent source must not stop init */
+    } catch (error) {
+      issues.push('agents: ' + error.message)
     }
   }
 
@@ -209,8 +232,8 @@ function cmdInit(args) {
   if (!args.includes('--no-githook')) {
     try {
       preCommit = require('../lib/hostmcp').githook('install', root, path.join(ROOT, 'bin', 'godkit.js'), false)
-    } catch {
-      /* not a git repo, or no permission: the hook is a nicety */
+    } catch (error) {
+      issues.push('pre-commit: ' + error.message)
     }
   }
 
@@ -223,6 +246,15 @@ function cmdInit(args) {
   const hostmcp = require('../lib/hostmcp')
   const bin = path.join(ROOT, 'bin', 'godkit.js')
   if (!args.includes('--no-install') && !args.includes('--no-mcp') && !hostmcp.mcpReady(bin)) mcp = hostmcp.registerMcp('install', false, bin)
+
+  issues.push(...refused, ...((skills && skills.refused) || []), ...additionalSkills)
+  for (const row of agentRows || []) if (row.how === 'refused') issues.push('agent ' + row.file + ': ' + row.reason)
+  for (const row of [...(machine || []), ...(mcp || [])]) if (row.error) issues.push(row.tool + ': ' + row.error)
+  if (options.silent) {
+    if (issues.length) throw new Error(issues.join('\n'))
+    return { root, configured: true }
+  }
+  if (issues.length) process.exitCode = 1
 
   const ui = require('../lib/ui').create()
   if (!ui.on) {
@@ -238,6 +270,9 @@ function cmdInit(args) {
     if (preCommit && preCommit.ok && preCommit.changed) log('  pre-commit: warns about staged files outside every claim (GODKIT_STRICT=1 blocks)')
     for (const m of machine || []) log('  hooks ' + m.tool + ': ' + m.added + ' registered (' + m.file + ')')
     for (const m of mcp || []) if (m.changed) log('  mcp ' + m.tool + ': godkit registered (' + m.file + ')')
+    for (const issue of issues) log('  ! ' + issue)
+    for (const row of mcp || []) if (row.needsAction) log('  action needed: ' + row.needsAction)
+    log(issues.length ? 'Configuration incomplete; resolve the errors above.' : 'Configuration saved. Run `godkit doctor --json` and complete host trust checks to verify readiness.')
     log('')
     if (greenfield) {
       log('Next: open your agent and describe what to build. It fills .agent/BRIEF.md from your')
@@ -268,7 +303,8 @@ function cmdInit(args) {
   }
   if (machine) ui.row('ok', 'Machine', machine.map((m) => m.tool + ' ' + m.added + '/' + total).join(' · ') + '   ' + c.dim(ROOT))
   else ui.row('skip', 'Machine', args.includes('--no-install') ? 'skipped (--no-install)' : 'already set up')
-  ui.done('Ready', startedAt)
+  for (const issue of issues) ui.row('warn', 'Setup error', issue)
+  ui.done(issues.length ? 'Configuration incomplete' : 'Configured — verify in your host', startedAt)
   ui.next(greenfield
     ? ['Open your AI agent here and describe what to build.', 'It writes the brief, plans and codes on its own.']
     : ['Open your AI agent and give it a task. The first session', 'maps the codebase automatically, then does the work.'])
@@ -408,6 +444,7 @@ function cmdMcp(args) {
   const results = require('../lib/hostmcp').registerMcp(action, dryRun, path.join(ROOT, 'bin', 'godkit.js'))
   for (const r of results) {
     if (r.error) log('  ' + r.tool.padEnd(12) + 'skipped — ' + r.error)
+    else if (r.needsAction) log('  ' + r.tool.padEnd(12) + 'action needed — ' + r.needsAction)
     else log('  ' + r.tool.padEnd(12) + (dryRun ? 'would ' : '') + action + (r.changed ? '' : ': already so') + '  (' + r.file + ')')
   }
 }
@@ -969,7 +1006,29 @@ function cmdVerify(args) {
   process.exitCode = 1
 }
 
-function cmdDoctor() {
+async function cmdDoctor(args = []) {
+  if (args.includes('--json') || args.includes('--fix') || args.includes('--record-evidence')) {
+    const doctor = require('../lib/doctor')
+    const opts = { cwd: projectRoot(process.cwd()), root: ROOT, env: process.env }
+    const at = args.indexOf('--record-evidence')
+    if (at >= 0) {
+      if (!args[at + 1] || args[at + 1].startsWith('--')) throw new Error('--record-evidence requires a JSON file containing an observed host-session result')
+      const evidence = JSON.parse(fs.readFileSync(path.resolve(args[at + 1]), 'utf8'))
+      doctor.recordEvidence({ ...opts, ...evidence, cwd: opts.cwd, root: ROOT, env: process.env })
+    }
+    const report = args.includes('--fix')
+      ? await doctor.fix({ ...opts, repair: () => cmdInit(['--no-githook'], { silent: true }) })
+      : await doctor.inspect(opts)
+    if (args.includes('--json')) log(JSON.stringify(report, null, 2))
+    else {
+      log('Godkit readiness: ' + report.status)
+      for (const host of report.hosts || []) log('  ' + host.host + ': ' + host.status)
+      for (const error of report.errors || []) log('  ! ' + (typeof error === 'string' ? error : JSON.stringify(error)))
+      log('Use --json for per-feature evidence and required actions.')
+    }
+    if (report.status === 'error') process.exitCode = 1
+    return report
+  }
   const root = projectRoot(process.cwd())
   const p = paths(root)
   const ui = require('../lib/ui').create()
@@ -1154,17 +1213,32 @@ function cmdUninstall(args) {
     log(t + ': ' + (dryRun ? 'would remove ' : 'removed ') + removed + ' entries from ' + base)
     if (kept.length) log('   kept (not ours): ' + kept.join(', '))
   }
+  if (!targets.length) {
+    const entries = registerHooks('uninstall', dryRun).concat(require('../lib/hostmcp').registerMcp('uninstall', dryRun, path.join(ROOT, 'bin', 'godkit.js')))
+    for (const row of entries) {
+      if (row.error) { log('  ! ' + row.tool + ': ' + row.error); process.exitCode = 1 }
+      else log('  ' + row.tool + ': ' + (dryRun ? 'would remove' : 'removed') + ' owned registration from ' + row.file)
+    }
+    const home = require('../lib/install').stableHome()
+    for (const name of ['godkit', 'godkit.cmd']) {
+      const file = path.join(home, 'bin', name)
+      if (!fs.existsSync(file) || !fs.lstatSync(file).isFile() || !fs.readFileSync(file, 'utf8').includes('godkit-owned launcher')) continue
+      if (!dryRun) fs.unlinkSync(file)
+      log('  ' + (dryRun ? 'would remove ' : 'removed ') + file)
+    }
+  }
   log('')
   log('Left in place: this project\'s .agent/ directory and rule files. Delete them by hand if')
   log('you want them gone — they are your project\'s memory, not the package\'s.')
   log('Skill copies inside this project: `godkit uninstall --project`.')
   log('Project skills linked into .claude/ or .agents/: `godkit skills --unlink`.')
+  log('Downloaded runtime and release caches remain in the Godkit home; no project memory is removed.')
 }
 
 const COMMANDS = [
   ['SETUP', null, [
     ['init [path] [--new]', 'set up this project · auto-detects new vs existing'],
-    ['doctor', 'health check: what is set up, what is stale'],
+    ['doctor [--json] [--fix]', 'readiness, observed capabilities and own-only repair'],
   ]],
   ['MEMORY', null, [
     ['recall <file|words>', 'search all history — logs, board, thread, archive'],
@@ -1188,7 +1262,7 @@ const COMMANDS = [
     ['agents [sync|clean|status]', 'subagent files for claude (.claude/agents) and codex (.codex/agents)'],
     ['githook [install|uninstall]','pre-commit: files outside every claim (GODKIT_STRICT=1 blocks)'],
     ['install [tool...]', 'skills into ~/ for every project (init already covers this one)'],
-    ['uninstall [tool|--project]', 'remove skills godkit placed; never touches .agent/'],
+    ['uninstall [tool|--project]', 'remove owned machine setup, or selected skills; preserve .agent/'],
     ['--version', 'the installed version'],
   ]],
 ]
@@ -1209,20 +1283,34 @@ function help(stream) {
 // init, install and hooks write paths meant to outlive this process. Run from npx, this process
 // lives in a cache npm prunes at will — so those three re-run from the stable copy instead.
 function fromStableHome(cmd, args) {
-  if (!['init', 'install', 'hooks', 'mcp'].includes(cmd)) return false
+  if (process.env.GODKIT_STABLE_CHILD === '1') return false
+  if (!['init', 'install', 'hooks', 'mcp', 'doctor'].includes(cmd)) return false
+  if (cmd === 'doctor' && !args.includes('--fix')) return false
+  if (args.includes('--dry-run') || (cmd === 'hooks' && !args.includes('install'))) return false
   if (cmd === 'mcp' && !args.includes('install')) return false // serving must not re-exec
-  const stable = require('../lib/install').stableRoot(version())
-  if (path.resolve(stable) === ROOT) return false
+  if (!require('../lib/install').isEphemeral(ROOT)) return false
+  const releases = require('../lib/releases')
+  const staged = releases.stageRelease(ROOT, { node: process.execPath })
   const { execFileSync } = require('child_process')
   try {
-    execFileSync(process.execPath, [path.join(stable, 'bin', 'godkit.js'), cmd, ...args], { stdio: 'inherit' })
+    const install = require('../lib/install')
+    const initPath = cmd === 'init' ? args.find((a) => !a.startsWith('-')) : null
+    const configFiles = install.configurationPaths(initPath ? path.resolve(initPath) : projectRoot(process.cwd()))
+    releases.activateRelease(staged, {
+      node: process.execPath,
+      configFiles,
+      configure: () => execFileSync(process.execPath, [path.join(staged.root, 'bin', 'godkit.js'), cmd, ...args], {
+        stdio: 'inherit', env: { ...process.env, GODKIT_STABLE_CHILD: '1' },
+      }),
+    })
   } catch (err) {
+    process.stderr.write('godkit: installation transaction failed: ' + err.message + '\n')
     process.exitCode = err.status || 1
   }
   return true
 }
 
-function main() {
+async function main() {
   const [cmd, ...args] = process.argv.slice(2)
   if (fromStableHome(cmd, args)) return
   switch (cmd) {
@@ -1267,7 +1355,7 @@ function main() {
     case 'verify':
       return cmdVerify(args)
     case 'doctor':
-      return cmdDoctor()
+      return cmdDoctor(args)
     case 'uninstall':
       return cmdUninstall(args)
     case 'version':
@@ -1286,9 +1374,7 @@ function main() {
   }
 }
 
-try {
-  main()
-} catch (err) {
+main().catch((err) => {
   process.stderr.write('godkit: ' + (err && err.message) + '\n')
-  process.exit(1)
-}
+  process.exitCode = 1
+})

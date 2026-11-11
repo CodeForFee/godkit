@@ -6,6 +6,10 @@ All notable changes to godkit. Format follows [Keep a Changelog](https://keepach
 
 ### Added
 
+- Runtime-aware PowerShell and shell installers prepare a pinned, checksum-verified private Node 24 runtime when a compatible Node is unavailable; the npm and bootstrap entrypoints share the same setup logic and use absolute runtime paths.
+- Machine-readable readiness (`doctor --json`), explicit owned-only repair (`doctor --fix`), staged release activation and rollback preserve existing configuration and project memory while distinguishing installed files from real host execution evidence.
+- Release verification covers Windows, macOS and Linux, actual packed npm artifacts and platform installer fixtures. Development-only boundary type checks and JSON benchmarks record CLI startup, MCP memory/latency, brief-hook latency and estimated context size.
+
 - Hooks for **Cursor** (`~/.cursor/hooks.json`) and **Antigravity** (`~/.gemini/config/hooks.json`) through `hooks/adapt.js`, which translates each host's hook dialect to the one the scripts read and back. Subset: session brief, edit tracking, clock-out check. No `PreToolUse` yet, so shell-only changes are not tracked on these hosts.
 - `godkit hooks install|status|uninstall` and `uninstall` cover both; they are registered only when the host is installed or `$CURSOR_HOME` / `$GEMINI_HOME` points at a folder, merged one handler at a time, and a `.bak` is kept.
 - The clock-out request is made at most three times in a row on these hosts, whatever the host's own loop limit.

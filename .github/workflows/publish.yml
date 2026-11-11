@@ -1,45 +1,69 @@
-name: publish
-
-# Tag pushes only. There is no manual trigger on purpose: `workflow_dispatch` could publish
-# whatever happened to be on a branch, and check-versions only compares against a tag.
+﻿name: publish
 on:
   push:
     tags: ['v*']
-
 permissions:
-  id-token: write # OIDC trusted publishing
   contents: read
-
-# Serialised, and deliberately NOT cancel-in-progress: interrupting a publish half way is worse
-# than running two of them in order.
 concurrency:
   group: publish
   cancel-in-progress: false
-
 jobs:
-  publish:
-    runs-on: ubuntu-latest
+  verify:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        node: ['22', '24', '26']
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: '22'
-          registry-url: 'https://registry.npmjs.org'
-
-      # Refuse to publish when a generated file is stale or the tag and manifests disagree.
-      # check-versions reads GITHUB_REF_TYPE/GITHUB_REF_NAME, so on this workflow it also asserts
-      # that the tag being published IS the version in all four manifests.
-      - run: node scripts/sync-rules.js --check
-      - run: node scripts/sync-hooks.js --check
-      - run: node scripts/check-versions.js
-      - run: node --test   # no glob: PowerShell does not expand one, and node <20 cannot
-
-      # The one check the suite cannot do for itself: what npm would actually upload. A runtime
-      # file missing from `files` works in a checkout and 404s for everyone who installed it.
-      - run: npm pack --dry-run
-
-      # Trusted publishing (OIDC) needs npm >= 11.5.1; Node 22 ships npm 10.
+          node-version: ${{ matrix.node }}
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npm run check
+      - run: npm run typecheck
+      - run: node --test
+      - run: node scripts/benchmark.js --output benchmark.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-benchmark-${{ runner.os }}-node${{ matrix.node }}
+          path: benchmark.json
+  publish:
+    needs: verify
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: write
+      actions: read
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          registry-url: https://registry.npmjs.org
+      - run: npm ci --ignore-scripts
+      - run: npm run check
+      - run: npm run typecheck
+      - run: npm run test:artifact
+      - run: npm pack --ignore-scripts
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: release-benchmark-*
+          path: release-metrics
+      # Trusted publishing uses OIDC; no long-lived npm token is stored.
       - run: npm install -g npm@latest
-      # No token: id-token above authenticates via OIDC and attaches provenance.
-      - run: npm publish
+      - run: npm publish --provenance
+      - name: Attach the exact installers, lock, package and performance evidence
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" --verify-tag --generate-notes scripts/install.ps1 scripts/install.sh scripts/runtime-lock.json ./*.tgz
+          find release-metrics -name benchmark.json -print | while read metric; do
+            label="$(basename "$(dirname "$metric")")"
+            cp "$metric" "$label.json"
+            gh release upload "$GITHUB_REF_NAME" "$label.json"
+          done

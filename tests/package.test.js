@@ -28,9 +28,11 @@ test('the bin entry exists and is executable as a script', () => {
 })
 
 test('the package declares no runtime dependencies', () => {
-  // The whole install story depends on this: no install step, nothing to audit, nothing to break.
+  // Consumers need no dependency installation. Type checking is a development-only build gate.
   assert.equal(pkg.dependencies, undefined)
-  assert.equal(pkg.devDependencies, undefined)
+  assert.equal(pkg.optionalDependencies, undefined)
+  assert.equal(pkg.peerDependencies, undefined)
+  assert.ok(pkg.devDependencies.typescript, 'type checking must remain development-only')
 })
 
 test('every skill directory has a SKILL.md whose name matches the directory', () => {

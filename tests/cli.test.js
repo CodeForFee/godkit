@@ -161,8 +161,7 @@ test('running init twice changes nothing the second time', () => {
 test('init refuses a host file whose markers were hand-mangled', () => {
   const dir = repo()
   fs.writeFileSync(path.join(dir, 'CLAUDE.md'), '<!-- godkit:start -->\nhalf a block, no end\n')
-  const out = cli(dir, 'init')
-  assert.match(out, /! CLAUDE\.md .*malformed/)
+  assert.throws(() => cli(dir, 'init'), (error) => error.status === 1 && /! CLAUDE\.md .*malformed/.test(error.stdout))
   assert.equal(read(dir, 'CLAUDE.md'), '<!-- godkit:start -->\nhalf a block, no end\n', 'left untouched')
 })
 
@@ -311,7 +310,8 @@ test('init copies every skill into the project, and a re-run never replaces a us
   fs.mkdirSync(path.join(dir, '.claude', 'skills', 'godkit-test'), { recursive: true })
   fs.writeFileSync(path.join(dir, '.claude', 'skills', 'godkit-test', 'SKILL.md'), 'mine\n')
 
-  const out = cli(dir, 'init')
+  let out
+  assert.throws(() => cli(dir, 'init'), (error) => { out = error.stdout; return error.status === 1 })
   for (const base of ['.claude/skills', '.agents/skills']) {
     for (const n of names) {
       if (base === '.claude/skills' && n === 'godkit-test') continue
@@ -323,7 +323,7 @@ test('init copies every skill into the project, and a re-run never replaces a us
 
   // A re-run refreshes godkit's own copies in place.
   fs.writeFileSync(path.join(dir, '.agents', 'skills', 'godkit', 'SKILL.md'), 'stale\n')
-  cli(dir, 'init')
+  assert.throws(() => cli(dir, 'init'), (error) => error.status === 1)
   assert.notEqual(read(dir, '.agents/skills/godkit/SKILL.md'), 'stale\n')
   assert.equal(read(dir, '.claude/skills/godkit-test/SKILL.md'), 'mine\n')
 })
@@ -476,8 +476,8 @@ test('run from an npx cache, init re-runs from a stable copy and points hooks th
     GEMINI_HOME: path.join(home, 'gemini'),
   }
   execFileSync(process.execPath, [CLI, 'init'], { cwd: dir, encoding: 'utf8', env })
-  const version = require('../package.json').version
-  const stable = path.join(home, 'godkit', version)
+  const state = JSON.parse(fs.readFileSync(path.join(home, 'godkit', 'active.json'), 'utf8'))
+  const stable = state.current.root
   assert.ok(fs.existsSync(path.join(stable, 'bin', 'godkit.js')), 'stable copy made')
   assert.ok(!fs.existsSync(path.join(stable, 'node_modules')), 'no node_modules copied')
   for (const file of [path.join(home, 'claude', 'settings.json'), path.join(home, 'codex', 'hooks.json')]) {

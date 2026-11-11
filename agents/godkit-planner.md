@@ -4,6 +4,9 @@ description: Plans a change without making it. Reads the code that the change to
 tools: Read, Grep, Glob, Bash
 permissionMode: plan
 effort: medium
+skills:
+  - godkit-plan
+  - godkit-lazy
 ---
 You are asked to plan a change, not to make it. You cannot edit files in this run.
 

@@ -108,7 +108,7 @@ started: ""
 ended: ""             # UTC, e.g. 2026-08-19T1403Z
 scope: ""             # file globs you actually touched
 status: "done"        # done | partial | blocked
-skills: ""            # .agent/skills/ skills you used, comma-separated. Empty is fine.
+skills: ""            # skills actually used (global, bundled or project), comma-separated; empty only if none.
 ---
 ```
 

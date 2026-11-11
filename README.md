@@ -39,11 +39,15 @@ npx @codeforfee/godkit init
 
 ## Quick start
 
+For a machine without Node.js, use the [runtime-aware installer](docs/installation.md). It reuses a compatible Node installation or prepares a private, checksum-verified Node 24 runtime. The npm package and installers use the same setup path; no global PATH configuration is needed for registered hooks or MCP servers.
+
 ```bash
 cd your-project
 npx @codeforfee/godkit init      # once per project; the first run also sets up the machine
 npx @codeforfee/godkit doctor    # what is set up, and which agents have actually run godkit
 ```
+
+`godkit doctor --json` returns machine-readable readiness evidence; `godkit doctor --fix` repairs Godkit-owned setup and checks it again. A configured component is distinct from one observed running in a host. Native agent capabilities and peer messaging are marked verified only with real host evidence; mandatory host trust prompts remain explicit. Installation, upgrades and rollback are described in the [installation guide](docs/installation.md).
 
 Then open Claude Code, Codex, Cursor or Antigravity and write your prompt as usual. There is no
 command to learn and no skill to pick: the hooks brief the agent at the start of the session, the

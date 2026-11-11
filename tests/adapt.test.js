@@ -171,7 +171,8 @@ test('the command written for Cursor and Antigravity has no double quotes, which
     assert.ok(commands.length > 0)
     for (const c of commands) {
       assert.doesNotMatch(c, /"/, kind + ': ' + c)
-      assert.match(c, /^node \S+adapt\.js (cursor|antigravity) \S+$/)
+      assert.match(c, /^\S+ \S+adapt\.js (cursor|antigravity) \S+$/)
+      assert.ok(path.isAbsolute(c.split(' ')[0]), 'adapter command uses an absolute runtime executable')
     }
   }
   assert.equal(install.bareCommandPath('/a/b/adapt.js'), '/a/b/adapt.js')
@@ -221,8 +222,8 @@ test('a host directory that is not there is not created by an installer run', ()
   process.env.HOME = process.env.USERPROFILE = home // os.homedir() reads these at call time
   try {
     const tools = install.allTargets({}).map((t) => t[0])
-    assert.deepEqual(tools, ['claude', 'codex'])
-    const pointed = install.allTargets({ CURSOR_HOME: path.join(home, 'c'), GEMINI_HOME: path.join(home, 'g') }).map((t) => t[0])
+    assert.deepEqual(tools, [], 'absent hosts are not installed implicitly')
+    const pointed = install.allTargets({ CLAUDE_CONFIG_DIR: path.join(home, 'cl'), CODEX_HOME: path.join(home, 'co'), CURSOR_HOME: path.join(home, 'c'), GEMINI_HOME: path.join(home, 'g') }).map((t) => t[0])
     assert.deepEqual(pointed, ['claude', 'codex', 'cursor', 'antigravity'], 'an explicit location is honoured')
   } finally {
     for (const [key, value] of Object.entries(saved)) {

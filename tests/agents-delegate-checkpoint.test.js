@@ -34,11 +34,44 @@ test('the Codex file is valid TOML text even when the body has three single quot
   const plain = agents.toCodex({ file: 'x.md', name: 'x', description: 'a "quoted" thing', body: 'line one\n' })
   assert.match(plain, /^name = "x"$/m)
   assert.match(plain, /^description = "a \\"quoted\\" thing"$/m)
-  assert.match(plain, /developer_instructions = '''\nline one\n'''/)
+  assert.match(plain, /developer_instructions = '''\nline one\n/)
   const hard = agents.toCodex({ file: 'x.md', name: 'x', description: 'd', body: "it's '''odd''' \\ and \"\"\"too\"\"\"\n" })
   assert.match(hard, /developer_instructions = """\n/)
   assert.ok(hard.includes('\\\\'), 'backslashes are escaped in a basic string')
   assert.ok(hard.includes('\\"\\"\\"'), 'a triple double quote is escaped')
+})
+
+test('native Codex roles carry skill names and a scoped team contract without embedding skill bodies', () => {
+  const role = agents.parseAgent('---\nname: specialist\ndescription: x\nskills:\n  - godkit-lazy\n  - godkit-test\n---\nDo the assigned change.\n')
+  role.file = 'specialist.md'
+  const rendered = agents.toCodex(role)
+  assert.match(rendered, /godkit-lazy, godkit-test/)
+  assert.match(rendered, /Load only.*SKILL\.md/)
+  assert.match(rendered, /native.*messaging/i)
+  assert.match(rendered, /through the leader/)
+  assert.match(rendered, /10 lines/)
+  assert.match(rendered, /Do not spawn/)
+  assert.ok(!rendered.includes('## The verification ladder'), 'skills are loaded on demand, not pasted into every role')
+  assert.ok(!rendered.includes('sandbox_mode'), 'a role does not promise a separate permission sandbox')
+
+  const csv = agents.parseAgent('---\nname: csv\ndescription: x\nskills: godkit-lazy, godkit-test\n---\nWork.\n')
+  csv.file = 'csv.md'
+  assert.match(agents.toCodex(csv), /godkit-lazy, godkit-test/)
+  csv.fields.skills = ['../outside']
+  assert.throws(() => agents.toCodex(csv), /invalid skill/)
+})
+
+test('shipped roles declare skills available to both native Codex and Claude', () => {
+  for (const role of agents.sources().filter((a) => a.name.startsWith('godkit-'))) {
+    assert.ok(Array.isArray(role.fields.skills), role.name + ' needs a YAML skill list for Claude')
+    const names = role.fields.skills
+    assert.deepEqual(agents.parseAgent(agents.toClaude(role)).fields.skills, names, 'Claude needs the skill array intact')
+    for (const name of names) {
+      assert.ok(fs.existsSync(path.join(ROOT, 'skills', name, 'SKILL.md')), name + ' is missing')
+      assert.ok(agents.toCodex(role).includes(name), 'Codex lost ' + name)
+      assert.ok(agents.toClaude(role).includes(name), 'Claude lost ' + name)
+    }
+  }
 })
 
 test('agents sync writes both hosts, is idempotent, and only ever replaces or removes its own files', () => {

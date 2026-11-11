@@ -94,6 +94,10 @@ function removeRuntimeState() {
 
 removeSkills()
 removeHooks()
+for (const row of require('../lib/hostmcp').registerMcp('uninstall', DRY, path.join(ROOT, 'bin', 'godkit.js'))) {
+  if (row.error) console.warn('skipped ' + row.tool + ' MCP: ' + row.error)
+  else if (row.changed) console.log((DRY ? 'would remove ' : 'removed ') + row.tool + ' Godkit MCP registration')
+}
 removeRuntimeState()
 console.log('')
 console.log("Left in place: every project's .agent/ directory and rule files. Those are your")

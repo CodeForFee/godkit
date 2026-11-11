@@ -51,6 +51,9 @@ test('every tool is listed with a schema the model can follow', () => {
     assert.ok(t.description.length > 30, t.name + ' needs a description the model can choose by')
   }
   assert.equal(TOOLS.length, tools.length)
+  const logTool = tools.find((t) => t.name === 'godkit_log')
+  assert.equal(logTool.inputSchema.properties.skills.type, 'string')
+  assert.ok(logTool.inputSchema.required.includes('skills'), 'skill attribution must be explicit')
   assert.equal(respond({ jsonrpc: '2.0', id: 7, method: 'tools/call', params: { name: 'nope' } }).error.code, -32602)
 })
 
@@ -89,11 +92,14 @@ test('a bad call is a tool error with a reason, never a crash or a protocol erro
 
 test('godkit_log enforces what godkit verify would: done needs evidence, partial needs what is left', () => {
   const d = repo()
-  const base = { agent: 'claude-opus-5', session: 'aaaa1111-session', task: 't', did: 'lib/x.js:1 changed', cwd: d }
+  const base = { agent: 'claude-opus-5', session: 'aaaa1111-session', task: 't', did: 'lib/x.js:1 changed', skills: 'godkit-lazy, godkit-test', cwd: d }
   assert.equal(call('godkit_log', { ...base, status: 'done' }).result.isError, true)
   assert.equal(call('godkit_log', { ...base, status: 'partial' }).result.isError, true)
   assert.equal(call('godkit_log', { ...base, status: 'done', verified: 'ran it', agent: 'claude' }).result.isError, true, 'a tool name is not a model id')
   assert.equal(call('godkit_claim', { agent: 'codex', scope: 'x', task: 't', cwd: d }).result.isError, true)
+  const ready = { ...base, status: 'done', verified: 'ran it' }
+  assert.match(call('godkit_log', { ...ready, skills: undefined }).result.content[0].text, /skills/, 'missing attribution must not silently become empty')
+  assert.equal(call('godkit_log', { ...ready, skills: ['godkit-test'] }).result.isError, true, 'skills must match the advertised string schema')
 
   const ok = call('godkit_log', { ...base, status: 'done', verified: '`npm test` -> 12 passing' }).result
   assert.equal(ok.isError, false)
@@ -101,14 +107,16 @@ test('godkit_log enforces what godkit verify would: done needs evidence, partial
   assert.equal(files.length, 1)
   assert.match(files[0], /-claude-opus-5-aaaa1111\.md$/)
   assert.match(fs.readFileSync(path.join(d, '.agent', 'log', files[0]), 'utf8'), /## Verified\n\n`npm test` -> 12 passing/)
+  assert.match(fs.readFileSync(path.join(d, '.agent', 'log', files[0]), 'utf8'), /^skills: "godkit-lazy, godkit-test"$/m)
   assert.equal(call('godkit_log', { ...base, status: 'done', verified: 'again' }).result.isError, true, 'never overwrite a log')
   assert.equal(call('godkit_verify', { cwd: d }).result.isError, false, 'the log it wrote passes godkit verify')
+  assert.equal(call('godkit_log', { ...ready, session: 'bbbb2222-session', skills: '' }).result.isError, false, 'an explicitly empty list is valid when no skills were used')
   fs.rmSync(d, { recursive: true, force: true })
 })
 
 test('recall finds what a log said, and map_query says plainly when there is no map', () => {
   const d = repo()
-  call('godkit_log', { agent: 'claude-opus-5', session: 'aaaa1111-session', task: 'find the zebra', did: 'lib/zebra.js:3 added', status: 'done', verified: 'ran it -> ok', cwd: d })
+  call('godkit_log', { agent: 'claude-opus-5', session: 'aaaa1111-session', task: 'find the zebra', did: 'lib/zebra.js:3 added', skills: '', status: 'done', verified: 'ran it -> ok', cwd: d })
   assert.match(call('godkit_recall', { query: 'zebra', cwd: d }).result.content[0].text, /zebra/)
   assert.equal(call('godkit_recall', { query: 'unicorn', cwd: d }).result.content[0].text, 'no matches')
   const q = call('godkit_map_query', { query: 'anything', cwd: d }).result

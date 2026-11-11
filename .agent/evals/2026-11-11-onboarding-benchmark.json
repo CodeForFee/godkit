@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "at": "2026-11-11T00:13:07.255Z",
+  "platform": "win32",
+  "arch": "x64",
+  "node": "v26.5.0",
+  "samples": 10,
+  "cliColdStartMedianMs": 54.47309999999999,
+  "briefHookMedianMs": 156.7322999999999,
+  "mcp": {
+    "initializeMs": 51.97709999999961,
+    "pingMedianMs": 0.15869999999995343,
+    "rssBytes": 64253952,
+    "tools": 9
+  },
+  "context": {
+    "scope": "brief and always-on rules only; excludes host catalog and task skills",
+    "briefBytes": 583,
+    "rulesBytes": 4904,
+    "estimatedTokens": 1372,
+    "tokenEstimateMethod": "UTF-8 bytes / 4; estimate, not tokenizer measurement"
+  }
+}

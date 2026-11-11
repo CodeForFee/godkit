@@ -61,7 +61,7 @@ Goal bigger than one seam, or the brief says NEW PROJECT? Read `references/sprin
 
 ## Everything is a provider
 
-Deciding who or what does a seam — a command, this turn, a subagent, another tool? Read `references/routing.md`: every capability as a provider, and the six-rung decomposition ladder.
+Deciding who or what does a seam — a command, this turn, a subagent, another tool? Read `references/routing.md`: the native session team protocol and the decomposition ladder. Prefer the host's native agents; external CLI/MCP runs need an explicit request, with no silent fallback.
 
 ## Rules
 

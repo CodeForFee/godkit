@@ -43,6 +43,9 @@
     "commands/",
     "evals/",
     "scripts/uninstall.js",
+    "scripts/install.ps1",
+    "scripts/install.sh",
+    "scripts/runtime-lock.json",
     "AGENTS.md",
     "CHANGELOG.md",
     "LICENSE"
@@ -53,9 +56,16 @@
   "scripts": {
     "test": "node --test",
     "check": "node scripts/sync-rules.js --check && node scripts/sync-hooks.js --check && node scripts/sync-templates.js --check && node scripts/check-versions.js",
-    "pretest": "npm run check"
+    "pretest": "npm run check",
+    "typecheck": "node scripts/check-types.js",
+    "benchmark": "node scripts/benchmark.js",
+    "test:artifact": "node --test tests/release-artifact.test.js"
   },
   "publishConfig": {
     "access": "public"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.5",
+    "typescript": "~5.9.3"
   }
 }

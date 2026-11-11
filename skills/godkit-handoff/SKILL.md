@@ -76,7 +76,7 @@ Before your first edit, every session:
 
 Before your turn ends — every session that touched a file:
 
-1. **Write the log entry.** Concrete paths with line numbers, real commands with the one to five output lines that decide them — not the whole dump. "Refactored auth" helps nobody. List any `.agent/skills/` skill you used in `skills:` — that self-report is the only evidence those skills ever get.
+1. **Write the log entry.** Concrete paths with line numbers, real commands with the one to five output lines that decide them — not the whole dump. "Refactored auth" helps nobody. List all skills actually used in `skills:` (global, bundled and project); empty only if none were used. A role's inherited catalog is not evidence of use. Each worker reports its own used skills; the leader records its own, without guessing for workers. This self-report is the evidence skill tracking uses.
 2. **Update the task file** — fill the phase section you worked, set `phase:`, write Handoff.
 3. **Update the board** — release your claim, close or add bugs, add any decision, prepend one line to *Last 3 handoffs* and trim to three.
 4. **Post to THREAD** if another agent is waiting on something you just changed.

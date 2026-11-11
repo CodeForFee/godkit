@@ -2,6 +2,17 @@
 
 Part of the **godkit** skill, loaded on demand.
 
+## Native session teams
+
+Use the host's native same-session agent tools when delegation earns its cost. Tool names vary by runtime: discover the available spawn, follow-up, message, wait and stop capabilities rather than assuming an API. CLI delegation and MCP `godkit_agent` start external processes and require an explicit external-run request. If native agents are unavailable, say so and continue useful work in this turn; never silently substitute an external run.
+
+- **Leader:** own the user's scope, file ownership and final join. Use the smallest team that clears the task, within the host's concurrency limits. Reuse an existing worker for follow-up work instead of spawning a duplicate. Workers do not spawn recursively by default; stop idle members when their work is finished.
+- **Roles and skills:** choose a named role from `agents/*.md` (explorer, planner, implementer or reviewer) and only the skills its seam needs. Use the host's custom agent definition when available; otherwise give the native worker the role file and needed skill paths to read. Inheriting a skill catalog does not mean every skill should run.
+- **Task contract:** give each worker file scope, a checkable exit condition, a verification command, and a short task brief with `file:line` pointers. Avoid copying the whole conversation by default. Context inheritance depends on the host; do not assume automatic sharing or promise a hard token limit.
+- **Peer messages:** use the actual native messaging tool, when available, for a targeted dependency, blocker, interface change or evidence another worker needs. Otherwise route it through the leader. Notify the leader when scope or ownership needs to change; a message does not grant edit ownership. No obligatory chatter. Use `.agent/THREAD.md` for durable handoffs across sessions.
+- **Reports and join:** ask for at most ten lines: result, files changed, check and deciding output, remaining blocker. The leader runs the required checks against the resulting files and integrates the result before declaring completion.
+- **Permissions and isolation:** native workers inherit the parent's permissions. A read-only role is an instruction, not a separate sandbox. Provide or explicitly create a worktree when isolation is needed; a role description or generated agent file does not create one.
+
 ## Everything is a provider
 
 An agent is not a special kind of thing. It is a provider behind one interface:
@@ -10,7 +21,7 @@ An agent is not a special kind of thing. It is a provider behind one interface:
 scope in  →  verified result + log entry out
 ```
 
-A Claude subagent, a Cursor session, a Codex run, an MCP tool, a shell command, a cron job — same contract, interchangeable. You do not orchestrate *agents*; you route a seam to whichever provider satisfies it. That makes routing mechanical instead of a vibe:
+A native subagent, another session, an MCP tool, a shell command or a cron job can satisfy this contract, but their execution and permission boundaries differ. Choose among providers allowed by the user's request and the native session policy above:
 
 **1. Which providers CAN do this seam?** Capability first — tools, permissions, repo access, context window. A provider missing one is rejected loud, never dispatched-and-hoped. A silently degraded result is worse than a refusal, because you will believe it.
 

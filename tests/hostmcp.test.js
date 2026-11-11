@@ -43,7 +43,8 @@ test('codex toml: a table is appended and removed as text, the rest of the file 
   const theirs = '[mcp_servers.codegraph]\ncommand = "codegraph"\nargs = ["serve", "--mcp"]\n\n[features]\nhooks = true\n'
   const once = hostmcp.applyToml(theirs, false, BIN)
   assert.ok(once.startsWith(theirs.trimEnd()), 'nothing above ours changed')
-  assert.match(once, /\[mcp_servers\.godkit\]\ncommand = "node"\nargs = \["[^"]*bin\/godkit\.js", "mcp"\]/)
+  assert.match(once, /\[mcp_servers\.godkit\]\ncommand = "[^"]+"\nargs = \["[^"]*bin\/godkit\.js", "mcp"\]/)
+  assert.ok(once.includes(JSON.stringify(process.execPath.replace(/\\/g, '/'))), 'GUI MCP uses the absolute selected runtime')
   assert.equal(hostmcp.applyToml(once, false, BIN), null)
   assert.equal(hostmcp.applyToml(once, true, BIN).trim(), theirs.trim())
   assert.equal(hostmcp.applyToml(theirs, true, BIN), null)
@@ -73,6 +74,29 @@ test('mcp install writes only the hosts that are there, keeps a backup, and unin
 })
 
 // --- git pre-commit ---------------------------------------------------------------------------
+
+test('Claude GUI registration needs no CLI and refuses a foreign user-scope server', () => {
+  const home = tmp('godkit-claude-owned-')
+  try {
+    const env = { HOME: home, USERPROFILE: home, CLAUDE_CONFIG_DIR: path.join(home, '.claude'), CODEX_HOME: path.join(home, '.codex'), CURSOR_HOME: path.join(home, '.cursor'), GEMINI_HOME: path.join(home, '.gemini') }
+    const file = path.join(home, '.claude.json')
+    const foreign = JSON.stringify({ mcpServers: { godkit: { command: 'foreign', args: [] } }, theme: 'dark' })
+    fs.writeFileSync(file, foreign)
+    assert.equal(hostmcp.mcpReady(BIN, env), false)
+    const refused = hostmcp.registerMcp('install', false, BIN, env).find((r) => r.tool === 'claude')
+    assert.match(refused.error, /not ours/)
+    assert.equal(fs.readFileSync(file, 'utf8'), foreign)
+    fs.writeFileSync(file, JSON.stringify({ mcpServers: { other: { command: 'theirs' } }, theme: 'dark' }))
+    assert.equal(hostmcp.registerMcp('install', false, BIN, env).find((r) => r.tool === 'claude').changed, true)
+    const value = JSON.parse(fs.readFileSync(file, 'utf8'))
+    assert.equal(value.mcpServers.godkit.command, process.execPath)
+    assert.equal(value.mcpServers.other.command, 'theirs')
+    assert.equal(value.theme, 'dark')
+    assert.equal(hostmcp.mcpReady(BIN, env), true)
+    hostmcp.registerMcp('uninstall', false, BIN, env)
+    assert.deepEqual(JSON.parse(fs.readFileSync(file, 'utf8')), { mcpServers: { other: { command: 'theirs' } }, theme: 'dark' })
+  } finally { fs.rmSync(home, { recursive: true, force: true }) }
+})
 
 function repo(rows) {
   const d = tmp('godkit-githook-')
