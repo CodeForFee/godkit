@@ -24,5 +24,7 @@ created: 2026-11-11T0147Z
 ## Test
 - npm test:378 total,376 pass,0 fail,2 skipped. After version bump/bootstrap fixture repair:8/8 bootstrap+actual packed artifact PASS. check/typecheck PASS. Cross-platform remote gate pending. Final affected bootstrap/doctor/ownership/artifact38/38 and logo fixture PASS; check/typecheck PASS.
 
+- v1.1.3 run42956180378: all9 real OS/Node verification jobs PASS; publish job artifact smoke test PASS. npm publish signed provenance but npm PUT rejectedE404; registry remains1.0.0. npmwhoamiE401 locally. No failure gates bypassed. Web login started; awaiting user authentication or trusted-publisher repair.
+
 ## Handoff
-- User explicitly requested npm publication; next commit/tag/push is authorized. Do not claim published until registry and workflow evidence confirm. Stale map not used.
+- User explicitly authorized publication. v1.1.3 source0153a25 is tagged/pushed and verified9/9. Pending npm authorization only: local web login or repair CodeForFee/godkit publish.yml trusted publisher then rerun failedjob42956180378. No passwords/OTP requested in chat; no published claim. Stale map not used.
