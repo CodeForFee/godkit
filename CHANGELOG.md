@@ -4,7 +4,7 @@ All notable changes to godkit. Format follows [Keep a Changelog](https://keepach
 
 ## [Unreleased]
 
-## [1.1.2] ? 2026-11-11
+## [1.1.3] ? 2026-11-11
 
 ### Added
 
@@ -37,6 +37,8 @@ All notable changes to godkit. Format follows [Keep a Changelog](https://keepach
 - `hooks status` now says a Codex hook needs approval after every change.
 
 ### Fixed
+
+- Safety checkpoints rebuild their private index to capture current bytes despite cached-clean files. Skill/setup copies use the JavaScript directory walker for Node22 Windows Unicode compatibility.
 
 - Canonical source paths preserve owned legacy link migrations across macOS aliases and Windows junctions; PowerShell runtime checksum verification uses built-in .NET cryptography without requiring an optional cmdlet module.
 

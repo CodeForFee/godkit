@@ -10,7 +10,7 @@ param(
   [switch]$Rollback
 )
 $ErrorActionPreference = 'Stop'
-$release = '1.1.2'
+$release = '1.1.3'
 function Get-Download([string]$Url, [string]$Destination) {
   if ($Url.StartsWith('file://')) { Copy-Item -LiteralPath ([Uri]$Url).LocalPath -Destination $Destination; return }
   if ($Url -notmatch '^https://' -and $Url -notmatch '^http://(127\.0\.0\.1|localhost):') { throw 'Unsupported download URL' }

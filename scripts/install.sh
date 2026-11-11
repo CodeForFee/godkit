@@ -1,7 +1,7 @@
 #!/bin/sh
 # Runtime bootstrap; the Node entrypoint shares normal Godkit installation.
 set -eu
-release=1.1.2
+release=1.1.3
 project=$PWD
 godkit_home="$HOME/.godkit"
 if [ "${GODKIT_HOME+x}" = x ]; then godkit_home=$GODKIT_HOME; fi

@@ -26,7 +26,7 @@ test('init reports a broken role source and exits unsuccessfully instead of pret
     const manifest = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8'))
     for (const item of ['package.json', ...manifest.files]) {
       const from = path.join(ROOT, item)
-      if (fs.existsSync(from)) fs.cpSync(from, path.join(pkg, item), { recursive: true })
+      if (fs.existsSync(from)) fs.cpSync(from, path.join(pkg, item), { recursive: true, filter: () => true })
     }
     fs.writeFileSync(path.join(pkg, 'agents/godkit-explorer.md'), 'invalid agent')
     const out = spawnSync(process.execPath, [path.join(pkg, 'bin/godkit.js'), 'init', '--no-install', '--no-githook'], { cwd: project, encoding: 'utf8' })

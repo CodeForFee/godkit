@@ -41,7 +41,7 @@ One owner per file. Workers update only their task and unique log; root alone ed
 | T-016 | native session teams, role skills and concise peer coordination | gpt-6 | done | `.agent/tasks/T-016-native-team.md` |
 | T-017 | portable runtime, verified onboarding and release recovery | gpt-6.1-sol | done | `.agent/tasks/T-017-portable-install.md` |
 | T-018 | native Antigravity roles, skill discovery and readiness | gpt-6.1-sol | done | `.agent/tasks/T-018-antigravity-native.md` |
-| T-019 | publish npm1.1.2 through verified OIDC release | gpt-6.1-sol | execute | `.agent/tasks/T-019-npm-release.md` |
+| T-019 | publish npm1.1.3 through verified OIDC release | gpt-6.1-sol | execute | `.agent/tasks/T-019-npm-release.md` |
 
 ## Bugs
 

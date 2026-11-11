@@ -222,6 +222,18 @@ test('a checkpoint captures tracked and new files without touching the index, br
   rm(d)
 })
 
+test('a checkpoint rehashes tracked content even when git cached it as unchanged', () => {
+  const { d, sh, write } = repo()
+  try {
+    sh('update-index', '--assume-unchanged', 'a.js')
+    write('a.js', 'two\n')
+    assert.equal(sh('diff', '--name-only'), '', 'fixture reproduces a cached clean index')
+    const checkpoint = ck.snapshot(d, 'cache111')
+    assert.equal(sh('show', checkpoint.ref + ':a.js'), 'two', 'snapshot must read current bytes')
+    assert.match(sh('ls-files', '-v', 'a.js'), /^h /, 'real index flags remain intact')
+  } finally { rm(d) }
+})
+
 test('rewind restores what the snapshot knew, leaves what was created since, and can itself be undone', () => {
   const { d, write, read } = repo()
   const one = ck.snapshot(d, 'bbbb2222-session')
