@@ -79,10 +79,11 @@ test('agents sync writes both hosts, is idempotent, and only ever replaces or re
   const first = agents.syncAgents(d, 'sync', false)
   const names = agents.sources().map((a) => a.name)
   assert.ok(names.length >= 2)
-  assert.equal(first.filter((r) => r.how === 'created').length, names.length * 2)
+  assert.equal(first.filter((r) => r.how === 'created').length, names.length * 3)
   for (const n of names) {
     assert.ok(fs.existsSync(path.join(d, '.claude', 'agents', n + '.md')))
     assert.match(fs.readFileSync(path.join(d, '.codex', 'agents', n + '.toml'), 'utf8'), /developer_instructions/)
+    assert.ok(fs.existsSync(path.join(d, '.agents', 'agents', n + '.md')))
   }
   assert.ok(agents.syncAgents(d, 'sync', false).every((r) => r.how === 'unchanged'))
 
@@ -109,6 +110,7 @@ test('godkit agents status writes nothing, and init does the sync', () => {
   execFileSync(process.execPath, [BIN, 'init', '--no-install'], { cwd: d, stdio: 'ignore' })
   assert.ok(fs.existsSync(path.join(d, '.claude', 'agents')))
   assert.ok(fs.existsSync(path.join(d, '.codex', 'agents')))
+  assert.ok(fs.existsSync(path.join(d, '.agents', 'agents')))
   rm(d)
 })
 

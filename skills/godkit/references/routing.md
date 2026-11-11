@@ -7,11 +7,20 @@ Part of the **godkit** skill, loaded on demand.
 Use the host's native same-session agent tools when delegation earns its cost. Tool names vary by runtime: discover the available spawn, follow-up, message, wait and stop capabilities rather than assuming an API. CLI delegation and MCP `godkit_agent` start external processes and require an explicit external-run request. If native agents are unavailable, say so and continue useful work in this turn; never silently substitute an external run.
 
 - **Leader:** own the user's scope, file ownership and final join. Use the smallest team that clears the task, within the host's concurrency limits. Reuse an existing worker for follow-up work instead of spawning a duplicate. Workers do not spawn recursively by default; stop idle members when their work is finished.
+- **Automatic dispatch:** for multi-step work with independent file scopes, dispatch native workers proactively. Prefer task-only context when configurable (`fork_turns: "none"` in Codex); send file pointers, the exit condition and verification command instead of copying the conversation.
 - **Roles and skills:** choose a named role from `agents/*.md` (explorer, planner, implementer or reviewer) and only the skills its seam needs. Use the host's custom agent definition when available; otherwise give the native worker the role file and needed skill paths to read. Inheriting a skill catalog does not mean every skill should run.
 - **Task contract:** give each worker file scope, a checkable exit condition, a verification command, and a short task brief with `file:line` pointers. Avoid copying the whole conversation by default. Context inheritance depends on the host; do not assume automatic sharing or promise a hard token limit.
 - **Peer messages:** use the actual native messaging tool, when available, for a targeted dependency, blocker, interface change or evidence another worker needs. Otherwise route it through the leader. Notify the leader when scope or ownership needs to change; a message does not grant edit ownership. No obligatory chatter. Use `.agent/THREAD.md` for durable handoffs across sessions.
 - **Reports and join:** ask for at most ten lines: result, files changed, check and deciding output, remaining blocker. The leader runs the required checks against the resulting files and integrates the result before declaring completion.
 - **Permissions and isolation:** native workers inherit the parent's permissions. A read-only role is an instruction, not a separate sandbox. Provide or explicitly create a worktree when isolation is needed; a role description or generated agent file does not create one.
+
+### Antigravity native recipe
+
+Inspect `/agents`; use `invoke_subagent` with a scoped brief and an explicit workspace choice (`inherit`, `branch` or `share`). Children start without conversation history. Read the exact skill files listed in the role body only as needed. Use available native messaging for brief dependency/blocker notes to known teammate IDs; otherwise route through the parent. The parent verifies results. Never silently use `agy --print` or `godkit_agent`. [Native subagent behavior](https://antigravity.google/docs/subagents).
+
+Antigravity role files are subagent-only. The inspected CLI 1.5.5 metadata command `agy agents` omitted workspace and subagent-only roles; use an actual parent `invoke_subagent` result to validate runtime support. Never relabel static role files or a primary-agent listing as a successful native team run.
+
+For peers, use native `send_message` with `Recipient` and `Message`; Antigravity provides this coordination tool even when a role limits its built-in tools. [Tool contract](https://antigravity.google/docs/hooks/#agent-collaboration), [allowlist behavior](https://antigravity.google/docs/build-plugins/#subagents).
 
 ## Everything is a provider
 

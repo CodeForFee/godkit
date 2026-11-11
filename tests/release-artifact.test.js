@@ -31,6 +31,21 @@ test('the actual release archive contains the runtime installers and runs in an 
     run(process.execPath, [bin, 'init', '--no-install'])
     assert.ok(fs.existsSync(path.join(project, '.agent', 'BOARD.md')))
     assert.ok(fs.existsSync(path.join(project, '.codex', 'agents', 'godkit-reviewer.toml')))
+    const agentSources = require(path.join(installed, 'lib', 'agents')).sources()
+    const agyDirectory = path.join(project, '.agents', 'agents')
+    assert.equal(agentSources.length, 6, 'the shipped named-role set changed; review native projection coverage')
+    assert.deepEqual(fs.readdirSync(agyDirectory).filter((name) => name.endsWith('.md')).sort(), agentSources.map((role) => role.name + '.md').sort())
+    for (const role of agentSources) {
+      const projected = fs.readFileSync(path.join(agyDirectory, role.name + '.md'), 'utf8')
+      assert.match(projected, /^subagent: true$/m, role.name + ' must be available to native invocation')
+      assert.match(projected, /^model: ["']?inherit["']?$/m, role.name + ' inherits the selected host model')
+      const head = projected.match(/^---\r?\n([\s\S]*?)\r?\n---/)
+      assert.ok(head, role.name + ' needs YAML frontmatter')
+      assert.doesNotMatch(head[1], /^skills:/m, 'frontmatter must not assume an undocumented relative skill-path base')
+      const skillNames = [...new Set([...projected.matchAll(/\.agents\/skills\/([A-Za-z0-9][A-Za-z0-9_-]*)\/SKILL\.md/g)].map((m) => m[1]))]
+      if (role.name.startsWith('godkit-')) assert.ok(skillNames.length > 0, role.name + ' needs explicit on-demand workspace skill instructions')
+      for (const skillName of skillNames) assert.ok(fs.existsSync(path.join(project, '.agents', 'skills', skillName, 'SKILL.md')), role.name + ' references a missing skill: ' + skillName)
+    }
     const messages = [
       { jsonrpc: '2.0', id: 1, method: 'initialize', params: { protocolVersion: '2025-06-18', capabilities: {}, clientInfo: { name: 'artifact-test', version: '1' } } },
       { jsonrpc: '2.0', method: 'notifications/initialized' },

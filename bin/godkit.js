@@ -18,7 +18,7 @@ const { projectRoot, paths, utcStamp } = require('../lib/paths')
 const TOOLS = {
   claude: { dir: ['.claude', 'skills'], style: 'per-skill', hooks: true },
   codex: { dir: ['.agents', 'skills'], style: 'per-skill', hooks: true },
-  antigravity: { dir: ['.gemini', 'antigravity', 'skills'], style: 'folder', hooks: false },
+  antigravity: { dir: ['.gemini', 'config', 'skills'], style: 'per-skill', hooks: false },
   cursor: { dir: null, style: 'rules-only', hooks: false },
 }
 
@@ -87,7 +87,7 @@ function skillNames() {
 // What each tool's install and uninstall actually touch. lib/install.js decides what is ours;
 // this only turns a tool spec into source/destination pairs.
 function skillPairs(spec, names) {
-  const base = path.join(os.homedir(), ...spec.dir)
+  const base = spec === TOOLS.antigravity && process.env.GEMINI_HOME ? path.join(process.env.GEMINI_HOME, 'config/skills') : path.join(os.homedir(), ...spec.dir)
   if (spec.style === 'folder') return { base, pairs: [[SKILLS, path.join(base, 'godkit')]] }
   return { base, pairs: names.map((n) => [path.join(SKILLS, n), path.join(base, n)]) }
 }
@@ -209,19 +209,14 @@ function cmdInit(args, options = {}) {
   }
 
   const skills = args.includes('--no-skills') ? null : installProjectSkills(root)
-  const additionalSkills = []
-  const gemini = process.env.GEMINI_HOME || path.join(os.homedir(), '.gemini')
-  if (!args.includes('--no-install') && !args.includes('--no-skills') && fs.existsSync(path.join(gemini, 'antigravity'))) {
-    const result = require('../lib/install').installOne(SKILLS, path.join(gemini, 'antigravity/skills/godkit'), false, { copy: true, label: 'godkit@' + version() })
-    if (!result.ok) additionalSkills.push('antigravity skills: ' + result.reason)
-  }
 
   // The subagents the map skill spawns, for hosts that read them from the project.
   let agentRows = null
   const issues = []
   if (!args.includes('--no-agents')) {
     try {
-      agentRows = require('../lib/agents').syncAgents(root, 'sync', false)
+      // Project skills were installed just above (or explicitly disabled); don't copy twice.
+      agentRows = require('../lib/agents').syncAgents(root, 'sync', false, { installSkills: false })
     } catch (error) {
       issues.push('agents: ' + error.message)
     }
@@ -247,7 +242,7 @@ function cmdInit(args, options = {}) {
   const bin = path.join(ROOT, 'bin', 'godkit.js')
   if (!args.includes('--no-install') && !args.includes('--no-mcp') && !hostmcp.mcpReady(bin)) mcp = hostmcp.registerMcp('install', false, bin)
 
-  issues.push(...refused, ...((skills && skills.refused) || []), ...additionalSkills)
+  issues.push(...refused, ...((skills && skills.refused) || []))
   for (const row of agentRows || []) if (row.how === 'refused') issues.push('agent ' + row.file + ': ' + row.reason)
   for (const row of [...(machine || []), ...(mcp || [])]) if (row.error) issues.push(row.tool + ': ' + row.error)
   if (options.silent) {
@@ -266,7 +261,7 @@ function cmdInit(args, options = {}) {
     if (skills) log('  skills: ' + skills.names.length + ' -> .claude/skills .agents/skills')
     for (const r of (skills && skills.refused) || []) log('  ! skipped ' + r)
     const made = (agentRows || []).filter((r) => r.how === 'created' || r.how === 'updated')
-    if (made.length) log('  agents: ' + made.length + ' file(s) -> .claude/agents .codex/agents')
+    if (made.length) log('  agents: ' + made.length + ' file(s) -> .claude/agents .codex/agents .agents/agents')
     if (preCommit && preCommit.ok && preCommit.changed) log('  pre-commit: warns about staged files outside every claim (GODKIT_STRICT=1 blocks)')
     for (const m of machine || []) log('  hooks ' + m.tool + ': ' + m.added + ' registered (' + m.file + ')')
     for (const m of mcp || []) if (m.changed) log('  mcp ' + m.tool + ': godkit registered (' + m.file + ')')
@@ -336,7 +331,7 @@ function cmdInstall(args) {
     let done = 0
     const refused = []
     for (const [src, dest] of pairs) {
-      const result = installOne(src, dest, dryRun)
+      const result = installOne(src, dest, dryRun, { copy: t === 'antigravity' })
       if (result.ok) done++
       else refused.push(path.basename(dest) + ' — ' + result.reason)
     }
@@ -609,7 +604,7 @@ function cmdDelegate(args) {
   if (!r.ok) process.exitCode = 1
 }
 
-// The subagents godkit-map needs, in the form each host reads (.claude/agents, .codex/agents).
+// Native role projections at each host's documented workspace discovery path.
 function cmdAgents(args) {
   const action = args.find((a) => !a.startsWith('-')) || 'status'
   if (!['sync', 'clean', 'status'].includes(action)) {
@@ -617,7 +612,7 @@ function cmdAgents(args) {
     return
   }
   const rows = require('../lib/agents').syncAgents(projectRoot(process.cwd()), action, args.includes('--dry-run'))
-  for (const r of rows) log('  ' + r.host.padEnd(8) + r.how.padEnd(10) + path.relative(process.cwd(), r.file) + (r.reason ? '  (' + r.reason + ')' : ''))
+  for (const r of rows) log('  ' + r.host.padEnd(13) + r.how.padEnd(10) + path.relative(process.cwd(), r.file) + (r.reason ? '  (' + r.reason + ')' : ''))
   if (rows.some((r) => r.how === 'refused')) process.exitCode = 1
 }
 
@@ -1259,7 +1254,7 @@ const COMMANDS = [
     ['rewind [session/n] [--yes]', 'go back to a file checkpoint (taken before agent edits)'],
     ['agent [list|run <name> "<task>"|model]', 'run a named subagent as its own process, permissions enforced'],
     ['delegate <host> "<task>" [--write]', 'hand a task to another agent CLI, headless, read-only by default'],
-    ['agents [sync|clean|status]', 'subagent files for claude (.claude/agents) and codex (.codex/agents)'],
+    ['agents [sync|clean|status]', 'native Claude, Codex and Antigravity role files'],
     ['githook [install|uninstall]','pre-commit: files outside every claim (GODKIT_STRICT=1 blocks)'],
     ['install [tool...]', 'skills into ~/ for every project (init already covers this one)'],
     ['uninstall [tool|--project]', 'remove owned machine setup, or selected skills; preserve .agent/'],

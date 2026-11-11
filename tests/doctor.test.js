@@ -32,6 +32,9 @@ function configured(o, host = 'codex') {
   write(path.join(o.cwd, '.agent', 'THREAD.md'), '# Thread')
   write(path.join(o.cwd, 'AGENTS.md'), '# Rules')
   agents.syncAgents(o.cwd, 'sync', false)
+  if (host === 'antigravity') {
+    for (const role of agents.sources()) write(path.join(o.cwd, '.agents/agents', role.name + '.md'), agents.toClaude(role))
+  }
   const skills = fs.readdirSync(path.join(ROOT, 'skills'))
   for (const skill of skills) write(path.join(o.cwd, host === 'claude' ? '.claude' : '.agents', 'skills', skill, 'SKILL.md'), '# Fixture skill')
   const where = doctor.locations(o.env)[host]
@@ -127,17 +130,91 @@ test('a real hook observation promotes hooks only and must follow the current co
   assert.ok(fs.existsSync(target.hooks))
 })
 
-test('unknown custom-role hosts remain explicitly unsupported while available features are checked', async (t) => {
+test('Cursor roles stay unsupported while Antigravity roles are missing until configured', async (t) => {
   const o = fixture(t)
   fs.mkdirSync(o.env.CURSOR_HOME, { recursive: true })
-  fs.mkdirSync(path.join(o.env.GEMINI_HOME, 'antigravity'), { recursive: true })
+  fs.mkdirSync(path.join(o.env.GEMINI_HOME, 'config'), { recursive: true })
   const result = await doctor.inspect(o)
   for (const name of ['cursor', 'antigravity']) {
     const host = result.hosts.find((h) => h.host === name)
     assert.equal(host.installed, true)
-    assert.equal(host.features.roles.status, 'unsupported')
+    assert.equal(host.features.roles.status, name === 'cursor' ? 'unsupported' : 'needs_action')
     assert.equal(host.ready, false)
   }
+})
+
+test('Antigravity recognizes canonical config and workspace native assets without claiming execution', async (t) => {
+  const o = fixture(t)
+  const target = configured(o, 'antigravity')
+  assert.ok(!fs.existsSync(path.join(o.env.GEMINI_HOME, 'antigravity')), 'new config layout does not need the legacy IDE directory')
+  const result = await doctor.inspect(o)
+  const host = result.hosts.find((h) => h.host === 'antigravity')
+  assert.equal(host.installed, true)
+  assert.equal(host.features.skills.status, 'configured')
+  assert.ok(host.features.skills.sources.every((s) => s.scope === 'workspace'))
+  assert.equal(host.features.roles.status, 'configured')
+  assert.equal(host.features.roles.path, path.join(o.cwd, '.agents/agents'))
+  assert.equal(host.features.hooks.path, target.hooks)
+  assert.equal(host.features.native_agents.status, 'needs_action')
+  assert.equal(host.features.peer_messaging.status, 'needs_action')
+  assert.equal(host.ready, false)
+})
+
+test('Antigravity resolves each skill workspace-first with canonical global fallback and hashes selected assets', async (t) => {
+  const o = fixture(t)
+  configured(o, 'antigravity')
+  for (const name of fs.readdirSync(path.join(ROOT, 'skills'))) write(path.join(o.env.GEMINI_HOME, 'config/skills', name, 'SKILL.md'), '# Global fixture skill')
+  const local = path.join(o.cwd, '.agents/skills/godkit-lazy/SKILL.md')
+  fs.rmSync(local)
+  const first = (await doctor.inspect(o)).hosts.find((h) => h.host === 'antigravity')
+  assert.equal(first.features.skills.status, 'configured')
+  assert.equal(first.features.skills.sources.find((s) => s.name === 'godkit-lazy').scope, 'global')
+  assert.equal(first.features.skills.sources.find((s) => s.name === 'godkit-test').scope, 'workspace')
+  const observation = { ...o, host: 'antigravity', feature: 'skills', surface: 'app', hostVersion: 'fixture-agy', session: 'fixture-session', source: 'host-session' }
+  doctor.recordEvidence(observation)
+  fs.appendFileSync(path.join(o.env.GEMINI_HOME, 'config/skills/godkit-test/SKILL.md'), '\nUnused global copy changed.\n')
+  assert.equal((await doctor.inspect(o)).hosts.find((h) => h.host === 'antigravity').features.skills.status, 'verified', 'unselected global copies must not invalidate workspace evidence')
+  fs.appendFileSync(path.join(o.env.GEMINI_HOME, 'config/skills/godkit-lazy/SKILL.md'), '\nSelected global copy changed.\n')
+  assert.equal((await doctor.inspect(o)).hosts.find((h) => h.host === 'antigravity').features.skills.status, 'configured')
+  doctor.recordEvidence(observation)
+  write(local, '# Local override fixture')
+  assert.equal((await doctor.inspect(o)).hosts.find((h) => h.host === 'antigravity').features.skills.status, 'configured', 'a new workspace override changes selected assets')
+})
+
+test('Antigravity accepts a complete canonical global skill catalog with no workspace skill copies', async (t) => {
+  const o = fixture(t)
+  configured(o, 'antigravity')
+  fs.rmSync(path.join(o.cwd, '.agents/skills'), { recursive: true })
+  for (const name of fs.readdirSync(path.join(ROOT, 'skills'))) write(path.join(o.env.GEMINI_HOME, 'config/skills', name, 'SKILL.md'), '# Canonical global fixture')
+  const host = (await doctor.inspect(o)).hosts.find((h) => h.host === 'antigravity')
+  assert.equal(host.features.skills.status, 'configured')
+  assert.ok(host.features.skills.sources.every((s) => s.scope === 'global'))
+  assert.equal(host.features.roles.status, 'configured')
+  assert.equal(host.features.native_agents.status, 'needs_action')
+})
+
+test('Antigravity native evidence follows .agents/agents rather than Codex roles', async (t) => {
+  const o = fixture(t)
+  configured(o, 'antigravity')
+  const base = { ...o, host: 'antigravity', surface: 'app', hostVersion: 'fixture-agy', session: 'fixture-session', source: 'host-session' }
+  for (const name of ['roles', 'native_agents', 'peer_messaging']) doctor.recordEvidence({ ...base, feature: name })
+  fs.appendFileSync(path.join(o.cwd, '.codex/agents/godkit-explorer.toml'), '\nUnrelated Codex fixture change.\n')
+  const unchanged = (await doctor.inspect(o)).hosts.find((h) => h.host === 'antigravity')
+  for (const name of ['roles', 'native_agents', 'peer_messaging']) assert.equal(unchanged.features[name].status, 'verified')
+  fs.appendFileSync(path.join(o.cwd, '.agents/agents/godkit-explorer.md'), '\nChanged Antigravity fixture role.\n')
+  const changed = (await doctor.inspect(o)).hosts.find((h) => h.host === 'antigravity')
+  assert.equal(changed.features.roles.status, 'configured')
+  assert.equal(changed.features.native_agents.status, 'needs_action')
+  assert.equal(changed.features.peer_messaging.status, 'needs_action')
+})
+
+test('legacy Antigravity nested Godkit skill folders do not prove canonical skill discovery', async (t) => {
+  const o = fixture(t)
+  for (const name of fs.readdirSync(path.join(ROOT, 'skills'))) write(path.join(o.env.GEMINI_HOME, 'antigravity/skills/godkit', name, 'SKILL.md'), '# Legacy fixture')
+  const host = (await doctor.inspect(o)).hosts.find((h) => h.host === 'antigravity')
+  assert.equal(host.installed, true)
+  assert.equal(host.features.skills.status, 'needs_action')
+  assert.equal(host.features.roles.status, 'needs_action')
 })
 
 test('malformed or foreign configuration is an error and is never changed by inspection', async (t) => {

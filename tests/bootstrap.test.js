@@ -5,7 +5,8 @@ const fs = require('node:fs')
 const os = require('node:os')
 const path = require('node:path')
 const { pathToFileURL } = require('node:url')
-const { spawnSync } = require('node:child_process')
+const { spawnSync, spawn } = require('node:child_process')
+const crypto = require('node:crypto')
 const { parse } = require('../bin/bootstrap')
 const ROOT = path.resolve(__dirname, '..')
 const BOOT = path.join(ROOT, 'bin', 'bootstrap.js')
@@ -89,4 +90,122 @@ test('runtime checksum mismatch leaves the active release and existing runtime u
     assert.equal(fs.readFileSync(path.join(home, 'active.json'), 'utf8'), 'prior release')
     assert.equal(fs.existsSync(path.join(home, 'runtime')), false)
   } finally { fs.rmSync(base, { recursive: true, force: true }) }
+})
+
+const posixShell = process.platform === 'win32'
+  ? [path.join(process.env.ProgramFiles || 'C:/Program Files', 'Git', 'bin', 'sh.exe'), 'C:/Program Files/Git/usr/bin/sh.exe'].find((file) => fs.existsSync(file))
+  : 'sh'
+const shellPath = (file) => process.platform === 'win32' ? file.replace(/\\/g, '/').replace(/^([A-Za-z]):/, (_, drive) => '/' + drive.toLowerCase()) : file
+// Git for Windows prepends its own tools at shell startup; set the fixture PATH afterwards.
+const posixArgs = (args) => ['-c', 'PATH=$GODKIT_TEST_PATH; export PATH; . "$0"', ...args]
+
+function posixFixture(base, options) {
+  const o = options || {}
+  const env = environment(base)
+  const home = env.GODKIT_HOME
+  const tools = path.join(base, 'tools')
+  fs.mkdirSync(tools)
+  const script = (name, body) => {
+    const file = path.join(tools, name)
+    fs.writeFileSync(file, '#!/bin/sh\n' + body + '\n', { mode: 0o755 })
+    return file
+  }
+  script('uname', 'case "$1" in -s) echo Linux;; -m) echo x86_64;; *) exit 1;; esac')
+  for (const name of ['curl', 'wget', 'tar']) script(name, 'echo called >> "$HOME/unexpected-runtime-io"; exit 89')
+  const lock = path.join(base, 'lock.json')
+  const version = o.version === undefined ? '24.22.2' : o.version
+  const archive = o.archive === undefined ? 'node-v24.22.2-linux-x64.tar.gz' : o.archive
+  let serializedLock = JSON.stringify({ godkitVersion: '1.1.0', version, baseUrl: 'http://127.0.0.1:9/no-network', archives: { 'linux-x64': { file: archive, sha256: o.sha256 || '0'.repeat(64) } } })
+  if (o.rawControl) serializedLock = serializedLock.replace('\\n', '\n')
+  fs.writeFileSync(lock, serializedLock)
+  const args = [shellPath(path.join(ROOT, 'scripts', 'install.sh')), '--source', shellPath(fixture(base, '1.0.0')), '--project', shellPath(path.join(base, 'project')), '--home', shellPath(home), '--runtime-lock', shellPath(lock), '--force-runtime', '--project-only']
+  const inheritedPath = env.PATH || env.Path || ''
+  env.PATH = [shellPath(tools), '/usr/bin', '/bin', ...inheritedPath.split(path.delimiter).filter(Boolean).map(shellPath)].join(':')
+  env.GODKIT_TEST_PATH = env.PATH
+  delete env.Path
+  env.HOME = shellPath(base)
+  env.GODKIT_HOME = shellPath(home)
+  return { home, tools, env, args, script, marker: path.join(base, 'unexpected-runtime-io'), runtime: path.join(home, 'runtime', '24.22.2-linux-x64') }
+}
+
+test('POSIX runtime lock rejects traversal and control characters before download/extraction', { skip: !posixShell }, () => {
+  const malformed = [
+    { version: '24.22.2/../../escape' }, { version: '24.22.2suffix' }, { version: '24.22.2\t' }, { version: '24.22.2\n' }, { version: '24.\n22.2', rawControl: true },
+    { archive: 'node-v24.22.2/../../escape-linux-x64.tar.gz' }, { archive: '../node-v24.22.2-linux-x64.tar.gz' },
+    { archive: 'node-v24.22.2-linux-x64.tar.gz\t' },
+  ]
+  for (const values of malformed) {
+    const base = temporary()
+    try {
+      const f = posixFixture(base, values)
+      const run = spawnSync(posixShell, posixArgs(f.args), { env: f.env, encoding: 'utf8', timeout: 10000 })
+      assert.notEqual(run.status, 0, JSON.stringify(values))
+      assert.match(run.stderr, /lock must pin an exact|runtime archive missing\/invalid/, run.stderr)
+      assert.equal(fs.existsSync(f.marker), false, 'malformed data must fail before runtime IO')
+      assert.equal(fs.existsSync(path.join(f.home, 'runtime')), false)
+    } finally { fs.rmSync(base, { recursive: true, force: true }) }
+  }
+})
+
+test('POSIX private runtime reuse requires the exact pin and preserves damaged caches', { skip: !posixShell }, () => {
+  for (const actualVersion of ['v24.22.2', 'v24.0.0', 'v22.0.0']) {
+    const base = temporary()
+    try {
+      const f = posixFixture(base)
+      const bin = path.join(f.runtime, 'bin')
+      fs.mkdirSync(bin, { recursive: true })
+      const node = path.join(bin, 'node')
+      fs.writeFileSync(node, '#!/bin/sh\nif [ "$1" = --version ]; then echo ' + actualVersion + '; else echo reused > "$HOME/runtime-used"; fi\n', { mode: 0o755 })
+      const original = fs.readFileSync(node)
+      const run = spawnSync(posixShell, posixArgs(f.args), { env: f.env, encoding: 'utf8', timeout: 10000 })
+      if (actualVersion === 'v24.22.2') {
+        assert.equal(run.status, 0, run.stderr)
+        assert.equal(fs.existsSync(path.join(base, 'runtime-used')), true)
+      } else {
+        assert.notEqual(run.status, 0)
+        assert.match(run.stderr, /existing runtime damaged or differs from pin/)
+      }
+      assert.deepEqual(fs.readFileSync(node), original, 'an existing cache is never overwritten')
+      assert.equal(fs.existsSync(f.marker), false, 'reuse/refusal must not download or extract')
+    } finally { fs.rmSync(base, { recursive: true, force: true }) }
+  }
+})
+
+test('POSIX runtime lock prevents concurrent installers from nesting a completed cache', { skip: !posixShell }, async () => {
+  const base = temporary()
+  let child
+  try {
+    const f = posixFixture(base)
+    const packageRoot = path.join(base, 'archive-source', 'node-v24.22.2-linux-x64')
+    fs.mkdirSync(path.join(packageRoot, 'bin'), { recursive: true })
+    fs.writeFileSync(path.join(packageRoot, 'bin', 'node'), '#!/bin/sh\nif [ "$1" = --version ]; then echo v24.22.2; else echo ready > "$HOME/runtime-used"; fi\n', { mode: 0o755 })
+    const archive = path.join(base, 'runtime.tar.gz')
+    const packed = spawnSync(posixShell, ['-c', 'tar -czf "$1" -C "$2" "$3"', '--', shellPath(archive), shellPath(path.dirname(packageRoot)), path.basename(packageRoot)], { encoding: 'utf8', timeout: 10000 })
+    assert.equal(packed.status, 0, packed.stderr)
+    const lockPath = path.join(base, 'lock.json')
+    const lock = JSON.parse(fs.readFileSync(lockPath, 'utf8'))
+    lock.archives['linux-x64'].sha256 = crypto.createHash('sha256').update(fs.readFileSync(archive)).digest('hex')
+    fs.writeFileSync(lockPath, JSON.stringify(lock))
+    fs.rmSync(path.join(f.tools, 'tar'))
+    f.script('curl', 'for arg do output=$arg; done\necho started > "$HOME/download-started"\nsleep 1\ncp "$RUNTIME_ARCHIVE" "$output"')
+    f.env.RUNTIME_ARCHIVE = shellPath(archive)
+    child = spawn(posixShell, posixArgs(f.args), { env: f.env, stdio: ['ignore', 'pipe', 'pipe'] })
+    let stderr = ''
+    child.stderr.on('data', (c) => { stderr += c })
+    child.stdout.resume()
+    const done = new Promise((resolve, reject) => { child.once('error', reject); child.once('close', resolve) })
+    for (let i = 0; i < 100 && !fs.existsSync(path.join(base, 'download-started')); i++) await new Promise((resolve) => setTimeout(resolve, 20))
+    assert.equal(fs.existsSync(path.join(base, 'download-started')), true, stderr)
+    const second = spawnSync(posixShell, posixArgs(f.args), { env: f.env, encoding: 'utf8', timeout: 10000 })
+    assert.notEqual(second.status, 0)
+    assert.match(second.stderr, /installation already in progress/)
+    assert.equal(await done, 0, stderr)
+    child = null
+    assert.equal(fs.existsSync(path.join(f.runtime, 'bin', 'node')), true)
+    assert.equal(fs.existsSync(path.join(f.runtime, 'runtime')), false, 'mv must never nest the runtime directory')
+    assert.equal(fs.existsSync(path.join(path.dirname(f.runtime), '.install-24.22.2-linux-x64.lock')), false)
+  } finally {
+    if (child && child.exitCode === null) { child.kill(); await new Promise((resolve) => child.once('close', resolve)) }
+    fs.rmSync(base, { recursive: true, force: true })
+  }
 })

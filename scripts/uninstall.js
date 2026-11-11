@@ -26,7 +26,8 @@ const DRY = process.argv.includes('--dry-run')
 const SKILL_DIRS = [
   ['claude', ['.claude', 'skills'], 'per-skill'],
   ['codex', ['.agents', 'skills'], 'per-skill'],
-  ['antigravity', ['.gemini', 'antigravity', 'skills'], 'folder'],
+  ['antigravity', ['.gemini', 'config', 'skills'], 'per-skill'],
+  ['antigravity-legacy', ['.gemini', 'antigravity', 'skills'], 'folder'],
 ]
 
 function skillNames() {
@@ -43,7 +44,9 @@ function skillNames() {
 function removeSkills() {
   const names = skillNames()
   for (const [tool, dir, style] of SKILL_DIRS) {
-    const base = path.join(os.homedir(), ...dir)
+    const base = tool.startsWith('antigravity') && process.env.GEMINI_HOME
+      ? path.join(process.env.GEMINI_HOME, ...dir.slice(1))
+      : path.join(os.homedir(), ...dir)
     const victims =
       style === 'folder'
         ? [[path.join(base, 'godkit'), SKILLS]]

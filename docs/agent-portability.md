@@ -6,9 +6,9 @@ Godkit targets four tools. They agree on almost nothing, so the package keeps **
 
 | | Claude Code | Cursor | Codex | Antigravity |
 |---|---|---|---|---|
-| **Skills** | `~/.claude/skills/<name>/SKILL.md` | not supported | `~/.agents/skills/<name>/SKILL.md` | `~/.gemini/antigravity/skills/godkit/` |
-| **Skill layout** | one link per skill | — | one link per skill | one link for the whole folder |
-| **Project-local skills** | `<project>/.claude/skills/<name>/` | not supported | `<project>/.agents/skills/<name>/` — *unverified against a live Codex* | not supported |
+| **Skills** | `~/.claude/skills/<name>/SKILL.md` | not supported | `~/.agents/skills/<name>/SKILL.md` | `~/.gemini/config/skills/<name>/SKILL.md` |
+| **Skill layout** | one link per skill | — | one link per skill | one link or owned copy per skill |
+| **Project-local skills** | `<project>/.claude/skills/<name>/` | not supported | `<project>/.agents/skills/<name>/` — *unverified against a live Codex* | `<project>/.agents/skills/<name>/` |
 | **Always-on rules** | `CLAUDE.md` | `.cursor/rules/godkit.mdc` | `AGENTS.md` | `.agents/rules/godkit.md` |
 | **Rules frontmatter** | none | `alwaysApply: true` | none | none |
 | **Hooks** | yes | yes, via `hooks/adapt.js` (subset) | yes, same JSON | yes, via `hooks/adapt.js` (subset) |
@@ -24,16 +24,13 @@ commands — the invocation row above describes the plugin install. Nothing plac
 files into a host's own commands directory, deliberately: that path is the user's, and one file
 per skill dropped into it is a lot of someone else's clutter.
 
-`gemini-extension.json` carries `skills` and `agents` pointers as a **best-effort** adapter: they
-are how Antigravity's own extension layout names those directories, and are harmless where a host
-ignores an unknown field. What is actually verified is the skills path in the table above, which
-is what `godkit install antigravity` writes.
+Antigravity App and CLI share workspace `.agents/` and personal `~/.gemini/config/` discovery. Godkit projects native roles into `.agents/agents/<name>.md` and standalone global skills into the canonical per-skill directory above; the extension manifest is not required for that integration. [Antigravity customization discovery](https://antigravity.google/docs/customization-discovery).
+
+The standalone IDE also accepts the legacy `~/.gemini/antigravity/skills/` location, but new Godkit installs use the canonical layout. CLI skill changes can be refreshed with `/skills reload` or a new conversation. [Antigravity skills](https://antigravity.google/docs/skills).
 
 **Project-local skills** (`.agent/skills/`, see the `godkit-evolve` skill) follow the same
 one-canonical-copy rule as the rules files: `.agent/skills/<name>/` is the source, and
-`godkit skills --link` projects it into each host's project path. Cursor and Antigravity have no
-project skill directory, so for them the generated `.agent/SKILLS.md` plus the always-on rule
-file is the whole story — the same enforced-versus-instructed asymmetry as hooks.
+`godkit skills --link` projects it into each supported host's project path. Antigravity and Codex share the workspace `.agents/skills/` layout. Cursor currently uses the generated `.agent/SKILLS.md` and always-on rules instead of a Godkit-managed project skill directory.
 
 Linking is **per skill, never a folder link**. A folder link would clobber a user's own skills at
 that path, and would make a quarantined skill still visible to the host. Per-skill links make
@@ -95,7 +92,7 @@ A tool with no hooks at all still has its always-on rule file, which is why ever
 
 | Agent | CLI | VS Code extension | Desktop app | What makes it automatic | State checked on this machine |
 |---|---|---|---|---|---|
-| Claude Code | yes | `anthropic.claude-code` | Claude desktop (Code tab) | Hooks in `~/.claude/settings.json` and the user-scope MCP server are shared by all three (the extension's docs say so for settings and MCP). Windows apps need `node` on the system PATH | Desktop: the SessionStart brief arrived in this very session (`CLAUDE_CODE_ENTRYPOINT=claude-desktop`). `node` is in `C:\Program Files\nodejs`, on the system PATH. CLI and extension: same file, not run separately |
+| Claude Code | yes | `anthropic.claude-code` | Claude desktop (Code tab) | Hooks in `~/.claude/settings.json` and the user-scope MCP server are shared by all three (the extension's docs say so for settings and MCP). Godkit registrations use the selected Node executable's absolute path | Earlier desktop check: the SessionStart brief arrived (`CLAUDE_CODE_ENTRYPOINT=claude-desktop`). CLI and extension: same file, not run separately |
 | Codex | yes | `openai.chatgpt` | Codex app | `~/.codex/hooks.json` and `[mcp_servers.godkit]` in `~/.codex/config.toml`. **A hook is skipped until you approve it, and again whenever it changes** (trust is per hook hash): `/hooks` in the CLI, "Review hooks" in the app. The docs do not say how the VS Code extension approves | A `codex exec` run left no godkit trace: the hooks are waiting for approval. Extension: unverified |
 | Antigravity | `agy` | Antigravity IDE | Antigravity | `~/.gemini/config/hooks.json` (docs: App, CLI and IDE) and `mcp_config.json` | Our hooks failed on Windows because of quoting (fixed). Another tool's quoted hook commands in the same file still fail and block `agy`'s edits |
 | Cursor | not installed here | the Cursor agent | Cursor | `~/.cursor/hooks.json`, `mcp.json`. User-level hooks do not run in Cursor's cloud agents | The Cursor app is not installed on this machine, so nothing is verified end to end |
@@ -106,7 +103,7 @@ Two checks replace guessing. `godkit doctor` prints a **last seen** line per age
 
 | | Claude Code | Codex | Cursor | Antigravity |
 |---|---|---|---|---|
-| Subagent files generated (`godkit agents`) | `.claude/agents/<name>.md` | `.codex/agents/<name>.toml` | not generated: format unverified | not generated: format unverified |
+| Subagent files generated (`godkit agents`) | `.claude/agents/<name>.md` | `.codex/agents/<name>.toml` | not generated: format unverified | `.agents/agents/<name>.md` |
 | `godkit delegate` target | `claude -p` (read-only: `dontAsk` + Read/Grep/Glob) | `codex exec --sandbox read-only` | no headless CLI on the test machine | `agy --print --mode plan` |
 | Checked against the real CLI | yes | flags accepted; the account rejected its model | n/a | yes |
 | Checkpoint hook (`PreToolUse` on edits) | yes | yes | no: no `PreToolUse` on every tool (see above) | yes |
@@ -118,6 +115,8 @@ Windows quoting. Antigravity (its own log shows it) and, to be safe, Cursor pass
 `agy --print` has two more limits that are not hooks: Google answers `503 No capacity available for model <name>` for some models at some times (try another with `--model`; `godkit agent model agy <model>` or `GODKIT_AGY_MODEL`), and in headless mode a tool that needs a permission it cannot ask for (a shell command) is auto-denied and the run ends with `jetski: no output produced`. godkit reports both as failures and does not pass `--dangerously-skip-permissions`; the supported fix is an allow-rule in agy's `settings.json` (`permissions.allow`, e.g. `command(<target>)`), which is the user's call. A `--settings` file with such a rule hung the run in a quick test here, so that route is unverified.
 
 **Native agents are the default.** Delegate through the host's native agent tools in the current session, using named roles and the skills needed for each task. `godkit agents sync` generates role definitions; it does not itself spawn a native agent. Runtime tool names and context inheritance vary. The leader gives scoped tasks, routes targeted peer messages when necessary, verifies reports and owns the final join; see [the native team protocol](../skills/godkit/references/routing.md#native-session-teams). If native tools are unavailable, report that limitation. Do not substitute an external CLI or MCP run without an explicit external-run request.
+
+**Antigravity native roles.** The generated YAML declares `subagent: true`, inherited model, sandbox command policy and allowed tools. The body gives exact workspace `SKILL.md` paths for on-demand reading, without assuming an undocumented base for frontmatter skill paths. Inspect roles through `/agents`; invocation uses `invoke_subagent` with a workspace choice and a fresh task brief. If a role is absent, inspect again in a new conversation. Generated files alone do not prove a live invocation or peer exchange. [Antigravity subagents](https://antigravity.google/docs/subagents).
 
 [Codex native subagents](https://learn.chatgpt.com/docs/agent-configuration/subagents) inherit the parent's sandbox and approval settings. A read-only role is an instruction, not an independently enforced sandbox. Native isolation requires a worktree to be explicitly provided or created; a generated role file does not establish it. Skills inherit from the parent, but each role should load only the instructions relevant to its task.
 

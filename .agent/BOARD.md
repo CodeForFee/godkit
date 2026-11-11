@@ -40,8 +40,11 @@ One owner per file. Workers update only their task and unique log; root alone ed
 | T-015 | v1.1: one-command install, greenfield, sprint, model identity, lazy rewrite | claude-opus-5 | done | `.agent/tasks/T-015-v11-product.md` |
 | T-016 | native session teams, role skills and concise peer coordination | gpt-6 | done | `.agent/tasks/T-016-native-team.md` |
 | T-017 | portable runtime, verified onboarding and release recovery | gpt-6.1-sol | done | `.agent/tasks/T-017-portable-install.md` |
+| T-018 | native Antigravity roles, skill discovery and readiness | gpt-6.1-sol | done | `.agent/tasks/T-018-antigravity-native.md` |
 
 ## Bugs
+
+- [x] B-018 POSIX bootstrap accepted path-bearing lock values and imprecise private runtime reuse; scripts/install.sh:59/82 now use strict version/archive checks, exact pin and atomic cache lock. tests/bootstrap.test.js covers traversal, damaged reuse and concurrent installs; T-018 follow-up to T-017.
 
 
 - [x] B-006 lazy/work state is shared across sessions and clockout evidence is not exact — runtime fixed in T-004, work-track registered in T-005.
@@ -131,14 +134,11 @@ One owner per file. Workers update only their task and unique log; root alone ed
 
 ## Last 3 handoffs
 
+- 2026-11-11 gpt-6.1-sol: T-018 AGY native role/schema/skills/readiness; parallel workers; 376 pass,2 skipped,0 failed. Six native roles +16 skills synchronized; actual AGY native execution still host-session pending. B-018 installer validation fixed. Log: log/2026-11-11T0054Z-gpt-6-1-sol-01a1c5f1.md.
+
 - 2026-11-11 gpt-6.1-sol: T-017 portable runtime/install, journaled release recovery, truthful readiness, type/CI/artifact gates. 364 passed, 2 skipped, 0 failed; 220KB npm payload. Optional fresh-runtime recheck blocked by policy; no publish. Log: log/2026-11-11T0017Z-gpt-6-1-sol-01a1c5f1.md.
 
 - 2026-11-10 gpt-6: T-016 native session teams, scoped role skills, peer messages; 51/51 tests, package checks and six TOML definitions valid. Peer question/reply verified; IDE role discovery and token savings unmeasured. Log: log/2026-11-10T1506Z-gpt-6-01a1c5f1.md.
-
-- 2026-09-26 claude-opus-5-5 — 1.1.0: npx installs run from `~/.godkit/<version>`, init copies all
-  skills into the project and auto-detects greenfield, rules carry a "Which skill, when" table,
-  brief is a ≤3KB digest, clockout archives to `.agent/archive/`, `godkit recall`. 222 pass.
-  Not published. Map stale. Log: `log/2026-09-26T1929Z-claude-opus-5-5-9ab1b5b0.md`.
 
 ## Open notes
 

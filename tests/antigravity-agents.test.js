@@ -1,0 +1,98 @@
+'use strict'
+const { test } = require('node:test')
+const assert = require('node:assert/strict')
+const fs = require('node:fs')
+const os = require('node:os')
+const path = require('node:path')
+const { spawnSync } = require('node:child_process')
+const agents = require('../lib/agents')
+const install = require('../lib/install')
+const ROOT = path.resolve(__dirname, '..')
+const BIN = path.join(ROOT, 'bin/godkit.js')
+const temp = () => fs.mkdtempSync(path.join(os.tmpdir(), 'godkit agy Việt '))
+
+test('Antigravity renderer translates role constraints into documented native YAML and exact skill reads', () => {
+  const allowed = new Set(['view_file', 'grep_search', 'run_command', 'replace_file_content'])
+  for (const role of agents.sources()) {
+    const rendered = agents.toAntigravity(role)
+    const parsed = agents.parseAgent(rendered)
+    assert.equal(parsed.name, role.name)
+    assert.equal(parsed.fields.subagent, 'true')
+    assert.equal(parsed.fields.mainAgent, 'false')
+    assert.equal(parsed.fields.model, 'inherit')
+    assert.equal(parsed.fields.commandExecutionPolicy, 'sandbox')
+    assert.ok(parsed.fields.tools.every((t) => allowed.has(t)), 'unknown tool aliases can hang native agents')
+    assert.ok(!('permissionMode' in parsed.fields) && !('isolation' in parsed.fields))
+    assert.match(parsed.body, /invoke_subagent/)
+    assert.match(parsed.body, /10 lines/)
+    for (const name of agents.roleSkills(role)) assert.ok(parsed.body.includes('.agents/skills/' + name + '/SKILL.md'))
+    assert.equal(parsed.fields.tools.includes('replace_file_content'), !['godkit-explorer', 'godkit-planner', 'godkit-reviewer'].includes(role.name))
+    assert.ok(!rendered.includes('## The verification ladder'), 'skill content must not be duplicated into every role')
+  }
+  assert.throws(() => agents.toAntigravity({ fields: { skills: ['../outside'] }, name: 'x', description: 'x', body: '' }), /invalid skill/)
+})
+
+test('sync installs required workspace skills and protects foreign Antigravity definitions and dependencies', () => {
+  const dir = temp()
+  try {
+    agents.syncAgents(dir, 'status', false)
+    agents.syncAgents(dir, 'sync', true)
+    assert.ok(!fs.existsSync(path.join(dir, '.agents')), 'status and dry-run must not write skills or roles')
+    const first = agents.syncAgents(dir, 'sync', false)
+    assert.equal(first.filter((r) => r.host === 'antigravity' && r.how === 'created').length, agents.sources().length)
+    for (const name of ['godkit-lazy', 'godkit-plan', 'godkit-test']) assert.ok(fs.existsSync(path.join(dir, '.agents/skills', name, 'SKILL.md')))
+    assert.ok(fs.existsSync(path.join(dir, '.agents/skills/godkit-handoff/SKILL.md')), 'the coordinator needs its workflow catalog as well')
+    assert.ok(agents.syncAgents(dir, 'sync', false).every((r) => r.how === 'unchanged'))
+    const foreign = path.join(dir, '.agents/agents/godkit-reviewer.md')
+    fs.writeFileSync(foreign, 'my own agent')
+    const report = agents.syncAgents(dir, 'sync', false)
+    assert.equal(report.find((r) => r.file === foreign).how, 'refused')
+    agents.syncAgents(dir, 'clean', false)
+    assert.equal(fs.readFileSync(foreign, 'utf8'), 'my own agent')
+    assert.ok(fs.existsSync(path.join(dir, '.agents/skills/godkit-test/SKILL.md')), 'cleaning roles must preserve shared skills')
+    const dependency = path.join(dir, '.agents/skills/godkit-plan')
+    fs.unlinkSync(path.join(dependency, install.MARKER))
+    fs.writeFileSync(path.join(dependency, 'SKILL.md'), 'my own skill')
+    const refusedDependency = agents.syncAgents(dir, 'sync', false).find((r) => r.file === dependency)
+    assert.equal(refusedDependency.how, 'refused')
+    assert.equal(fs.readFileSync(path.join(dependency, 'SKILL.md'), 'utf8'), 'my own skill')
+  } finally { fs.rmSync(dir, { recursive: true, force: true }) }
+})
+
+test('no-skills init preserves its flag while generating Antigravity native roles', () => {
+  const dir = temp()
+  try {
+    const result = spawnSync(process.execPath, [BIN, 'init', '--no-install', '--no-skills', '--no-githook'], { cwd: dir, encoding: 'utf8' })
+    assert.equal(result.status, 0, result.stderr)
+    assert.ok(fs.existsSync(path.join(dir, '.agents/agents/godkit-explorer.md')))
+    assert.ok(!fs.existsSync(path.join(dir, '.agents/skills')))
+  } finally { fs.rmSync(dir, { recursive: true, force: true }) }
+})
+
+test('global Antigravity installation uses individually discoverable canonical skills and rollback covers native roles', () => {
+  const dir = temp()
+  try {
+    const gemini = path.join(dir, 'custom Gemini Việt')
+    const env = { ...process.env, HOME: dir, USERPROFILE: dir, GEMINI_HOME: gemini, GODKIT_HOME: path.join(dir, 'godkit'), GODKIT_FORCE_STABLE: '0' }
+    const result = spawnSync(process.execPath, [BIN, 'install', 'antigravity'], { cwd: dir, encoding: 'utf8', env })
+    assert.equal(result.status, 0, result.stderr)
+    const skill = path.join(gemini, 'config/skills/godkit-lazy/SKILL.md')
+    assert.ok(fs.existsSync(skill), 'global skills must be discoverable one folder deep')
+    assert.ok(!fs.lstatSync(path.dirname(skill)).isSymbolicLink(), 'readiness evidence must be able to fingerprint installed bytes')
+    const files = install.configurationPaths(dir, env)
+    assert.ok(files.includes(path.join(dir, '.agents/agents/godkit-explorer.md')))
+    assert.ok(files.includes(path.dirname(skill)))
+    const foreign = path.join(gemini, 'config/skills/user-skill/SKILL.md')
+    fs.mkdirSync(path.dirname(foreign), { recursive: true })
+    fs.writeFileSync(foreign, 'user skill')
+    const uninstall = path.join(ROOT, 'scripts/uninstall.js')
+    const preview = spawnSync(process.execPath, [uninstall, '--dry-run'], { cwd: dir, encoding: 'utf8', env })
+    assert.equal(preview.status, 0, preview.stderr)
+    assert.ok(preview.stdout.includes(path.join(gemini, 'config/skills')))
+    assert.ok(fs.existsSync(skill), 'dry-run must keep installed custom-home skills')
+    const removed = spawnSync(process.execPath, [uninstall], { cwd: dir, encoding: 'utf8', env })
+    assert.equal(removed.status, 0, removed.stderr)
+    assert.ok(!fs.existsSync(skill), 'standalone uninstall must follow the same GEMINI_HOME as installation')
+    assert.equal(fs.readFileSync(foreign, 'utf8'), 'user skill')
+  } finally { fs.rmSync(dir, { recursive: true, force: true }) }
+})
