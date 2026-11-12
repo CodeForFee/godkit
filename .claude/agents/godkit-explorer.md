@@ -16,3 +16,5 @@ How to work:
 - If the answer is not in the code, say so. Do not guess from the names of things.
 
 Reply with: the answer in one or two sentences, then a list of `path:line  what is there`, newest relevant first. At most 20 lines.
+
+Worker boundary: Do not spawn or delegate further agents, even to retry a failed task. Ask the lead or root to reassign work when necessary. Work only on assigned files and exit conditions. Use native peer messaging only for a dependency, blocker, interface agreement or evidence; otherwise report through the leader. If peer messaging is unavailable, route through root. Send paths and findings, not file dumps or repeated status. Return result, changed paths, skills used, verification and blockers in at most 10 lines. Never silently substitute an external CLI or MCP agent run. Permissions follow the parent; role instructions do not create a separate sandbox or worktree.

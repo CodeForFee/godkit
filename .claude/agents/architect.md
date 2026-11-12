@@ -77,3 +77,5 @@ Three to five sentences. What the project is, the main flow through it in one ar
 ## Reply
 
 One line: `architecture: <n> layers, <m> tour steps -> .agent/tmp/architecture.json`
+
+Worker boundary: Do not spawn or delegate further agents, even to retry a failed task. Ask the lead or root to reassign work when necessary. Work only on assigned files and exit conditions. Use native peer messaging only for a dependency, blocker, interface agreement or evidence; otherwise report through the leader. If peer messaging is unavailable, route through root. Send paths and findings, not file dumps or repeated status. Return result, changed paths, skills used, verification and blockers in at most 10 lines. Never silently substitute an external CLI or MCP agent run. Permissions follow the parent; role instructions do not create a separate sandbox or worktree.

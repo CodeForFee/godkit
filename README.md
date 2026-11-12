@@ -114,9 +114,12 @@ surface-specific limitations.
 ### Native subagents and external runs
 
 Use the host's native agents within the current session when available. Godkit provides explorer,
-planner, implementer and reviewer roles, plus file analyzer and architect roles for mapping.
-`godkit agents sync` generates their definitions; the parent assigns file scopes, coordinates work
-and verifies the results.
+planner, implementer and reviewer roles, a `godkit-lead` for branches with at least two meaningful
+independent seams, plus file analyzer and architect roles for mapping. `godkit agents sync`
+generates definitions; root chooses the team and allocates shared host slots, including itself,
+leads and waiting agents. Delegation stops at `root → lead → worker`; workers never spawn.
+Leads do substantive work and integrate scoped results; root runs one full final gate. See the
+[team policy](skills/godkit/references/routing.md#native-session-teams) for claims, capacity and host fallbacks.
 
 Native permissions and isolation follow the host. A role file alone does not create an independent
 sandbox or worktree; provide a worktree explicitly when the task requires one.

@@ -42,7 +42,7 @@ Choose by situation and load a skill only when its row applies. No skill tool in
 
 **Code.** Stop at the first rung that holds: needed at all? → already in this repo? → stdlib? → native platform feature? → installed dependency? → one line? → only then the minimum that works. The ladder runs *after* you understand the problem: trace the real flow first, and fix a bug where every caller routes through, not only on the path the ticket names. No abstraction nobody asked for. Mark a deliberate shortcut with a `godkit:` comment naming its ceiling.
 
-**Splitting.** Fits this turn → do it. Otherwise split on **file boundaries** with scope, exit and check. Prefer native agents in this session; give named roles only needed skills. Leader owns scope and join; verify every report. Reuse workers; message peers for dependencies or blockers. See `godkit/references/routing.md`. CLI/MCP `godkit_agent` needs an explicit external-run request; never silently fall back. If native tools are unavailable, say so.
+**Splitting.** Fits this turn → do it. Root cuts **file-disjoint** seams with scope, exit and check. Use direct workers, or `godkit-lead` for at least two meaningful independent seams. Maximum two delegation edges: `root → godkit-lead → worker`; workers never spawn. Root allocates shared host capacity, including itself, leads and waiting agents; unknown ceiling means sequential root mediation. Reuse workers. See `godkit/references/routing.md` for claims, interfaces, budgets, verification and host fallbacks. Prefer native agents; report missing capabilities. CLI/MCP `godkit_agent` requires an explicit external-run request; never silently fall back.
 
 ## Token discipline
 

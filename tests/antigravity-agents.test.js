@@ -12,7 +12,7 @@ const BIN = path.join(ROOT, 'bin/godkit.js')
 const temp = () => fs.mkdtempSync(path.join(os.tmpdir(), 'godkit agy Việt '))
 
 test('Antigravity renderer translates role constraints into documented native YAML and exact skill reads', () => {
-  const allowed = new Set(['view_file', 'grep_search', 'run_command', 'replace_file_content'])
+  const allowed = new Set(['view_file', 'grep_search', 'run_command', 'replace_file_content', 'invoke_subagent'])
   for (const role of agents.sources()) {
     const rendered = agents.toAntigravity(role)
     const parsed = agents.parseAgent(rendered)
@@ -22,6 +22,7 @@ test('Antigravity renderer translates role constraints into documented native YA
     assert.equal(parsed.fields.model, 'inherit')
     assert.equal(parsed.fields.commandExecutionPolicy, 'sandbox')
     assert.ok(parsed.fields.tools.every((t) => allowed.has(t)), 'unknown tool aliases can hang native agents')
+    assert.equal(parsed.fields.tools.includes('invoke_subagent'), role.name === 'godkit-lead', 'only the lead gets a native spawn tool')
     assert.ok(!('permissionMode' in parsed.fields) && !('isolation' in parsed.fields))
     assert.match(parsed.body, /invoke_subagent/)
     assert.match(parsed.body, /10 lines/)

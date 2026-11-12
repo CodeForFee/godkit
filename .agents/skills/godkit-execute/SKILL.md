@@ -39,6 +39,8 @@ Do the work. Bounds live *around* the call, not inside it: a timeout, a retry bu
 
 **godkit-lazy** governs what you write here. Take the shortest working diff.
 
+Delegated execution follows [the detailed routing policy](../godkit/references/routing.md#native-session-teams): root allocates shared host slots, leads work and integrate within their allowance, workers never spawn. No capacity means useful own work and a reallocation request to root, not spawn-and-retry.
+
 ### 4. Post-execute — verify against the world
 
 **The return value is not evidence.** The tool saying `ok` proves the tool returned; it does not prove the file changed, the test passed, or the service came up.
@@ -51,6 +53,8 @@ Do the work. Bounds live *around* the call, not inside it: a timeout, a retry bu
 | bug fixed | the symptom path works | the symptom path **and** the sibling callers of the function you touched |
 | delegated work finished | its report says done | run its verification yourself |
 
+Workers run scoped checks; leads verify subtree integration; root runs one full final gate. Verify the report against the resulting files without repeating the full suite at every level. A changed input, failure or unresolved concern justifies another check.
+
 **Report orthogonal outcomes separately.** "14 pass, 2 skipped, 1 unrelated failure" is three facts. Compressing them into "tests pass" is the most common way a broken state gets handed forward as a clean one.
 
 ### 5. Checkpoint — record it
@@ -60,6 +64,8 @@ After a meaningful step: note what changed and what proved it, in the task file'
 ## Error recovery
 
 **Retry only on verified advancement.** Before retrying, name what is different: an input you changed, something you learned, an external condition that moved. Same inputs plus same state equals same failure — that is not a retry, it is a loop with extra tokens.
+
+Spawning a new agent, changing models or renaming a task does not justify retrying unchanged inputs. Report the cause to the parent; do not evade the retry or slot budget through delegation.
 
 Before retrying at all, isolate the cause: reproduce it with the smallest input that still fails, bisect down to the smallest failing case (the last-known-good commit, the specific file, the specific line), and confirm that is actually the cause — not just where the error surfaced — before touching any code. A fix aimed at the wrong cause is itself an unverified retry.
 

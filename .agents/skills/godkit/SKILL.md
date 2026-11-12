@@ -61,16 +61,16 @@ Goal bigger than one seam, or the brief says NEW PROJECT? Read `references/sprin
 
 ## Everything is a provider
 
-Deciding who or what does a seam — a command, this turn, a subagent, another tool? Read `references/routing.md`: the native session team protocol and the decomposition ladder. Prefer the host's native agents; external CLI/MCP runs need an explicit request, with no silent fallback.
+Deciding who or what does a seam — a command, this turn, a subagent, another tool? Read `references/routing.md`, the detailed team policy and decomposition ladder. Root decides autonomously: direct workers, or a substantive `godkit-lead` for at least two meaningful independent seams, with at most `root → lead → worker`. Root allocates shared host slots; only actual editors claim leaves. Prefer native agents; external CLI/MCP runs need an explicit request, with no silent fallback.
 
 ## Rules
 
 - **Every delegation carries three things**: scope (which files), exit condition (checkable), verification (the command that proves it). Missing one and you have not delegated, you have gambled.
 - **Never spawn for work that fits in your current turn.** Below that threshold you pay overhead to do the same work worse.
-- **Never accept a result without verifying it.** "It said it passed" is not evidence. Run the check.
+- **Never accept a result without verifying it.** Workers check their scopes, leads verify subtree integration, root runs one full final gate; see `references/routing.md`.
 - **One owner per file.** Two seams that must touch one file get serialized. Parallelizing a shared file trades wall-clock for a merge bug.
 - **Report orthogonal outcomes independently.** "Tests pass but I skipped the migration" is two facts; collapsing them into "done" hands the next agent a trap.
-- **Depth 3+ means you cut the wrong seams.** Back up and re-split rather than delegating deeper.
+- **Maximum two delegation edges.** Workers never spawn; use the hierarchy and shared slot budget in `references/routing.md`.
 - **Retry only on verified advancement.** Same inputs and same state give the same outcome. Change something or stop.
 - **Checkpoint before context-risky steps** — long dumps, wide searches, big test output. Write the state you would hate to lose.
 - Mark deliberate orchestration shortcuts with a `godkit:` comment naming the ceiling and the upgrade path.

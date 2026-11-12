@@ -33,7 +33,8 @@ test('the actual release archive contains the runtime installers and runs in an 
     assert.ok(fs.existsSync(path.join(project, '.codex', 'agents', 'godkit-reviewer.toml')))
     const agentSources = require(path.join(installed, 'lib', 'agents')).sources()
     const agyDirectory = path.join(project, '.agents', 'agents')
-    assert.equal(agentSources.length, 6, 'the shipped named-role set changed; review native projection coverage')
+    assert.equal(agentSources.length, 7, 'the shipped named-role set changed; review native projection coverage')
+    assert.ok(agentSources.some((role) => role.name === 'godkit-lead'), 'the bounded lead must ship in the release archive')
     assert.deepEqual(fs.readdirSync(agyDirectory).filter((name) => name.endsWith('.md')).sort(), agentSources.map((role) => role.name + '.md').sort())
     for (const role of agentSources) {
       const projected = fs.readFileSync(path.join(agyDirectory, role.name + '.md'), 'utf8')

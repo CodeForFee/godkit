@@ -18,9 +18,9 @@ godkit	3. **Write each seam to `.agent/tasks/T-NNN-<slug>.md`** with scope, exit
 godkit	4. **Assign owners from the roster**, capability first then cost. An unassigned seam is one everybody assumes somebody else took.
 godkit	5. **Claim what you are taking**, and post a THREAD block if another agent needs to know.
 godkit	## Sprint mode
-godkit	- **A wave is a set of tasks whose file scopes do not overlap.** That is the entire admission rule.
-godkit	- **Dispatch the wave at once, not one after another.** Serialising work that could run together is
-godkit	- **Every wave ends at a join gate**: one agent runs the full check suite after the merge. Without
+godkit	- **A wave is a set of ready tasks whose file scopes do not overlap.** Pin shared interfaces first.
+godkit	- **Dispatch ready seams within root's shared host slot budget.** Follow the hierarchy, branch
+godkit	- **Every wave ends at a scoped join gate**: its owner verifies the seams compose. Root runs one
 godkit	- **Route each seam down the cost ladder above.** A sprint does not change the ladder, it runs it
 godkit	- **`godkit sprint close` refuses** while any named task is unfinished or finished with an empty
 godkit	## Everything is a provider
@@ -29,22 +29,22 @@ godkit	0. **Can a command answer it?** `rg`, the test suite, `tsc --noEmit`, `gi
 godkit	1. **Can this turn do it?** You already hold the context; a spawn pays a cold start to re-derive what you know.
 godkit	2. **Can a small or local model do it?** Mechanical edits, filling stubs, a test from a named behaviour, renames, summarizing a diff.
 godkit	3. **Does it need repo-wide reasoning?** Root cause, a refactor spanning modules, "why is this broken", cutting the seams. Strong tier, and worth it.
-godkit	4. **Does it need several at once?** Fan out cheap workers over disjoint files, join with one strong reviewer and one full test run.
+godkit	4. **Does it need several at once?** Use ready disjoint seams within root's granted capacity; a lead needs at least two meaningful independent seams. Verify at the owning level, then run the full final gate at root.
 godkit	## The work decomposition ladder
 godkit	1. **Fits in this turn?** Do it. No decomposition, no delegation, no plan document.
 godkit	2. **Sequential in this session?** Step through it with checkpoints.
 godkit	3. **Has natural seams?** Split on the seams, each with scope, exit condition and verification. Seams split on **file boundaries**, never on abstract layers that share files.
 godkit	4. **Needs a specialist?** One scoped worker, with only the tools that scope needs.
-godkit	5. **Needs genuine parallelism?** Fan out over **disjoint file sets**, then gate on the join — one agent runs the full suite after the merge.
+godkit	5. **Needs genuine parallelism?** Dispatch ready **disjoint file sets** within the shared slot budget, then verify their composition. Root owns the full final gate.
 godkit	6. **Needs iteration to converge?** Goal-driven loop with a hard max-rounds cap and a measurable exit. No cap means no loop.
 godkit	7. **Only then:** full multi-phase orchestration.
 godkit	## Rules
 godkit	- **Every delegation carries three things**: scope (which files), exit condition (checkable), verification (the command that proves it). Missing one and you have not delegated, you have gambled.
 godkit	- **Never spawn for work that fits in your current turn.** Below that threshold you pay overhead to do the same work worse.
-godkit	- **Never accept a result without verifying it.** "It said it passed" is not evidence. Run the check.
+godkit	- **Never accept a result without verifying it.** Workers check their scopes, leads verify subtree integration, root runs one full final gate; see `references/routing.md`.
 godkit	- **One owner per file.** Two seams that must touch one file get serialized. Parallelizing a shared file trades wall-clock for a merge bug.
 godkit	- **Report orthogonal outcomes independently.** "Tests pass but I skipped the migration" is two facts; collapsing them into "done" hands the next agent a trap.
-godkit	- **Depth 3+ means you cut the wrong seams.** Back up and re-split rather than delegating deeper.
+godkit	- **Maximum two delegation edges.** Workers never spawn; use the hierarchy and shared slot budget in `references/routing.md`.
 godkit	- **Retry only on verified advancement.** Same inputs and same state give the same outcome. Change something or stop.
 godkit	- **Checkpoint before context-risky steps** — long dumps, wide searches, big test output. Write the state you would hate to lose.
 godkit	- Mark deliberate orchestration shortcuts with a `godkit:` comment naming the ceiling and the upgrade path.
@@ -411,9 +411,9 @@ godkit-plan	## Rules
 godkit-plan	- **Never plan two owners onto one file.** If the split demands it, the split is wrong — re-cut, or serialize.
 godkit-plan	- **No seam without a verification.** "Then it works" is not an exit condition.
 godkit-plan	- **Parallelize only disjoint file sets.** Wall-clock saved is never worth a merge bug.
-godkit-plan	- **Every parallel fan-out needs a join gate** — one agent, full suite, after the merge, logged.
+godkit-plan	- **Every parallel fan-out needs a scoped join gate** — verify the composition and log it; root owns one full final gate.
 godkit-plan	- **Do not plan past the first unknown.** If seam 2 depends on what seam 1 discovers, plan seam 1 and say so. Speculative seams get thrown away.
-godkit-plan	- **Cap the depth.** A seam needing its own sub-seams three levels down means the top-level cut was wrong. Back up and re-cut.
+godkit-plan	- **Bound the team.** At most `root → godkit-lead → worker`, within root's shared live-slot budget; see routing for unknown capacity and host fallbacks.
 godkit-plan	- Deliberate shortcuts get a `godkit:` note naming the ceiling.
 godkit-plan	## Anti-patterns
 godkit-plan	- **Plan-shaped procrastination** — three seams for two hours of work. Do the work.
