@@ -42,9 +42,11 @@ One owner per file. Workers update only their task and unique log; root alone ed
 | T-017 | portable runtime, verified onboarding and release recovery | gpt-6.1-sol | done | `.agent/tasks/T-017-portable-install.md` |
 | T-018 | native Antigravity roles, skill discovery and readiness | gpt-6.1-sol | done | `.agent/tasks/T-018-antigravity-native.md` |
 | T-019 | publish npm1.1.3 through verified OIDC release | gpt-6.1-sol | execute | `.agent/tasks/T-019-npm-release.md` |
+| T-020 | bounded native root-lead-worker teams | gpt-6 | done | `.agent/tasks/T-020-bounded-agent-teams.md` |
 
 ## Bugs
 
+- [ ] B-019 intermittent concurrent-suite installer timing test: tests/bootstrap.test.js:222-225 can start the second installer after the mock download's one-second window; concurrent run failed at line 225, isolated check passed (1/1), serialized suite passed (379 pass, 2 skipped). Suspected test synchronization race, outside T-020; use an explicit handshake before changing the installer. Log: log/2026-11-12T0456Z-gpt-6-01a1cdf4.md.
 
 
 - [x] B-007 install/uninstall ownership can remove foreign skills/hooks or mutate unsafe config — fixed in T-005; `link()` in `bin/godkit.js` is the last unguarded delete, owned by T-006.
@@ -133,17 +135,16 @@ One owner per file. Workers update only their task and unique log; root alone ed
 
 ## Last 3 handoffs
 
+- 2026-11-12 gpt-6: T-020 bounded root-lead-worker teams on feat/bounded-agent-teams; 379 pass, 0 fail, 2 skipped with serialized files, check/typecheck clean; native lead plus two leaves/peer exchange and simulated fallbacks verified. B-019 timing follow-up separate. Log: log/2026-11-12T0456Z-gpt-6-01a1cdf4.md.
+
 - 2026-11-11 gpt-6.1-sol: T-018 AGY native role/schema/skills/readiness; parallel workers; 376 pass,2 skipped,0 failed. Six native roles +16 skills synchronized; actual AGY native execution still host-session pending. B-018 installer validation fixed. Log: log/2026-11-11T0054Z-gpt-6-1-sol-01a1c5f1.md.
 
 - 2026-11-11 gpt-6.1-sol: T-017 portable runtime/install, journaled release recovery, truthful readiness, type/CI/artifact gates. 364 passed, 2 skipped, 0 failed; 220KB npm payload. Optional fresh-runtime recheck blocked by policy; no publish. Log: log/2026-11-11T0017Z-gpt-6-1-sol-01a1c5f1.md.
 
-- 2026-11-10 gpt-6: T-016 native session teams, scoped role skills, peer messages; 51/51 tests, package checks and six TOML definitions valid. Peer question/reply verified; IDE role discovery and token savings unmeasured. Log: log/2026-11-10T1506Z-gpt-6-01a1c5f1.md.
-
 ## Open notes
 
-- Nothing is claimed. `main` is the only branch now, local and remote, and it is pushed. All the
-  merged `godkit/*` branches are deleted.
-- The map is current and stamped at the release commit. GitHub topics and homepage are set.
+- T-020 is on `feat/bounded-agent-teams`; main has not been merged or modified by this task.
+- The project map remains stale; T-020 inspected current source directly.
 - **Published.** `@codeforfee/godkit@1.0.0` is live, tagged `v1.0.0` at e420478, verified by
   installing it from the registry into a clean directory and scaffolding a project with it.
   The bare name `godkit` is permanently unpublishable: npm refuses it as too similar to the

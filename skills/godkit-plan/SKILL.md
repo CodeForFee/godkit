@@ -37,7 +37,7 @@ alone; a horizontal one is the "bad seams" example above wearing a different hat
 | **Exit** | what "done" means, checkable by someone else |
 | **Verify** | the command or observation that proves it. `npm test auth` → pass, not "looks right" |
 
-**4. Sequence.** Which seams depend on which? Dependencies are almost always *interfaces*: seam B needs the type seam A defines. Land the interface first, then both sides go parallel.
+**4. Sequence.** Which seams depend on which? Dependencies are almost always *interfaces*: seam B needs the type seam A defines. Pin shared types/API contracts and their owner first, then parallelize ready, disjoint consumers.
 
 **5. Route each seam to a provider.** Read `## Roster` on the board for what this project actually has, then route in two steps: **capability first, then cost.**
 
@@ -64,11 +64,11 @@ Assigning work a provider cannot do produces a confident half-result — worse t
 
 Verification routes the same way: the cheapest thing that can prove it.
 
-**6. Write the task files.** Each seam becomes `.agent/tasks/T-NNN-<slug>.md` with `scope`, `exit`, `owner` and `phase: plan` in the frontmatter, and the reasoning under `## Plan`. Add each to the board's task index. Ids are monotonic — check the index for the next one.
+**6. Write the task files.** Each seam becomes `.agent/tasks/T-NNN-<slug>.md` with `scope`, `exit`, `owner` and `phase: plan` in the frontmatter, and the reasoning under `## Plan`. Root records the hierarchy, parent, slot allowances and dependencies in the existing `## Plan` and updates the board's task index; do not add a task schema. Follow [the detailed routing policy](../godkit/references/routing.md#native-session-teams): root decides decomposition, a lead needs at least two meaningful independent seams and does substantive work, and workers never spawn. Ids are monotonic — check the index for the next one.
 
 A seam that stays in your head dies with your session. If it outlives this turn, it gets a file.
 
-**7. Claim what you are taking** and start. A plan that is not claimed is a plan someone else will duplicate.
+**7. Claim what you will edit** and start. Scope envelopes do not claim every file below them; only actual editors own exclusive leaf claims. In a native team root alone updates the board and coordinates transfers after release.
 
 ## Output
 
@@ -85,7 +85,7 @@ S3  src/ui/login.tsx       loading + error states      cursor    exit: both stat
                                                                  verify: manual, both paths
 
 Order: S1 → (S2 ∥ S3) → join.
-Join gate: full `npm test` after merge, by whoever lands second.
+Join gate: scoped integration after each branch, full `npm test` once at root's final gate.
 written: T-007, T-008, T-009. claimed: T-007.
 ```
 
@@ -94,9 +94,9 @@ written: T-007, T-008, T-009. claimed: T-007.
 - **Never plan two owners onto one file.** If the split demands it, the split is wrong — re-cut, or serialize.
 - **No seam without a verification.** "Then it works" is not an exit condition.
 - **Parallelize only disjoint file sets.** Wall-clock saved is never worth a merge bug.
-- **Every parallel fan-out needs a join gate** — one agent, full suite, after the merge, logged.
+- **Every parallel fan-out needs a scoped join gate** — verify the composition and log it; root owns one full final gate.
 - **Do not plan past the first unknown.** If seam 2 depends on what seam 1 discovers, plan seam 1 and say so. Speculative seams get thrown away.
-- **Cap the depth.** A seam needing its own sub-seams three levels down means the top-level cut was wrong. Back up and re-cut.
+- **Bound the team.** At most `root → godkit-lead → worker`, within root's shared live-slot budget; see routing for unknown capacity and host fallbacks.
 - Deliberate shortcuts get a `godkit:` note naming the ceiling.
 
 ## Anti-patterns

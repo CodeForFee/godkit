@@ -74,6 +74,31 @@ test('shipped roles declare skills available to both native Codex and Claude', (
   }
 })
 
+test('all host projections distinguish a bounded lead from leaf workers', () => {
+  const roles = agents.sources()
+  const lead = roles.find((role) => role.name === 'godkit-lead')
+  assert.ok(lead, 'the reusable lead role must be shipped')
+  assert.ok(!lead.fields.tools, 'the Claude lead inherits native capabilities instead of a worker tool allowlist')
+  for (const render of [agents.toClaude, agents.toCodex, agents.toAntigravity]) {
+    const rendered = render(lead)
+    assert.match(rendered, /Lead boundary:/)
+    assert.match(rendered, /granted allowance/)
+    assert.match(rendered, /root -> lead -> worker/)
+    assert.match(rendered, /no available slot/)
+    assert.match(rendered, /nested spawning is unavailable/)
+    assert.match(rendered, /root to dispatch/)
+    assert.match(rendered, /references\/routing\.md/)
+    assert.ok(!rendered.includes('Worker boundary:'), 'the renderer must not forbid the lead delegation it just granted')
+    for (const role of roles.filter((r) => r !== lead)) {
+      const worker = render(role)
+      assert.match(worker, /Worker boundary: Do not spawn or delegate further agents/)
+      assert.ok(!worker.includes('Lead boundary:'), role.name + ' must remain a leaf')
+      assert.match(worker, /10 lines/)
+      assert.match(worker, /peer messaging is unavailable/)
+    }
+  }
+})
+
 test('agents sync writes both hosts, is idempotent, and only ever replaces or removes its own files', () => {
   const d = tmp('godkit-agents-')
   const first = agents.syncAgents(d, 'sync', false)
